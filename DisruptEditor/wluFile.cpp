@@ -8,22 +8,6 @@
 #include "BinaryObject.h"
 #include "Hash.h"
 
-class Attribute {
-public:
-	Attribute(FILE* fp) {
-		fread(&hash, sizeof(hash), 1, fp);
-	};
-	void deserialize(FILE *fp);
-
-	void serializeXML(tinyxml2::XMLPrinter &printer);
-
-	std::string getHashName();
-	std::string getHumanReadable();
-	std::string getByteString();
-	uint32_t hash;
-	std::vector<uint8_t> buffer;
-};
-
 void Attribute::deserialize(FILE * fp) {
 	size_t offset = ftell(fp);
 
@@ -85,23 +69,11 @@ std::string Attribute::getByteString() {
 		str.append(strbuffer);
 	}
 
+	if(!str.empty())
+		str.pop_back();
+
 	return str;
 }
-
-class Node {
-public:
-	Node(FILE* fp) { deserialize(fp); };
-	void deserialize(FILE *fp);
-	void serializeXML(tinyxml2::XMLPrinter &printer);
-
-	std::string getHashName();
-
-	size_t offset;
-	uint32_t hash;
-
-	std::vector<Node> children;
-	std::vector<Attribute> attributes;
-};
 
 void Node::deserialize(FILE* fp) {
 	size_t pos = ftell(fp);
@@ -185,54 +157,13 @@ bool wluFile::open(const char * filename) {
 		return false;
 	}
 
-	Node node(fp);
+	root = Node(fp);
 	fclose(fp);
 
-	fp = fopen("test.xml", "wb");
+	/*fp = fopen("test.xml", "wb");
 	tinyxml2::XMLPrinter printer(fp);
 	node.serializeXML(printer);
-	fclose(fp);
+	fclose(fp);*/
 
-	int count = 0;
-
-	/*while (ftell(fp) < wluhead.size + sizeof(wluhead)) {
-		//size_t a = ftell(fp);
-		//printf("Offset: %d\n", a);
-
-		uint32_t c = ReadCountB(fp);
-		if (c < 254)
-			printf("%02X\n", c);
-		else
-			printf("%08X\n", c);
-
-		uint32_t hash;
-		fread(&hash, sizeof(hash), 1, fp);
-		printf("%08X\n", hash);
-
-		uint8_t s;
-		fread(&s, 1, 1, fp);
-		printf("%02X\n", s);
-
-		std::vector<uint8_t> data(s + 1);
-		fread(data.data(), 1, data.size(), fp);
-		for (auto it = data.begin(); it != data.end(); ++it) {
-			if(*it > 32 && *it < 126)
-				printf("%c", *it);
-			else
-				printf("%02X ", *it);
-		}
-		printf("\n\n");
-		//printf("Datasize: %d\n", data.size());
-
-		count++;
-	}*/
-
-	//std::vector<std::shared_ptr<BinaryObject>> pointers;
-	//std::shared_ptr<BinaryObject> root = Deserialize(NULL, fp, pointers);
-
-	//size_t a = ftell(fp);
-	//printf("Final Offset: %d\n", a);
-
-	fclose(fp);
 	return true;
 }

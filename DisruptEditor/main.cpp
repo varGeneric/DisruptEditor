@@ -7,6 +7,8 @@
 
 #include "wluFile.h"
 #include "DatFat.h"
+#define TINYFILES_IMPL
+#include "tinyfiles.h"
 
 int main(int argc, char **argv) {
 	SDL_Init(SDL_INIT_EVERYTHING);
@@ -14,12 +16,12 @@ int main(int argc, char **argv) {
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-	/*SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
+	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
 	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
 	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
 	SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);*/
+	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 	SDL_Window* window = SDL_CreateWindow(
 		"Disrupt Editor",                  // window title
 		SDL_WINDOWPOS_CENTERED,           // initial x position
@@ -46,8 +48,32 @@ int main(int argc, char **argv) {
 	ImGui_ImplSdlGL3_Init(window);
 
 	std::string wd = "D:/Desktop/bin/windy_city_unpack/worlds/windy_city/generated/wlu";
-	wluFile w;
-	w.open((wd + "/wlu_data_world.xml.data.fcb").c_str());
+	std::map<std::string, wluFile> wlus;
+
+	tfDIR dir;
+	tfDirOpen(&dir, wd.c_str());
+
+	int count = 0;
+
+	while (dir.has_next) {
+		tfFILE file;
+		tfReadFile(&dir, &file);
+
+		if (!file.is_dir && strcmp(file.ext, "xml.data.fcb") == 0) {
+			printf("Loading %s\n", file.name);
+
+			wlus[file.name].open(file.path);
+		}
+
+		tfDirNext(&dir);
+
+		count++;
+
+		if (count > 25)
+			break;
+	}
+
+	tfDirClose(&dir);
 
 	//const std::string wd = "C:/Program Files/Ubisoft/WATCH_DOGS/data_win64/";
 	//DatFat df;
@@ -86,6 +112,11 @@ int main(int argc, char **argv) {
 			}
 			ImGui::EndMainMenuBar();
 		}
+
+
+		//Draw Layer Window
+		ImGui::Begin("Layers");
+			ImGui::End();
 
 		ImGui::Render();
 

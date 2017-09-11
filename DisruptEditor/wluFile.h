@@ -1,6 +1,9 @@
 #pragma once
 
 #include <stdint.h>
+#include "tinyxml2.h"
+#include <string>
+#include <vector>
 
 struct baseHeader {
 	char magic[4];
@@ -22,11 +25,43 @@ struct wluHeader {
 	fcbHeader fcb;
 };
 
+class Attribute {
+public:
+	Attribute(FILE* fp) {
+		fread(&hash, sizeof(hash), 1, fp);
+	};
+	void deserialize(FILE *fp);
+
+	void serializeXML(tinyxml2::XMLPrinter &printer);
+
+	std::string getHashName();
+	std::string getHumanReadable();
+	std::string getByteString();
+	uint32_t hash;
+	std::vector<uint8_t> buffer;
+};
+
+class Node {
+public:
+	Node() {};
+	Node(FILE* fp) { deserialize(fp); };
+	void deserialize(FILE *fp);
+	void serializeXML(tinyxml2::XMLPrinter &printer);
+
+	std::string getHashName();
+
+	size_t offset;
+	uint32_t hash;
+
+	std::vector<Node> children;
+	std::vector<Attribute> attributes;
+};
+
 class wluFile {
 public:
 	wluFile() {};
 	bool open(const char* filename);
 
-
+	Node root;
 };
 
