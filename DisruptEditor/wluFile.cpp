@@ -4,7 +4,9 @@
 #include <string.h>
 #include <assert.h>
 
+#include "tinyxml2.h"
 #include "BinaryObject.h"
+#include "Hash.h"
 
 class Attribute {
 public:
@@ -13,6 +15,11 @@ public:
 	};
 	void deserialize(FILE *fp);
 
+	void serializeXML(tinyxml2::XMLPrinter &printer);
+
+	std::string getHashName();
+	std::string getHumanReadable();
+	std::string getByteString();
 	uint32_t hash;
 	std::vector<uint8_t> buffer;
 };
@@ -43,10 +50,51 @@ void Attribute::deserialize(FILE * fp) {
 	}
 }
 
+void Attribute::serializeXML(tinyxml2::XMLPrinter &printer) {
+	printer.PushAttribute(getHashName().c_str(), getHumanReadable().c_str());
+}
+
+std::string Attribute::getHashName() {
+	return Hash::instance().getReverseHash(hash);
+}
+
+std::string Attribute::getHumanReadable() {
+	if (buffer.size() > 1 && buffer.back() == '\0') {
+		//Iterate over string for any non-ascii chars
+		bool valid = true;
+		for (auto byte = buffer.begin(); byte != buffer.end() - 1; ++byte) {
+			if (!(*byte > 31 && *byte < 127)) {
+				valid = false;
+				break;
+			}
+		}
+
+		if(valid)
+			return std::string((char*)buffer.data());
+	}
+
+	return getByteString();
+}
+
+std::string Attribute::getByteString() {
+	std::string str;
+
+	for (auto byte : buffer) {
+		char strbuffer[4];
+		snprintf(strbuffer, sizeof(strbuffer), "%02x ", byte);
+		str.append(strbuffer);
+	}
+
+	return str;
+}
+
 class Node {
 public:
 	Node(FILE* fp) { deserialize(fp); };
 	void deserialize(FILE *fp);
+	void serializeXML(tinyxml2::XMLPrinter &printer);
+
+	std::string getHashName();
 
 	size_t offset;
 	uint32_t hash;
@@ -106,6 +154,24 @@ void Node::deserialize(FILE* fp) {
 	}
 }
 
+void Node::serializeXML(tinyxml2::XMLPrinter &printer) {
+	std::string hashName = getHashName();
+
+	printer.OpenElement(hashName.c_str());
+
+	for (auto &attribute : attributes)
+		attribute.serializeXML(printer);
+
+	for (auto &child : children)
+		child.serializeXML(printer);
+
+	printer.CloseElement();
+}
+
+std::string Node::getHashName() {
+	return Hash::instance().getReverseHash(hash);
+}
+
 bool wluFile::open(const char * filename) {
 	FILE *fp = fopen(filename, "rb");
 	if (!fp) {
@@ -120,6 +186,12 @@ bool wluFile::open(const char * filename) {
 	}
 
 	Node node(fp);
+	fclose(fp);
+
+	fp = fopen("test.xml", "wb");
+	tinyxml2::XMLPrinter printer(fp);
+	node.serializeXML(printer);
+	fclose(fp);
 
 	int count = 0;
 
