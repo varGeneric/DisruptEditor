@@ -9,6 +9,7 @@
 class BinaryObject;
 
 uint32_t ReadCount(FILE *fp, bool &isOffset);
+uint32_t ReadCountB(FILE *fp, bool &isOffset);
 std::shared_ptr<BinaryObject> Deserialize(BinaryObject *parent, FILE *fp, std::vector<std::shared_ptr<BinaryObject>>& pointers);
 
 class BinaryObject {

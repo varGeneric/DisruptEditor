@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-struct wluHeader {
+struct baseHeader {
 	char magic[4];
 	uint32_t size;
 	uint32_t unknown1;
@@ -15,6 +15,11 @@ struct fcbHeader {
 	uint16_t headerFlags;
 	uint32_t totalObjectCount;
 	uint32_t totalValueCount;
+};
+
+struct wluHeader {
+	baseHeader base;
+	fcbHeader fcb;
 };
 
 class wluFile {

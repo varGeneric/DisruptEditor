@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
 
 	std::string wd = "D:/Desktop/bin/windy_city_unpack/worlds/windy_city/generated/wlu";
 	wluFile w;
-	w.open((wd + "/wlu_data_01_loop_hubunlock_mission.xml.data.fcb").c_str());
+	w.open((wd + "/wlu_data_world.xml.data.fcb").c_str());
 
 	//const std::string wd = "C:/Program Files/Ubisoft/WATCH_DOGS/data_win64/";
 	//DatFat df;
