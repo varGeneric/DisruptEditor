@@ -114,7 +114,7 @@ uint32_t updateCRC32(unsigned char ch, uint32_t crc) {
 	return UPDC32(ch, crc);
 }
 
-uint32_t crc32buf(char *buf, size_t len) {
+uint32_t crc32buf(const char *buf, size_t len) {
 	register uint32_t oldcrc32;
 
 	oldcrc32 = 0xFFFFFFFF;
@@ -154,4 +154,8 @@ std::string Hash::getReverseHash(uint32_t hash) {
 	}
 
 	return reverseHash[hash];
+}
+
+uint32_t Hash::getHash(const char *str) {
+	return crc32buf(str, strlen(str));
 }

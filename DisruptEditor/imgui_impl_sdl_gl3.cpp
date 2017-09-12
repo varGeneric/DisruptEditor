@@ -14,7 +14,7 @@
 #ifdef _WIN32
 #include <SDL_syswm.h>
 #endif
-#include "gl_glGEN.h"
+#include "glad.h"
 
 // Data
 static double       g_Time = 0.0f;

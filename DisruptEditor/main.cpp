@@ -1,4 +1,4 @@
-#include "gl_glGEN.h"
+#include "glad.h"
 #include <SDL.h>
 #include "imgui.h"
 #include "imgui_impl_sdl_gl3.h"
@@ -43,8 +43,8 @@ int main(int argc, char **argv) {
 		printf("Could not create context: %s\n", SDL_GetError());
 		return 1;
 	}
-
-	ogl_LoadFunctions();
+	SDL_GL_SetSwapInterval(1);
+	gladLoadGL();
 	ImGui_ImplSdlGL3_Init(window);
 
 	std::string wd = "D:/Desktop/bin/windy_city_unpack/worlds/windy_city/generated/wlu";
@@ -116,7 +116,46 @@ int main(int argc, char **argv) {
 
 		//Draw Layer Window
 		ImGui::Begin("Layers");
-			ImGui::End();
+
+		static int cur = -1;
+		std::vector<const char*> items;
+		for (auto it = wlus.begin(); it != wlus.end(); ++it)
+			items.push_back(it->first.c_str());
+		ImGui::ListBox("##WLU", &cur, items.data(), items.size());
+
+		if (cur > -1 && cur < wlus.size()) {
+			ImGui::Text("%s", items[cur]);
+
+			wluFile &wlu = wlus[items[cur]];
+
+			Node *Entities = wlu.root.findFirstChild("Entities");
+			assert(Entities);
+
+			for (auto &entity : Entities->children) {
+				Attribute *hidName = entity.getAttribute("hidName");
+				assert("hidName");
+
+				Attribute *hidPos = entity.getAttribute("hidPos");
+				assert("hidPos");
+
+				ImGui::Separator();
+				ImGui::Text("%s", hidName->buffer.data());
+				ImGui::InputFloat3("hidPos", (float*)hidPos->buffer.data());
+				
+				Node *Components = entity.findFirstChild("Components");
+				assert(Components);
+
+				Node* CGraphicComponent = Components->findFirstChild("CGraphicComponent");
+				if (CGraphicComponent) {
+					Attribute* XBG = CGraphicComponent->getAttribute(0x3182766C);
+					if(XBG)
+						ImGui::Text("%s", XBG->buffer.data());
+				}
+
+			}
+		}
+
+		ImGui::End();
 
 		ImGui::Render();
 

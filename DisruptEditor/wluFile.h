@@ -48,6 +48,10 @@ public:
 	void deserialize(FILE *fp);
 	void serializeXML(tinyxml2::XMLPrinter &printer);
 
+	Node* findFirstChild(const char* name);
+	Attribute* getAttribute(const char* name);
+	Attribute* getAttribute(uint32_t hash);
+
 	std::string getHashName();
 
 	size_t offset;

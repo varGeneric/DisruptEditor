@@ -140,6 +140,37 @@ void Node::serializeXML(tinyxml2::XMLPrinter &printer) {
 	printer.CloseElement();
 }
 
+Node* Node::findFirstChild(const char *name) {
+	uint32_t hash = Hash::instance().getHash(name);
+
+	for (auto &child : children) {
+		if (child.hash == hash)
+			return &child;
+	}
+
+	return NULL;
+}
+
+Attribute* Node::getAttribute(const char *name) {
+	uint32_t hash = Hash::instance().getHash(name);
+
+	for (auto &attribute : attributes) {
+		if (attribute.hash == hash)
+			return &attribute;
+	}
+
+	return NULL;
+}
+
+Attribute* Node::getAttribute(uint32_t hash) {
+	for (auto &attribute : attributes) {
+		if (attribute.hash == hash)
+			return &attribute;
+	}
+
+	return NULL;
+}
+
 std::string Node::getHashName() {
 	return Hash::instance().getReverseHash(hash);
 }
@@ -162,7 +193,7 @@ bool wluFile::open(const char * filename) {
 
 	/*fp = fopen("test.xml", "wb");
 	tinyxml2::XMLPrinter printer(fp);
-	node.serializeXML(printer);
+	root.serializeXML(printer);
 	fclose(fp);*/
 
 	return true;
