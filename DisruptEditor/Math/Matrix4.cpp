@@ -217,6 +217,10 @@ mat4 mat4::adjoint() const {
 		MINOR(0, 1, 2, 0, 1, 2));
 }
 
+mat4 mat4::swapMajor() const {
+	return mat4(m[0][0], m[1][0], m[2][0], m[3][0], m[0][1], m[1][1], m[2][1], m[3][1], m[0][2], m[1][2], m[2][2], m[3][2], m[0][3], m[1][3], m[2][3], m[3][3]);
+}
+
 vec4 mat4::operator[](int index) const {
 	assert(index >= 0 && index < 4);
 	return m[index];

@@ -211,8 +211,8 @@ public:
 	// The pixel values range from 255 for a pixel within a glyph to 0 for a transparent pixel.
 	// If createGlyphTexture() returns null, the renderer will disable all text drawing functions.
 	//
-	dd::GlyphTextureHandle createGlyphTexture(int width, int height, const void * pixels) { return 0; }
-	void destroyGlyphTexture(dd::GlyphTextureHandle glyphTex) {}
+	dd::GlyphTextureHandle createGlyphTexture(int width, int height, const void * pixels);
+	void destroyGlyphTexture(dd::GlyphTextureHandle glyphTex);
 
 	//
 	// Batch drawing methods for the primitives used by the debug renderer.
@@ -220,18 +220,22 @@ public:
 	//
 	void drawPointList(const dd::DrawVertex * points, int count, bool depthEnabled);
 	void drawLineList(const dd::DrawVertex * lines, int count, bool depthEnabled);
-	void drawGlyphList(const dd::DrawVertex * glyphs, int count, dd::GlyphTextureHandle glyphTex) {}
+	void drawGlyphList(const dd::DrawVertex * glyphs, int count, dd::GlyphTextureHandle glyphTex);
 
-	Shader lines;
-	VertexBuffer linesBuffer;
+	Shader lines, tex;
+	VertexBuffer linesBuffer, texBuffer;
 
 	mat4 VP;
+	ivec2 windowSize;
 };
 
 RenderInterface::RenderInterface() {
 	lines = loadShaders("gldd.xml");
 	linesBuffer = createVertexBuffer(NULL, 0, BUFFER_STREAM);
 	glEnable(GL_PROGRAM_POINT_SIZE);
+
+	tex = loadShaders("tex.xml");
+	texBuffer = createVertexBuffer(NULL, 0, BUFFER_STREAM);
 }
 
 void RenderInterface::drawPointList(const dd::DrawVertex *points, int count, bool depthEnabled) {
@@ -300,6 +304,82 @@ void RenderInterface::drawLineList(const dd::DrawVertex *points, int count, bool
 	glDrawArrays(GL_LINES, 0, count);
 	glDisableVertexAttribArray(0);
 	glDisableVertexAttribArray(1);
+}
+
+void RenderInterface::drawGlyphList(const dd::DrawVertex * glyphs, int count, dd::GlyphTextureHandle glyphTex) {
+	updateVertexBuffer(glyphs, count * sizeof(dd::DrawVertex), texBuffer);
+
+	tex.use();
+	glUniform2f(tex.uniforms["windowSize"], windowSize.x, windowSize.y);
+	glBindBuffer(GL_ARRAY_BUFFER, texBuffer.buffer_id);
+	// 1rst attribute buffer : vertices
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(
+		0,                  // attribute. No particular reason for 0, but must match the layout in the shader.
+		2,                  // size
+		GL_FLOAT,           // type
+		GL_FALSE,           // normalized?
+		sizeof(float) * 7,  // stride
+		(void*)0            // array buffer offset
+	);
+
+	// 2nd attribute buffer : colors
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(
+		1,                                // attribute. No particular reason for 1, but must match the layout in the shader.
+		2,                                // size
+		GL_FLOAT,                         // type
+		GL_FALSE,                         // normalized?
+		sizeof(float) * 7,                // stride
+		(GLvoid*)(2 * sizeof(GLfloat))    // array buffer offset
+	);
+
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(
+		2,                                // attribute. No particular reason for 1, but must match the layout in the shader.
+		3,                                // size
+		GL_FLOAT,                         // type
+		GL_FALSE,                         // normalized?
+		sizeof(float) * 7,                // stride
+		(GLvoid*)(4 * sizeof(GLfloat))    // array buffer offset
+	);
+
+	// Draw the triangles
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glDisable(GL_DEPTH_TEST);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, (GLuint)glyphTex);
+	glDrawArrays(GL_TRIANGLES, 0, count);
+	glDisable(GL_BLEND);
+
+	glDisableVertexAttribArray(0);
+	glDisableVertexAttribArray(1);
+	glDisableVertexAttribArray(2);
+}
+
+dd::GlyphTextureHandle RenderInterface::createGlyphTexture(int width, int height, const void * pixels) {
+	GLuint textureId;
+	glGenTextures(1, &textureId);
+	glBindTexture(GL_TEXTURE_2D, textureId);
+
+	glPixelStorei(GL_PACK_ALIGNMENT, 1);
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, pixels);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	return (dd::GlyphTextureHandle)textureId;
+}
+
+void RenderInterface::destroyGlyphTexture(dd::GlyphTextureHandle glyphTex) {
+	glDeleteTextures(1, (GLuint*)&glyphTex);
 }
 
 const ddVec3 red = { 1.0f, 0.0f, 0.0f };
@@ -411,8 +491,9 @@ int main(int argc, char **argv) {
 		mat4 projection = MATperspective(camera.fov, (float)windowSize.x / windowSize.y, camera.near_plane, camera.far_plane);
 		mat4 vp = projection * view;
 		renderInterface.VP = vp;
+		renderInterface.windowSize = windowSize;
 
-		dd::xzSquareGrid(-50.0f, 50.0f, -1.0f, 1.7f, green);
+		dd::xzSquareGrid(-50.0f, 50.0f, 0.f, 1.f, white);
 
 		ImGui::SetNextWindowPos(ImVec2(5.f, 5.f));
 		ImGui::Begin("", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
@@ -464,31 +545,23 @@ int main(int argc, char **argv) {
 						ImGui::Text("%s", XBG->buffer.data());
 				}
 
-				vec3* pos = (vec3*)hidPos->buffer.data();
-				vec3 screenPos = MATProject(*pos, view, projection);
-				screenPos.x *= windowSize.x;
-				screenPos.y *= windowSize.y;
-				if (screenPos.x > 0.f && screenPos.x < windowSize.x && screenPos.y > 0.f && screenPos.y < windowSize.y) {
-					ImGui::SetNextWindowPos(ImVec2(screenPos.x, screenPos.y));
-					ImGui::Begin((char*)hidName->buffer.data(), NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-					ImGui::Text("%s %f", hidName->buffer.data(), screenPos.z);
-					ImGui::End();
-				}
+				vec3 pos = swapYZ(*(vec3*)hidPos->buffer.data());
+				if(pos.distance(camera.location) < 5.f)
+					dd::projectedText((char*)hidName->buffer.data(), &pos.x, white, &vp[0][0], 0, 0, windowSize.x, windowSize.y, 0.5f);
 
-				vec3 a = swapYZ(*pos);
-				dd::cross(&a.x, 1.f);
+				dd::cross(&pos.x, 1.f);
 
 				if (hidBBox) {
 					vec3 boxMin = swapYZ(*((vec3*)hidBBox->getAttribute("vectorBBoxMin")->buffer.data()));
 					vec3 boxMax = swapYZ(*((vec3*)hidBBox->getAttribute("vectorBBoxMax")->buffer.data()));
 					vec3 boxExtent = boxMax - boxMin;
-					dd::box(&a.x, blue, boxExtent.x, boxExtent.y, boxExtent.z);
+					dd::box(&pos.x, blue, boxExtent.x, boxExtent.y, boxExtent.z);
 				}
 			}
 		}
 		ImGui::End();
 
-		dd::flush(delta * 1000.f);
+		dd::flush(0);
 		ImGui::Render();
 
 		SDL_GL_SwapWindow(window);

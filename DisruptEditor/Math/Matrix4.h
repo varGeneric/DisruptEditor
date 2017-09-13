@@ -32,6 +32,7 @@ public:
 	float determinant() const;
 
 	mat4 adjoint() const;
+	mat4 swapMajor() const;
 
 	vec4 operator[](int index) const;
 	vec4& operator[](int index);

@@ -76,9 +76,9 @@ void Camera::update(float delta) {
 
 			theta = (lon) * (3.141592f / 180.f);
 
-			lookingAt.x = 100.f * sinf(phi) * cosf(theta);
-			lookingAt.y = 100.f * cosf(phi);
-			lookingAt.z = 100.f * sinf(phi) * sinf(theta);
+			lookingAt.x = sinf(phi) * cosf(theta);
+			lookingAt.y = cosf(phi);
+			lookingAt.z = sinf(phi) * sinf(theta);
 
 			lookingAt += location;
 			break;

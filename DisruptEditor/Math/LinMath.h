@@ -164,8 +164,9 @@ static inline float length2(vec3 const &m) {
 static inline vec3 MATProject(const vec3 &pos, const mat4 &view, const mat4 &projection) {
 	//Projection transform, the final row of projection matrix is always [0 0 -1 0]
 	//so we optimize for that.
-	vec4 fTempo = projection * vec4(pos, 1.f);
-	fTempo.w = -pos.z;
+	mat4 VP = projection * view;
+	vec4 fTempo = VP * vec4(pos, 1.f);
+	//fTempo.w = -pos.z;
 	//The result normalizes between -1 and 1
 	if (fTempo.w == 0.f)	//The w value
 		return vec3(-5000.f, -5000.f, 0.f);
@@ -176,5 +177,6 @@ static inline vec3 MATProject(const vec3 &pos, const mat4 &view, const mat4 &pro
 	fTempo.z *= fTempo.w;
 	//Window coordinates
 	//Map x, y to range 0-1
-	return vec3((fTempo.x * 0.5 + 0.5)*view[0][2] + view[0][0], (fTempo.y * 0.5 + 0.5)*view[0][3] + view[0][1], (1.f + fTempo.z)*0.5f);
+	//return vec3((fTempo.x * 0.5 + 0.5)*view[0][2] + view[0][0], (fTempo.y * 0.5 + 0.5)*view[0][3] + view[0][1], (1.f + fTempo.z)*0.5f);
+	return vec3((fTempo.x * 0.5f + 0.5f), (fTempo.y * 0.5f + 0.5f), (1.f + fTempo.z)*0.5f);
 }
