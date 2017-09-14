@@ -163,6 +163,7 @@
     <ClCompile Include="Math\Vector4.cpp" />
     <ClCompile Include="tinyxml2.cpp" />
     <ClCompile Include="wluFile.cpp" />
+    <ClCompile Include="xbgFile.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BinaryObject.h" />
@@ -170,6 +171,7 @@
     <ClInclude Include="DatFat.h" />
     <ClInclude Include="debug_draw.hpp" />
     <ClInclude Include="glad.h" />
+    <ClInclude Include="GLHelper.h" />
     <ClInclude Include="Hash.h" />
     <ClInclude Include="imconfig.h" />
     <ClInclude Include="imgui.h" />
@@ -192,6 +194,7 @@
     <ClInclude Include="tinyfiles.h" />
     <ClInclude Include="tinyxml2.h" />
     <ClInclude Include="wluFile.h" />
+    <ClInclude Include="xbgFile.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

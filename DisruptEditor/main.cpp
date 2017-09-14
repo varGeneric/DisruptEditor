@@ -9,184 +9,17 @@
 #include <string>
 
 #include "wluFile.h"
+#include "xbgFile.h"
 #include "DatFat.h"
 #define TINYFILES_IMPL
 #include "tinyfiles.h"
 
 #include "Camera.h"
 
+#include "GLHelper.h"
+
 vec3 swapYZ(const vec3 &ref) {
 	return vec3(ref.x, ref.z, ref.y);
-}
-
-class Shader {
-public:
-	GLuint oglid;
-	void use() { glUseProgram(oglid); }
-	std::map<std::string, GLint> uniforms;
-	enum UniformTypes { INT, FLOAT, MAT4, VEC2, VEC3, VEC4, TEXTURE2D, TEXTURE3D };
-	std::map<std::string, std::string> uniformTypes;
-	std::vector<std::string> samplerAttributes;
-};
-
-bool loadShader(Shader *shader, const char * vertex, const char * fragment) {
-	// Create the shaders
-	GLuint VertexShaderID = glCreateShader(GL_VERTEX_SHADER);
-	GLuint FragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
-
-	GLint Result = GL_FALSE;
-	int InfoLogLength;
-
-	// Compile Vertex Shader
-	glShaderSource(VertexShaderID, 1, &vertex, NULL);
-	glCompileShader(VertexShaderID);
-
-	// Check Vertex Shader
-	glGetShaderiv(VertexShaderID, GL_COMPILE_STATUS, &Result);
-	if (Result == GL_FALSE) {
-		glGetShaderiv(VertexShaderID, GL_INFO_LOG_LENGTH, &InfoLogLength);
-		std::vector<char> VertexShaderErrorMessage(InfoLogLength + 1);
-		glGetShaderInfoLog(VertexShaderID, InfoLogLength, NULL, &VertexShaderErrorMessage[0]);
-		return false;
-	}
-
-	// Compile Fragment Shader
-	glShaderSource(FragmentShaderID, 1, &fragment, NULL);
-	glCompileShader(FragmentShaderID);
-
-	// Check Fragment Shader
-	glGetShaderiv(FragmentShaderID, GL_COMPILE_STATUS, &Result);
-	if (Result == GL_FALSE) {
-		glGetShaderiv(FragmentShaderID, GL_INFO_LOG_LENGTH, &InfoLogLength);
-		std::vector<char> FragmentShaderErrorMessage(InfoLogLength + 1);
-		glGetShaderInfoLog(FragmentShaderID, InfoLogLength, NULL, &FragmentShaderErrorMessage[0]);
-		glDeleteShader(VertexShaderID);
-		glDeleteShader(FragmentShaderID);
-		return false;
-	}
-
-	// Link the program
-	shader->oglid = glCreateProgram();
-	glAttachShader(shader->oglid, VertexShaderID);
-	glAttachShader(shader->oglid, FragmentShaderID);
-
-	glLinkProgram(shader->oglid);
-
-	glDeleteShader(VertexShaderID);
-	glDeleteShader(FragmentShaderID);
-
-	// Check the program
-	glGetProgramiv(shader->oglid, GL_LINK_STATUS, &Result);
-	if (Result == GL_FALSE) {
-		glGetProgramiv(shader->oglid, GL_INFO_LOG_LENGTH, &InfoLogLength);
-		std::vector<char> ProgramErrorMessage(InfoLogLength + 1);
-		glGetProgramInfoLog(shader->oglid, InfoLogLength, NULL, &ProgramErrorMessage[0]);
-		glDeleteProgram(shader->oglid);
-		return false;
-	}
-
-	glUseProgram(shader->oglid);
-
-	for (auto it = shader->uniforms.begin(), end = shader->uniforms.end(); it != end; ++it) {
-		it->second = glGetUniformLocation(shader->oglid, it->first.c_str());
-	}
-
-	for (int i = 0; i < shader->samplerAttributes.size(); ++i) {
-		glUniform1i(shader->uniforms[shader->samplerAttributes[i]], i);
-	}
-
-	return true;
-}
-
-Shader loadShaders(const char *program) {
-	Shader shader;
-
-	// Create the shaders
-	GLuint VertexShaderID = glCreateShader(GL_VERTEX_SHADER);
-	GLuint FragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
-
-	tinyxml2::XMLDocument doc;
-	doc.LoadFile(program);
-
-	tinyxml2::XMLElement *root = doc.RootElement();
-
-	tinyxml2::XMLElement *uniform = root->FirstChildElement("uniform");
-	while (uniform) {
-		const char* name = uniform->Attribute("name");
-		const char* type = uniform->Attribute("type");
-
-		shader.uniforms[name] = -1;
-		shader.uniformTypes[name] = type;
-		if (type == std::string("sampler2D") || type == std::string("sampler3D")) {
-			shader.samplerAttributes.push_back(name);
-		}
-
-		uniform = uniform->NextSiblingElement("uniform");
-	}
-
-	assert(loadShader(&shader, root->FirstChildElement("vertex")->GetText(), root->FirstChildElement("fragment")->GetText()));
-
-	return shader;
-}
-
-enum VertexBufferOptions { BUFFER_STATIC, BUFFER_DYNAMIC, BUFFER_STREAM };
-
-class VertexBuffer {
-public:
-	bool loaded() { return buffer_id != 0; }
-	uint32_t buffer_id = 0;
-	unsigned long size = 0, maxsize = 0;
-	VertexBufferOptions type;
-};
-
-VertexBuffer createVertexBuffer(const void *data, unsigned long size, VertexBufferOptions type) {
-	VertexBuffer oglvb;
-	glGenBuffers(1, &oglvb.buffer_id);
-	glBindBuffer(GL_ARRAY_BUFFER, oglvb.buffer_id);
-	oglvb.type = type;
-	switch (type) {
-		case BUFFER_STATIC:
-			glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
-			break;
-
-		case BUFFER_DYNAMIC:
-			glBufferData(GL_ARRAY_BUFFER, size, data, GL_DYNAMIC_DRAW);
-			break;
-
-		case BUFFER_STREAM:
-			glBufferData(GL_ARRAY_BUFFER, size, data, GL_STREAM_DRAW);
-			break;
-	}
-
-	oglvb.maxsize = size;
-	oglvb.size = size;
-
-	return oglvb;
-}
-
-void updateVertexBuffer(const void *data, unsigned long size, VertexBuffer &buffer) {
-	assert(buffer.buffer_id != 0);
-
-	glBindBuffer(GL_ARRAY_BUFFER, buffer.buffer_id);
-	if (buffer.maxsize < size) {
-		buffer.maxsize = size;
-		switch (buffer.type) {
-			case BUFFER_STATIC:
-				glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
-				break;
-
-			case BUFFER_DYNAMIC:
-				glBufferData(GL_ARRAY_BUFFER, size, data, GL_DYNAMIC_DRAW);
-				break;
-
-			case BUFFER_STREAM:
-				glBufferData(GL_ARRAY_BUFFER, size, data, GL_STREAM_DRAW);
-				break;
-		}
-	} else {
-		glBufferSubData(GL_ARRAY_BUFFER, 0, size, data);
-	}
-	buffer.size = size;
 }
 
 class RenderInterface : public dd::RenderInterface {
@@ -222,7 +55,7 @@ public:
 	void drawLineList(const dd::DrawVertex * lines, int count, bool depthEnabled);
 	void drawGlyphList(const dd::DrawVertex * glyphs, int count, dd::GlyphTextureHandle glyphTex);
 
-	Shader lines, tex;
+	Shader lines, tex, model;
 	VertexBuffer linesBuffer, texBuffer;
 
 	mat4 VP;
@@ -236,6 +69,8 @@ RenderInterface::RenderInterface() {
 
 	tex = loadShaders("tex.xml");
 	texBuffer = createVertexBuffer(NULL, 0, BUFFER_STREAM);
+
+	model = loadShaders("model.xml");
 }
 
 void RenderInterface::drawPointList(const dd::DrawVertex *points, int count, bool depthEnabled) {
@@ -352,6 +187,7 @@ void RenderInterface::drawGlyphList(const dd::DrawVertex * glyphs, int count, dd
 	glBindTexture(GL_TEXTURE_2D, (GLuint)glyphTex);
 	glDrawArrays(GL_TRIANGLES, 0, count);
 	glDisable(GL_BLEND);
+	glEnable(GL_DEPTH_TEST);
 
 	glDisableVertexAttribArray(0);
 	glDisableVertexAttribArray(1);
@@ -403,6 +239,8 @@ int main(int argc, char **argv) {
 	SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
 	SDL_Window* window = SDL_CreateWindow(
 		"Disrupt Editor",                  // window title
 		SDL_WINDOWPOS_CENTERED,           // initial x position
@@ -438,11 +276,13 @@ int main(int argc, char **argv) {
 	RenderInterface renderInterface;
 	dd::initialize(&renderInterface);
 
-	std::string wd = "D:/Desktop/bin/windy_city_unpack/worlds/windy_city/generated/wlu";
+	std::string wd = "D:/Desktop/bin/windy_city_unpack/";
+	std::string wdWluDir = wd + "worlds/windy_city/generated/wlu";
 	std::map<std::string, wluFile> wlus;
+	std::map<std::string, xbgFile> xbgs;
 
 	tfDIR dir;
-	tfDirOpen(&dir, wd.c_str());
+	tfDirOpen(&dir, wdWluDir.c_str());
 
 	int count = 0;
 
@@ -460,7 +300,7 @@ int main(int argc, char **argv) {
 
 		count++;
 
-		if (count > 25)
+		if (count > 320)
 			break;
 	}
 
@@ -486,6 +326,7 @@ int main(int argc, char **argv) {
 
 		ivec2 windowSize;
 		SDL_GetWindowSize(window, &windowSize.x, &windowSize.y);
+		glViewport(0, 0, windowSize.x, windowSize.y);
 		camera.update(delta);
 		mat4 view = MATlookAt(camera.location, camera.lookingAt, camera.up);
 		mat4 projection = MATperspective(camera.fov, (float)windowSize.x / windowSize.y, camera.near_plane, camera.far_plane);
@@ -514,6 +355,13 @@ int main(int argc, char **argv) {
 
 			wluFile &wlu = wlus[items[cur]];
 
+			if (ImGui::Button("XML")) {
+				FILE *fp = fopen("test.xml", "wb");
+				tinyxml2::XMLPrinter printer(fp);
+				wlu.root.serializeXML(printer);
+				fclose(fp);
+			}
+
 			Node *Entities = wlu.root.findFirstChild("Entities");
 			assert(Entities);
 
@@ -529,6 +377,8 @@ int main(int argc, char **argv) {
 				Attribute *hidPos_precise = entity.getAttribute("hidPos_precise");
 				assert(hidPos_precise);
 
+				vec3 pos = swapYZ(*(vec3*)hidPos->buffer.data());
+
 				ImGui::Separator();
 				ImGui::Text("%s", hidName->buffer.data());
 				ImGui::DragFloat3((std::string("hidPos##") + imguiHash).c_str(), (float*)hidPos->buffer.data());
@@ -541,21 +391,54 @@ int main(int argc, char **argv) {
 				Node* CGraphicComponent = Components->findFirstChild("CGraphicComponent");
 				if (CGraphicComponent) {
 					Attribute* XBG = CGraphicComponent->getAttribute(0x3182766C);
-					if(XBG)
+
+					if (XBG) {
 						ImGui::Text("%s", XBG->buffer.data());
+						if (xbgs.count((char*)XBG->buffer.data()) == 0) {
+							auto &model = xbgs[(char*)XBG->buffer.data()];
+							printf("Loading %s...\n", XBG->buffer.data());
+							model.open((wd + (char*)(XBG->buffer.data())).c_str());
+						}
+
+						auto &model = xbgs[(char*)XBG->buffer.data()];
+						renderInterface.model.use();
+						mat4 MVP = vp * MATtranslate(mat4(), pos);
+						glUniformMatrix4fv(renderInterface.model.uniforms["MVP"], 1, GL_FALSE, &MVP[0][0]);
+						model.draw();
+					}
 				}
 
-				vec3 pos = swapYZ(*(vec3*)hidPos->buffer.data());
 				if(pos.distance(camera.location) < 5.f)
 					dd::projectedText((char*)hidName->buffer.data(), &pos.x, white, &vp[0][0], 0, 0, windowSize.x, windowSize.y, 0.5f);
+				dd::cross(&pos.x, 0.25f);
 
-				dd::cross(&pos.x, 1.f);
+				Node *CProximityTriggerComponent = Components->findFirstChild("CProximityTriggerComponent");
+				if (CProximityTriggerComponent) {
+					vec3 extent = swapYZ(*(vec3*)CProximityTriggerComponent->getAttribute("vectorSize")->buffer.data());
+					dd::box(&pos.x, red, extent.x, extent.y, extent.z);
+				}
 
-				if (hidBBox) {
+				if (hidBBox && false) {
 					vec3 boxMin = swapYZ(*((vec3*)hidBBox->getAttribute("vectorBBoxMin")->buffer.data()));
 					vec3 boxMax = swapYZ(*((vec3*)hidBBox->getAttribute("vectorBBoxMax")->buffer.data()));
 					vec3 boxExtent = boxMax - boxMin;
 					dd::box(&pos.x, blue, boxExtent.x, boxExtent.y, boxExtent.z);
+				}
+
+				Node* PatrolDescription = entity.findFirstChild("PatrolDescription");
+				if (PatrolDescription) {
+					Node* PatrolPointList = PatrolDescription->findFirstChild("PatrolPointList");
+
+					vec3 last;
+					for (Node &PatrolPoint : PatrolPointList->children) {
+						vec3 pos = swapYZ(*(vec3*)PatrolPoint.getAttribute("vecPos")->buffer.data());
+
+						if (last != vec3())
+							dd::line(&last[0], &pos[0], red);
+						else
+							dd::projectedText((char*)hidName->buffer.data(), &pos.x, red, &vp[0][0], 0, 0, windowSize.x, windowSize.y, 0.5f);
+						last = pos;
+					}
 				}
 			}
 		}

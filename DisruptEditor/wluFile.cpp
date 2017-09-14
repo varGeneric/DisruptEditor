@@ -191,10 +191,5 @@ bool wluFile::open(const char * filename) {
 	root = Node(fp);
 	fclose(fp);
 
-	/*fp = fopen("test.xml", "wb");
-	tinyxml2::XMLPrinter printer(fp);
-	root.serializeXML(printer);
-	fclose(fp);*/
-
 	return true;
 }
