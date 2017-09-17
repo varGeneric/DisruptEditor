@@ -31,6 +31,7 @@ public:
 		fread(&hash, sizeof(hash), 1, fp);
 	};
 	void deserialize(FILE *fp);
+	void serialize(FILE *fp);
 
 	void serializeXML(tinyxml2::XMLPrinter &printer);
 
@@ -46,6 +47,7 @@ public:
 	Node() {};
 	Node(FILE* fp) { deserialize(fp); };
 	void deserialize(FILE *fp);
+	void serialize(FILE *fp);
 	void serializeXML(tinyxml2::XMLPrinter &printer);
 
 	Node* findFirstChild(const char* name);
@@ -65,6 +67,8 @@ class wluFile {
 public:
 	wluFile() {};
 	bool open(const char* filename);
+
+	void serialize(FILE *fp);
 
 	Node root;
 };

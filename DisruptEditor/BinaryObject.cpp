@@ -21,32 +21,6 @@ uint32_t ReadCount(FILE *fp, bool &isOffset) {
 	return v;
 }
 
-uint32_t ReadCountB(FILE *fp, bool &isOffset) {
-	size_t pos = ftell(fp);
-
-	uint8_t value;
-	fread(&value, sizeof(value), 1, fp);
-
-	isOffset = false;
-
-	if (value < 0xFE)
-		return value;
-	else {
-		isOffset = value == 0xFE;
-
-		fseek(fp, -1, SEEK_CUR);
-		uint32_t v;
-		fread(&v, sizeof(v), 1, fp);
-		v = v >> 8;
-
-		if (isOffset) {
-			v = pos - v;
-		}
-
-		return v;
-	}
-}
-
 std::shared_ptr<BinaryObject> Deserialize(BinaryObject *parent, FILE *fp, std::vector<std::shared_ptr<BinaryObject>>& pointers) {
 	long position = ftell(fp);
 

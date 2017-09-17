@@ -7,6 +7,8 @@
 #include "debug_draw.hpp"
 #include <stdio.h>
 #include <string>
+#include <algorithm>
+#include <cctype>
 
 #include "wluFile.h"
 #include "xbgFile.h"
@@ -17,6 +19,34 @@
 #include "Camera.h"
 
 #include "GLHelper.h"
+#include <Shlwapi.h>
+
+const static char* wd = "D:/Desktop/bin/windy_city_unpack/";
+
+uint64_t fileHash(std::string file) {
+	std::transform(file.begin(), file.end(), file.begin(), ::tolower);
+
+	uint64_t hash = 0xCBF29CE484222325;
+	for (auto it = file.begin(); it != file.end(); ++it) {
+		hash *= 0x100000001B3;
+		hash ^= *it;
+	}
+
+	return hash;
+}
+
+std::string getPathToFile(const char* file) {
+	std::string realPath = wd;
+	realPath.append(file);
+	if(PathFileExistsA(realPath.c_str()))
+		return realPath;
+
+	uint32_t hash = fileHash(file);
+	char buffer[500];
+	snprintf(buffer, sizeof(buffer), "__UNKNOWN\\gfx\\%08X.xbg", hash);
+
+	return wd + std::string(buffer);
+}
 
 vec3 swapYZ(const vec3 &ref) {
 	return vec3(ref.x, ref.z, ref.y);
@@ -272,20 +302,16 @@ int main(int argc, char **argv) {
 
 	Camera camera;
 	camera.type = Camera::FLYCAM;
+	camera.far_plane = 4096.f;
 
 	RenderInterface renderInterface;
 	dd::initialize(&renderInterface);
 
-	std::string wd = "D:/Desktop/bin/windy_city_unpack/";
-	std::string wdWluDir = wd + "worlds/windy_city/generated/wlu";
 	std::map<std::string, wluFile> wlus;
 	std::map<std::string, xbgFile> xbgs;
 
 	tfDIR dir;
-	tfDirOpen(&dir, wdWluDir.c_str());
-
-	int count = 0;
-
+	tfDirOpen(&dir, (wd + std::string("worlds/windy_city/generated/wlu")).c_str());
 	while (dir.has_next) {
 		tfFILE file;
 		tfReadFile(&dir, &file);
@@ -293,17 +319,13 @@ int main(int argc, char **argv) {
 		if (!file.is_dir && strcmp(file.ext, "xml.data.fcb") == 0) {
 			printf("Loading %s\n", file.name);
 
-			wlus[file.name].open(file.path);
+			if (!wlus[file.name].open(file.path)) {
+				wlus.erase(file.name);
+			}
 		}
 
 		tfDirNext(&dir);
-
-		count++;
-
-		if (count > 320)
-			break;
 	}
-
 	tfDirClose(&dir);
 
 	//const std::string wd = "C:/Program Files/Ubisoft/WATCH_DOGS/data_win64/";
@@ -337,7 +359,7 @@ int main(int argc, char **argv) {
 		dd::xzSquareGrid(-50.0f, 50.0f, 0.f, 1.f, white);
 
 		ImGui::SetNextWindowPos(ImVec2(5.f, 5.f));
-		ImGui::Begin("", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+		ImGui::Begin("##Top", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
 		ImGui::DragFloat3("##Camera", (float*)&camera.location);
 		ImGui::End();
 
@@ -366,11 +388,18 @@ int main(int argc, char **argv) {
 			assert(Entities);
 
 			for (auto &entity : Entities->children) {
+				bool needsCross = true;
+
 				char imguiHash[18];
 				snprintf(imguiHash, sizeof(imguiHash), "%p", &entity);
 
 				Attribute *hidName = entity.getAttribute("hidName");
 				assert(hidName);
+
+				Attribute *disEntityId = entity.getAttribute("disEntityId");
+				assert(disEntityId);
+				char disEntityIdS[26];
+				snprintf(disEntityIdS, sizeof(disEntityIdS), "%llu", *(uint64_t*)disEntityId->buffer.data());
 
 				Attribute *hidPos = entity.getAttribute("hidPos");
 				assert(hidPos);
@@ -381,6 +410,10 @@ int main(int argc, char **argv) {
 
 				ImGui::Separator();
 				ImGui::Text("%s", hidName->buffer.data());
+				if (ImGui::Selectable(disEntityIdS)) {
+					SDL_SetClipboardText(disEntityIdS);
+				}
+				
 				ImGui::DragFloat3((std::string("hidPos##") + imguiHash).c_str(), (float*)hidPos->buffer.data());
 				
 				Node *hidBBox = entity.findFirstChild("hidBBox");
@@ -392,12 +425,12 @@ int main(int argc, char **argv) {
 				if (CGraphicComponent) {
 					Attribute* XBG = CGraphicComponent->getAttribute(0x3182766C);
 
-					if (XBG) {
+					if (XBG && XBG->buffer.size() > 5) {
 						ImGui::Text("%s", XBG->buffer.data());
 						if (xbgs.count((char*)XBG->buffer.data()) == 0) {
 							auto &model = xbgs[(char*)XBG->buffer.data()];
 							printf("Loading %s...\n", XBG->buffer.data());
-							model.open((wd + (char*)(XBG->buffer.data())).c_str());
+							model.open(getPathToFile((char*)(XBG->buffer.data())).c_str());
 						}
 
 						auto &model = xbgs[(char*)XBG->buffer.data()];
@@ -408,12 +441,17 @@ int main(int argc, char **argv) {
 					}
 				}
 
-				if(pos.distance(camera.location) < 5.f)
-					dd::projectedText((char*)hidName->buffer.data(), &pos.x, white, &vp[0][0], 0, 0, windowSize.x, windowSize.y, 0.5f);
-				dd::cross(&pos.x, 0.25f);
+				Attribute *ArchetypeGuid = entity.getAttribute("ArchetypeGuid");
+				if (ArchetypeGuid) {
+					bool selected;
+					if (ImGui::Selectable((char*)ArchetypeGuid->buffer.data())) {
+						SDL_SetClipboardText((char*)ArchetypeGuid->buffer.data());
+					}
+				}
 
 				Node *CProximityTriggerComponent = Components->findFirstChild("CProximityTriggerComponent");
 				if (CProximityTriggerComponent) {
+					needsCross = false;
 					vec3 extent = swapYZ(*(vec3*)CProximityTriggerComponent->getAttribute("vectorSize")->buffer.data());
 					dd::box(&pos.x, red, extent.x, extent.y, extent.z);
 				}
@@ -427,6 +465,7 @@ int main(int argc, char **argv) {
 
 				Node* PatrolDescription = entity.findFirstChild("PatrolDescription");
 				if (PatrolDescription) {
+					needsCross = false;
 					Node* PatrolPointList = PatrolDescription->findFirstChild("PatrolPointList");
 
 					vec3 last;
@@ -440,6 +479,11 @@ int main(int argc, char **argv) {
 						last = pos;
 					}
 				}
+
+				if (pos.distance(camera.location) < 5.f)
+					dd::projectedText((char*)hidName->buffer.data(), &pos.x, white, &vp[0][0], 0, 0, windowSize.x, windowSize.y, 0.5f);
+				if(needsCross)
+					dd::cross(&pos.x, 0.25f);
 			}
 		}
 		ImGui::End();

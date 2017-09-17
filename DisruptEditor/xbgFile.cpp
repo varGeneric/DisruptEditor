@@ -25,8 +25,10 @@ void seekpad(FILE *fp, long pad) {
 
 void xbgFile::open(const char *file) {
 	FILE* fp = fopen(file, "rb");
-	if (!fp)
+	if (!fp) {
+		printf("Failed\n");
 		return;
+	}
 
 	XBGHead head;
 	fread(&head, sizeof(head), 1, fp);
@@ -158,6 +160,7 @@ void xbgFile::open(const char *file) {
 
 		int32_t count;
 		fread(&count, sizeof(count), 1, fp);
+		assert(count == 0);
 		for (int32_t i = 0; i < count; ++i) {
 			Unknown u;
 			fread(&u, sizeof(u), 1, fp);
@@ -175,6 +178,7 @@ void xbgFile::open(const char *file) {
 	{
 		int32_t count;
 		fread(&count, sizeof(count), 1, fp);
+		assert(count == 0);
 		for (int32_t i = 0; i < count; ++i) {
 
 		}
@@ -269,14 +273,14 @@ void xbgFile::draw() {
 		glVertexAttribPointer(
 			0,                  // attribute. No particular reason for 0, but must match the layout in the shader.
 			3,                  // size
-			GL_UNSIGNED_SHORT,  // type
+			GL_SHORT,  // type
 			GL_TRUE,           // normalized?
 			mesh.vertexStride,  // stride
 			(void*)0            // array buffer offset
 		);
 
 		// Draw the triangles
-		glDrawElements(GL_TRIANGLES, mesh.faceCount, GL_UNSIGNED_SHORT, 0);
+		glDrawElements(GL_TRIANGLES, mesh.faceCount * 3, GL_UNSIGNED_SHORT, 0);
 
 		glDisableVertexAttribArray(0);
 	}

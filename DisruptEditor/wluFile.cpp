@@ -5,8 +5,49 @@
 #include <assert.h>
 
 #include "tinyxml2.h"
-#include "BinaryObject.h"
 #include "Hash.h"
+
+bool bailOut = false;
+
+uint32_t ReadCountB(FILE *fp, bool &isOffset) {
+	size_t pos = ftell(fp);
+
+	uint8_t value;
+	fread(&value, sizeof(value), 1, fp);
+
+	isOffset = false;
+
+	if (value < 0xFE)
+		return value;
+	else {
+		isOffset = value == 0xFE;
+
+		fseek(fp, -1, SEEK_CUR);
+		uint32_t v;
+		fread(&v, sizeof(v), 1, fp);
+		v = v >> 8;
+
+		if (isOffset) {
+			v = pos - v;
+		}
+
+		return v;
+	}
+}
+
+void writeSize(FILE *fp, size_t osize) {
+	assert(osize != 254);
+	if (osize > 254) {
+		uint32_t size = osize;
+		size = size << 8;
+		size |= 0xFF;
+		//TODO, Check if this works
+		fwrite(&size, sizeof(size), 1, fp);
+	} else {
+		uint8_t size = osize;
+		fwrite(&size, sizeof(size), 1, fp);
+	}
+}
 
 void Attribute::deserialize(FILE * fp) {
 	size_t offset = ftell(fp);
@@ -32,6 +73,11 @@ void Attribute::deserialize(FILE * fp) {
 		} else if (count > attributeTypeSize)
 		throw new InvalidOperationException(string.Format("Data type '{0}' buffer has overflowed (size: 0x{1:X})", (object)this.Type.ToString(), (object)count));*/
 	}
+}
+
+void Attribute::serialize(FILE * fp) {
+	writeSize(fp, buffer.size());
+	fwrite(buffer.data(), 1, buffer.size(), fp);
 }
 
 void Attribute::serializeXML(tinyxml2::XMLPrinter &printer) {
@@ -76,6 +122,7 @@ std::string Attribute::getByteString() {
 }
 
 void Node::deserialize(FILE* fp) {
+	if (bailOut) return;
 	size_t pos = ftell(fp);
 
 	bool isOffset;
@@ -94,35 +141,78 @@ void Node::deserialize(FILE* fp) {
 
 		size_t pos2 = ftell(fp);
 		size_t num2 = pos2 + num1;
-		assert(num1 != 0);
+		if (num1 != 0) {
+			bool isOffset2;
+			int32_t c2 = ReadCountB(fp, isOffset2);
+			bool flag = false;
+			if (isOffset2) {
+				fseek(fp, c2, SEEK_SET);
 
-		bool isOffset2;
-		int32_t c2 = ReadCountB(fp, isOffset2);
-		bool flag = false;
-		if (isOffset2) {
-			fseek(fp, c2, SEEK_SET);
+				bool isOffset3;
+				c2 = ReadCountB(fp, isOffset3);
+				assert(!isOffset3);
+				pos2 += 4;
+				flag = true;
+			}
 
-			bool isOffset3;
-			c2 = ReadCountB(fp, isOffset3);
-			assert(!isOffset3);
-			pos2 += 4;
-			flag = true;
+			attributes.reserve(c2);
+			for (int index = 0; index < c2; ++index)
+				attributes.emplace_back(fp);
+			if (flag)
+				fseek(fp, pos2, SEEK_SET);
+			for (auto &attribute : attributes)
+				attribute.deserialize(fp);
+
+			size_t a = ftell(fp);
+			if (a != num2) {
+				printf("Warning! This file could not be read!\n");
+				bailOut = true;
+				return;
+			}
 		}
-
-		attributes.reserve(c2);
-		for (int index = 0; index < c2; ++index)
-			attributes.emplace_back(fp);
-		if (flag)
-			fseek(fp, pos2, SEEK_SET);
-		for(auto &attribute : attributes)
-			attribute.deserialize(fp);
-
-		size_t a = ftell(fp);
-		assert(a == num2);
 
 		children.reserve(c);
 		for (int index = 0; index < c; ++index)
 			children.emplace_back(fp);
+	}
+}
+
+void Node::serialize(FILE * fp) {
+	writeSize(fp, children.size());
+	fwrite(&hash, sizeof(hash), 1, fp);
+
+	//Calc Attribute Size
+	uint16_t num1 = 0;
+	if (!attributes.empty()) {
+		if (attributes.size() > 254)
+			num1 += 4;
+		else
+			num1 += 1;
+	}
+	for (auto &attribute : attributes) {
+		num1 += sizeof(attribute.hash);
+		num1 += attribute.buffer.size();
+		if (attribute.buffer.size() > 254)
+			num1 += 4;
+		else
+			num1 += 1;
+	}
+	fwrite(&num1, sizeof(num1), 1, fp);
+
+	//Write Attribute Hashes
+	if (!attributes.empty()) {
+		writeSize(fp, attributes.size());
+	}
+	for (auto &attribute : attributes) {
+		fwrite(&attribute.hash, sizeof(attribute.hash), 1, fp);
+	}
+	for (auto &attribute : attributes) {
+		attribute.serialize(fp);
+	}
+
+	//Write Children
+	for (auto &child : children) {
+		child.serialize(fp);
 	}
 }
 
@@ -183,13 +273,33 @@ bool wluFile::open(const char * filename) {
 
 	wluHeader wluhead;
 	fread(&wluhead, sizeof(wluhead), 1, fp);
-	if (memcmp(wluhead.base.magic, "ESAB", 4) != 0) {
-		fclose(fp);
-		return false;
-	}
 
+	assert(memcmp(wluhead.base.magic, "ESAB", 4) == 0);
+	assert(memcmp(wluhead.fcb.magic, "nbCF", 4) == 0);
+	assert(wluhead.fcb.version == 16389);
+	assert(wluhead.fcb.totalObjectCount == wluhead.fcb.totalValueCount + 1);
+
+	bailOut = false;
 	root = Node(fp);
 	fclose(fp);
 
-	return true;
+	return !bailOut;
+}
+
+void wluFile::serialize(FILE *fp) {
+	wluHeader wluhead;
+
+	memcpy(wluhead.base.magic, "ESAB", 4);
+	wluhead.base.unknown1 = wluhead.base.unknown2 = 0;
+
+	memcpy(wluhead.fcb.magic, "nbCF", 4);
+	wluhead.fcb.version = 16389;
+
+	fwrite(&wluhead, sizeof(wluhead), 1, fp);
+
+	root.serialize(fp);
+
+	wluhead.base.size = ftell(fp) - sizeof(wluhead.base);
+	fseek(fp, 0, SEEK_SET);
+	fwrite(&wluhead, sizeof(wluhead), 1, fp);
 }
