@@ -13,6 +13,7 @@
 #include "wluFile.h"
 #include "xbgFile.h"
 #include "DatFat.h"
+#include "DominoBox.h"
 #define TINYFILES_IMPL
 #include "tinyfiles.h"
 
@@ -309,6 +310,8 @@ int main(int argc, char **argv) {
 
 	std::map<std::string, wluFile> wlus;
 	std::map<std::string, xbgFile> xbgs;
+
+	DominoBox db("D:\\Desktop\\bin\\dlc_solo_unpack\\domino\\user\\windycity\\tests\\ai_carfleeing_patterns\\ai_carfleeing_patterns.main.lua");
 
 	tfDIR dir;
 	tfDirOpen(&dir, (wd + std::string("worlds/windy_city/generated/wlu")).c_str());

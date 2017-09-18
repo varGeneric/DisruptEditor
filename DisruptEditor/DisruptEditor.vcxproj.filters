@@ -72,6 +72,9 @@
     <ClCompile Include="xbtFile.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="DominoBox.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="imgui.h">
@@ -162,6 +165,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="xbtFile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DominoBox.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

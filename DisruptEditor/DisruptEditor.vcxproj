@@ -151,6 +151,7 @@
     <ClCompile Include="BinaryObject.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="DatFat.cpp" />
+    <ClCompile Include="DominoBox.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="Hash.cpp" />
     <ClCompile Include="imgui.cpp" />
@@ -173,6 +174,7 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="DatFat.h" />
     <ClInclude Include="debug_draw.hpp" />
+    <ClInclude Include="DominoBox.h" />
     <ClInclude Include="glad.h" />
     <ClInclude Include="GLHelper.h" />
     <ClInclude Include="Hash.h" />
