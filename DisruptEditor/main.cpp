@@ -39,6 +39,19 @@ uint64_t fileHash(std::string file) {
 std::string getPathToFile(const char* file) {
 	std::string realPath = wd;
 	realPath.append(file);
+	if (PathFileExistsA(realPath.c_str()))
+		return realPath;
+
+	uint32_t hash = fileHash(file);
+	char buffer[500];
+	snprintf(buffer, sizeof(buffer), "__UNKNOWN\\unknown\\%08X", hash);
+
+	return wd + std::string(buffer);
+}
+
+std::string getPathToFileXBG(const char* file) {
+	std::string realPath = wd;
+	realPath.append(file);
 	if(PathFileExistsA(realPath.c_str()))
 		return realPath;
 
@@ -366,6 +379,12 @@ int main(int argc, char **argv) {
 		ImGui::DragFloat3("##Camera", (float*)&camera.location);
 		ImGui::End();
 
+		ImGui::Begin("Scripts");
+
+
+
+		ImGui::End();
+
 		//Draw Layer Window
 		ImGui::Begin("Layers");
 
@@ -386,6 +405,12 @@ int main(int argc, char **argv) {
 				wlu.root.serializeXML(printer);
 				fclose(fp);
 			}
+			ImGui::SameLine();
+			if (ImGui::Button("Import XML")) {
+				tinyxml2::XMLDocument doc;
+				doc.LoadFile("test.xml");
+				wlu.root.deserializeXML(doc.RootElement());
+			}
 
 			Node *Entities = wlu.root.findFirstChild("Entities");
 			assert(Entities);
@@ -405,14 +430,18 @@ int main(int argc, char **argv) {
 				snprintf(disEntityIdS, sizeof(disEntityIdS), "%llu", *(uint64_t*)disEntityId->buffer.data());
 
 				Attribute *hidPos = entity.getAttribute("hidPos");
-				assert(hidPos);
+				if (!hidPos) continue;
 				Attribute *hidPos_precise = entity.getAttribute("hidPos_precise");
 				assert(hidPos_precise);
 
 				vec3 pos = swapYZ(*(vec3*)hidPos->buffer.data());
 
 				ImGui::Separator();
-				ImGui::Text("%s", hidName->buffer.data());
+				if (ImGui::Selectable((char*)hidName->buffer.data())) {
+					camera.phi = 2.43159294f;
+					camera.theta = 3.36464548f;
+					camera.location = pos + vec3(1.f, 1.f, 0.f);
+				}
 				if (ImGui::Selectable(disEntityIdS)) {
 					SDL_SetClipboardText(disEntityIdS);
 				}
@@ -433,7 +462,7 @@ int main(int argc, char **argv) {
 						if (xbgs.count((char*)XBG->buffer.data()) == 0) {
 							auto &model = xbgs[(char*)XBG->buffer.data()];
 							printf("Loading %s...\n", XBG->buffer.data());
-							model.open(getPathToFile((char*)(XBG->buffer.data())).c_str());
+							model.open(getPathToFileXBG((char*)(XBG->buffer.data())).c_str());
 						}
 
 						auto &model = xbgs[(char*)XBG->buffer.data()];
@@ -483,10 +512,23 @@ int main(int argc, char **argv) {
 					}
 				}
 
+				//.batch is source files for .cbatch
+				/*Attribute* ExportPath = entity.getAttribute("ExportPath");
+				if (ExportPath) {
+					ImGui::Text("%s", (char*)ExportPath->buffer.data());
+				}*/
+
 				if (pos.distance(camera.location) < 5.f)
 					dd::projectedText((char*)hidName->buffer.data(), &pos.x, white, &vp[0][0], 0, 0, windowSize.x, windowSize.y, 0.5f);
 				if(needsCross)
 					dd::cross(&pos.x, 0.25f);
+			}
+
+			Node *Phys = wlu.root.findFirstChild(0x211f3057);
+			if (Phys) {
+				for (Node &CBatch : Phys->children) {
+					std::string CBatchPath = (char*)CBatch.getAttribute(0xc7673122)->buffer.data();
+				}
 			}
 		}
 		ImGui::End();

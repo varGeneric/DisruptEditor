@@ -7,12 +7,19 @@
 
 std::string readLuaLine(FILE *fp) {
 	char buffer[500];
-	fgets(buffer, sizeof(buffer), fp);
+	if (!fgets(buffer, sizeof(buffer), fp))
+		return std::string();
 
 	//Cut off \n
 	buffer[strlen(buffer) - 1] = '\0';
 
-	return buffer;
+	//Trim spaces in front
+	char *it = buffer;
+	while (*it == ' ' || *it == '\t') {
+		it++;
+	}
+
+	return it;
 }
 
 std::string scanToNextLine(FILE *fp, const char* str) {
@@ -30,10 +37,10 @@ DominoBox::DominoBox(const char *filename) {
 	std::string line = scanToNextLine(fp, "function export:Create(cbox)");
 	do {
 		std::smatch cm;
-		std::regex_match(line, cm, std::regex("(    cbox:RegisterBox\\(\")(.*)(\"\\);)"));
+		std::regex_match(line, cm, std::regex("cbox:RegisterBox\\(\"(.*)\"\\);"));
 
-		if(cm.size() == 4)
-			CBoxDeps.push_back(cm[2]);
+		if(cm.size() == 2)
+			CBoxDeps.push_back(cm[1]);
 
 		line = readLuaLine(fp);
 	} while (line != "end;");
@@ -42,16 +49,16 @@ DominoBox::DominoBox(const char *filename) {
 	line = scanToNextLine(fp, "function export:Init(cbox)");
 
 	//I expect this line to be local l0
-	assert(line == "    local l0;");
+	assert(line == "local l0;");
 	line = readLuaLine(fp);
 
 	//Local Variables
 	do {
 		std::smatch cm;
-		std::regex_match(line, cm, std::regex("(    self\\.)(.*)( = )(.*)(;)"));
+		std::regex_match(line, cm, std::regex("self\\.(.*) = (.*);"));
 
-		if (cm.size() == 6)
-			localVariables[cm[2]] = cm[4];
+		if (cm.size() == 3)
+			localVariables[cm[1]] = cm[2];
 		else
 			break;
 
@@ -61,7 +68,7 @@ DominoBox::DominoBox(const char *filename) {
 	//CBoxes
 	do {
 		std::smatch cm;
-		std::regex_match(line, cm, std::regex("    self\\[(.*)\\] = cbox:CreateBox\\(\"(.*)\"\\);"));
+		std::regex_match(line, cm, std::regex("self\\[(.*)\\] = cbox:CreateBox\\(\"(.*)\"\\);"));
 
 		if (cm.size() != 3)
 			break;
@@ -101,27 +108,27 @@ std::string DominoCBox::deserialize(FILE *fp) {
 	//Skip First Line it's           l0 = self[15];
 	std::string line = readLuaLine(fp);
 	line = readLuaLine(fp);//l0._graph = self;
-	assert(line == "    l0._graph = self;");
+	assert(line == "l0._graph = self;");
 	line = readLuaLine(fp);
 
 	do {
 		std::smatch cm;
-		std::regex_match(line, cm, std::regex("    self\\[(.*)\\] = cbox:CreateBox\\(\"(.*)\"\\);"));
+		std::regex_match(line, cm, std::regex("self\\[(.*)\\] = cbox:CreateBox\\(\"(.*)\"\\);"));
 		if (!cm.empty())
 			return line;
 
-		std::regex_match(line, cm, std::regex("    l0\\.(.*) = (.*);"));
+		std::regex_match(line, cm, std::regex("l0\\.(.*) = (.*);"));
 		if (cm.size() == 3)
 			localVariables[cm[1]] = cm[2];
 		else {
 			//Lets see if it's an array
-			std::regex_match(line, cm, std::regex("    l0\\.(.*) = \\{"));
+			std::regex_match(line, cm, std::regex("l0\\.(.*) = \\{"));
 			if (cm.size() == 2) {
 				std::string name = cm[1];
 				std::string value = "{";
 				//Read Each Entry
 				line = readLuaLine(fp);
-				while (line != "    };") {
+				while (line != "};") {
 					value += line;
 					line = readLuaLine(fp);
 				}
@@ -141,6 +148,11 @@ std::string DominoCBox::deserialize(FILE *fp) {
 std::string DominoFunction::deserialize(FILE *fp) {
 	std::string line = readLuaLine(fp);
 	do {
+		if (line == "local l0;") {
+			line = readLuaLine(fp);
+			continue;
+		}
+
 		str += line;
 
 		line = readLuaLine(fp);

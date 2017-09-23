@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <stdlib.h>
 
 #include "tinyxml2.h"
 #include "Hash.h"
@@ -78,6 +79,51 @@ void Attribute::deserialize(FILE * fp) {
 void Attribute::serialize(FILE * fp) {
 	writeSize(fp, buffer.size());
 	fwrite(buffer.data(), 1, buffer.size(), fp);
+}
+
+void Attribute::deserializeXML(const tinyxml2::XMLAttribute *attr) {
+	const char* name = attr->Name();
+	//Determine if this is a hash or name
+	if (name[0] == '_') {
+		name++;
+		hash = std::stoul(name, NULL, 16);
+	} else {
+		hash = Hash::instance().getHash(name);
+	}
+
+	//Determine if this is hex string or string
+	const char* data = attr->Value();
+
+	bool hex = true;
+	for (;; data++) {
+		char c = *data;
+		if (c == '\0')
+			break;
+		bool valid = (c >= 48 && c <= 57) || (c >= 97 && c <= 102) || c == ' ';
+		if (!valid) {
+			hex = false;
+			break;
+		}
+	}
+
+	data = attr->Value();
+
+	if (hex) {
+		buffer.clear();
+		if (strlen(data) == 0) return;
+		int len = (strlen(data) / 3) + 1;
+		buffer.reserve(len);
+
+		for (int i = 0; i < len; ++i) {
+			uint8_t byte = (uint8_t)strtol(data, NULL, 16);
+			buffer.push_back(byte);
+			data += 3;
+		}
+	} else {
+		buffer.resize(strlen(data) + 1);
+		strcpy((char*)buffer.data(), data);
+	}
+
 }
 
 void Attribute::serializeXML(tinyxml2::XMLPrinter &printer) {
@@ -216,6 +262,31 @@ void Node::serialize(FILE * fp) {
 	}
 }
 
+void Node::deserializeXML(const tinyxml2::XMLElement *node) {
+	const char* name = node->Name();
+	//Determine if this is a hash or name
+	if (name[0] == '_') {
+		name++;
+		hash = std::stoul(name, NULL, 16);
+	} else {
+		hash = Hash::instance().getHash(name);
+	}
+
+	//Load Attributes
+	attributes.clear();
+	for (auto it = node->FirstAttribute(); it; it = it->Next()) {
+		attributes.emplace_back();
+		attributes.back().deserializeXML(it);
+	}
+
+	//Load Children
+	children.clear();
+	for (auto it = node->FirstChildElement(); it; it = it->NextSiblingElement()) {
+		children.emplace_back();
+		children.back().deserializeXML(it);
+	}
+}
+
 void Node::serializeXML(tinyxml2::XMLPrinter &printer) {
 	std::string hashName = getHashName();
 
@@ -233,6 +304,15 @@ void Node::serializeXML(tinyxml2::XMLPrinter &printer) {
 Node* Node::findFirstChild(const char *name) {
 	uint32_t hash = Hash::instance().getHash(name);
 
+	for (auto &child : children) {
+		if (child.hash == hash)
+			return &child;
+	}
+
+	return NULL;
+}
+
+Node* Node::findFirstChild(uint32_t hash) {
 	for (auto &child : children) {
 		if (child.hash == hash)
 			return &child;

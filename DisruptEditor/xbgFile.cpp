@@ -160,7 +160,7 @@ void xbgFile::open(const char *file) {
 
 		int32_t count;
 		fread(&count, sizeof(count), 1, fp);
-		assert(count == 0);
+		if (count != 0) return;
 		for (int32_t i = 0; i < count; ++i) {
 			Unknown u;
 			fread(&u, sizeof(u), 1, fp);

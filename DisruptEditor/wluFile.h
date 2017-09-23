@@ -27,12 +27,13 @@ struct wluHeader {
 
 class Attribute {
 public:
+	Attribute() {}
 	Attribute(FILE* fp) {
 		fread(&hash, sizeof(hash), 1, fp);
 	};
 	void deserialize(FILE *fp);
 	void serialize(FILE *fp);
-
+	void deserializeXML(const tinyxml2::XMLAttribute *attr);
 	void serializeXML(tinyxml2::XMLPrinter &printer);
 
 	std::string getHashName();
@@ -48,9 +49,11 @@ public:
 	Node(FILE* fp) { deserialize(fp); };
 	void deserialize(FILE *fp);
 	void serialize(FILE *fp);
+	void deserializeXML(const tinyxml2::XMLElement *node);
 	void serializeXML(tinyxml2::XMLPrinter &printer);
 
 	Node* findFirstChild(const char* name);
+	Node* findFirstChild(uint32_t hash);
 	Attribute* getAttribute(const char* name);
 	Attribute* getAttribute(uint32_t hash);
 
