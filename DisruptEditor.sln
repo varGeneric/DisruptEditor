@@ -1,22 +1,25 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26730.16
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DisruptEditor", "DisruptEditor\DisruptEditor.vcxproj", "{60CE386B-2172-4878-82D2-C20B51DD60EA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|x86 = Debug|x86
-		Release|x86 = Release|x86
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{60CE386B-2172-4878-82D2-C20B51DD60EA}.Debug|x86.ActiveCfg = Debug|Win32
-		{60CE386B-2172-4878-82D2-C20B51DD60EA}.Debug|x86.Build.0 = Debug|Win32
-		{60CE386B-2172-4878-82D2-C20B51DD60EA}.Release|x86.ActiveCfg = Release|Win32
-		{60CE386B-2172-4878-82D2-C20B51DD60EA}.Release|x86.Build.0 = Release|Win32
+		{60CE386B-2172-4878-82D2-C20B51DD60EA}.Debug|x64.ActiveCfg = Debug|x64
+		{60CE386B-2172-4878-82D2-C20B51DD60EA}.Debug|x64.Build.0 = Debug|x64
+		{60CE386B-2172-4878-82D2-C20B51DD60EA}.Release|x64.ActiveCfg = Release|x64
+		{60CE386B-2172-4878-82D2-C20B51DD60EA}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {089EEDBC-0C90-452C-A47B-9886B5A3AE64}
 	EndGlobalSection
 EndGlobal

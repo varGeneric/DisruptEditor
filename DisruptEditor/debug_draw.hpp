@@ -170,15 +170,15 @@
 // These are hard constraints. If not enough, change and recompile.
 //
 #ifndef DEBUG_DRAW_MAX_STRINGS
-    #define DEBUG_DRAW_MAX_STRINGS 512
+    #define DEBUG_DRAW_MAX_STRINGS 65535
 #endif // DEBUG_DRAW_MAX_STRINGS
 
 #ifndef DEBUG_DRAW_MAX_POINTS
-    #define DEBUG_DRAW_MAX_POINTS 8192
+    #define DEBUG_DRAW_MAX_POINTS 65535
 #endif // DEBUG_DRAW_MAX_POINTS
 
 #ifndef DEBUG_DRAW_MAX_LINES
-    #define DEBUG_DRAW_MAX_LINES 32768
+    #define DEBUG_DRAW_MAX_LINES 65535
 #endif // DEBUG_DRAW_MAX_LINES
 
 //
@@ -2377,6 +2377,8 @@ void projectedText(ddStrParam str, ddVec3Param pos, ddVec3Param color, ddMat4x4P
     // Need to invert the direction because on OGL the screen origin is the bottom-left corner.
     // NOTE: This is not renderer agnostic, I think... Should add a #define or something!
     scrY = static_cast<float>(sh) - scrY;
+
+	//if (scrY < -1.f || scrY > 1.f) return;
 
     DebugString & dstr    = g_debugStrings[g_debugStringsCount++];
     dstr.expiryDateMillis = g_currentTimeMillis + durationMillis;

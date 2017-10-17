@@ -16,7 +16,7 @@ struct XBGHead {
 	int32_t lodCount;
 };
 
-void seekpad(FILE *fp, long pad) {
+static inline void seekpad(FILE *fp, long pad) {
 	//16-byte chunk alignment
 	long size = ftell(fp);
 	long seek = (pad - (size % pad)) % pad;
@@ -280,6 +280,8 @@ void xbgFile::draw() {
 		);
 
 		// Draw the triangles
+		GLint id;
+		glGetIntegerv(GL_CURRENT_PROGRAM, &id);
 		glDrawElements(GL_TRIANGLES, mesh.faceCount * 3, GL_UNSIGNED_SHORT, 0);
 
 		glDisableVertexAttribArray(0);

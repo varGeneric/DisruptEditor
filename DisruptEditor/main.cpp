@@ -1,8 +1,18 @@
 #include "glad.h"
 #include <SDL.h>
-#include "imgui.h"
-#include "imgui_impl_sdl_gl3.h"
-#include "ImGuizmo.h"
+
+#define NK_INCLUDE_FIXED_TYPES
+#define NK_INCLUDE_STANDARD_IO
+#define NK_INCLUDE_DEFAULT_ALLOCATOR
+#define NK_INCLUDE_STANDARD_VARARGS
+#define NK_INCLUDE_VERTEX_BUFFER_OUTPUT
+#define NK_INCLUDE_FONT_BAKING
+#define NK_INCLUDE_DEFAULT_FONT
+#define NK_IMPLEMENTATION
+#include "nuklear.h"
+#define NK_SDL_GL3_IMPLEMENTATION
+#include "nuklear_sdl_gl3.h"
+
 #define DEBUG_DRAW_IMPLEMENTATION
 #include "debug_draw.hpp"
 #include <stdio.h>
@@ -16,11 +26,18 @@
 #include "DominoBox.h"
 #define TINYFILES_IMPL
 #include "tinyfiles.h"
-
+#include <ogg/ogg.h>
+#include <vorbis/vorbisfile.h>
 #include "Camera.h"
-
+#define NOC_FILE_DIALOG_IMPLEMENTATION
+#define NOC_FILE_DIALOG_WIN32
+#include "noc_file_dialog.h"
 #include "GLHelper.h"
 #include <Shlwapi.h>
+
+#include "spkFile.h"
+#include "sbaoFile.h"
+#include "cseqFile.h"
 
 const static char* wd = "D:/Desktop/bin/windy_city_unpack/";
 
@@ -269,6 +286,7 @@ const ddVec3 magenta = { 1.0f, 0.2f, 0.8f };
 const ddVec3 yellow = { 1.0f, 1.0f, 0.0f };
 const ddVec3 orange = { 1.0f, 0.5f, 0.0f };
 const ddVec3 white = { 1.0f, 1.0f, 1.0f };
+const ddVec3 black = { 0.f, 0.f, 0.f };
 const ddVec3 green = { 0.0f, 0.6f, 0.0f };
 
 int main(int argc, char **argv) {
@@ -312,7 +330,42 @@ int main(int argc, char **argv) {
 	GLuint VertexArrayID;
 	glGenVertexArrays(1, &VertexArrayID);
 	glBindVertexArray(VertexArrayID);
-	ImGui_ImplSdlGL3_Init(window);
+	
+	nk_context *ctx = nk_sdl_init(window);
+	nk_font_atlas *atlas;
+	nk_sdl_font_stash_begin(&atlas);
+	nk_sdl_font_stash_end();
+	//Style
+	struct nk_color table[NK_COLOR_COUNT];
+	table[NK_COLOR_TEXT] = nk_rgba(70, 70, 70, 255);
+	table[NK_COLOR_WINDOW] = nk_rgba(175, 175, 175, 255);
+	table[NK_COLOR_HEADER] = nk_rgba(175, 175, 175, 255);
+	table[NK_COLOR_BORDER] = nk_rgba(0, 0, 0, 255);
+	table[NK_COLOR_BUTTON] = nk_rgba(185, 185, 185, 255);
+	table[NK_COLOR_BUTTON_HOVER] = nk_rgba(170, 170, 170, 255);
+	table[NK_COLOR_BUTTON_ACTIVE] = nk_rgba(160, 160, 160, 255);
+	table[NK_COLOR_TOGGLE] = nk_rgba(150, 150, 150, 255);
+	table[NK_COLOR_TOGGLE_HOVER] = nk_rgba(120, 120, 120, 255);
+	table[NK_COLOR_TOGGLE_CURSOR] = nk_rgba(175, 175, 175, 255);
+	table[NK_COLOR_SELECT] = nk_rgba(190, 190, 190, 255);
+	table[NK_COLOR_SELECT_ACTIVE] = nk_rgba(175, 175, 175, 255);
+	table[NK_COLOR_SLIDER] = nk_rgba(190, 190, 190, 255);
+	table[NK_COLOR_SLIDER_CURSOR] = nk_rgba(80, 80, 80, 255);
+	table[NK_COLOR_SLIDER_CURSOR_HOVER] = nk_rgba(70, 70, 70, 255);
+	table[NK_COLOR_SLIDER_CURSOR_ACTIVE] = nk_rgba(60, 60, 60, 255);
+	table[NK_COLOR_PROPERTY] = nk_rgba(175, 175, 175, 255);
+	table[NK_COLOR_EDIT] = nk_rgba(150, 150, 150, 255);
+	table[NK_COLOR_EDIT_CURSOR] = nk_rgba(0, 0, 0, 255);
+	table[NK_COLOR_COMBO] = nk_rgba(175, 175, 175, 255);
+	table[NK_COLOR_CHART] = nk_rgba(160, 160, 160, 255);
+	table[NK_COLOR_CHART_COLOR] = nk_rgba(45, 45, 45, 255);
+	table[NK_COLOR_CHART_COLOR_HIGHLIGHT] = nk_rgba(255, 0, 0, 255);
+	table[NK_COLOR_SCROLLBAR] = nk_rgba(180, 180, 180, 255);
+	table[NK_COLOR_SCROLLBAR_CURSOR] = nk_rgba(140, 140, 140, 255);
+	table[NK_COLOR_SCROLLBAR_CURSOR_HOVER] = nk_rgba(150, 150, 150, 255);
+	table[NK_COLOR_SCROLLBAR_CURSOR_ACTIVE] = nk_rgba(160, 160, 160, 255);
+	table[NK_COLOR_TAB_HEADER] = nk_rgba(180, 180, 180, 255);
+	nk_style_from_table(ctx, table);
 
 	Camera camera;
 	camera.type = Camera::FLYCAM;
@@ -320,6 +373,15 @@ int main(int argc, char **argv) {
 
 	RenderInterface renderInterface;
 	dd::initialize(&renderInterface);
+
+	const std::string wd = "C:/Program Files/Ubisoft/WATCH_DOGS/data_win64/";
+	DatFat df;
+	df.addFat(wd + "common.fat");
+	//return 0;
+	//df.addFat(wd + "worlds/windy_city/windy_city.fat");
+
+	df.openRead("domino/user/windycity/main_missions/act_02/mission_09c/a02_m09c.a02_m09c_activation.debug.lua");
+
 
 	std::map<std::string, wluFile> wlus;
 	std::map<std::string, xbgFile> xbgs;
@@ -338,34 +400,69 @@ int main(int argc, char **argv) {
 			if (!wlus[file.name].open(file.path)) {
 				wlus.erase(file.name);
 			}
+			break;
 		}
 
 		tfDirNext(&dir);
 	}
 	tfDirClose(&dir);
 
-	//const std::string wd = "C:/Program Files/Ubisoft/WATCH_DOGS/data_win64/";
-	//DatFat df;
-	//df.addFat(wd + "common.fat");
-	//df.addFat(wd + "worlds/windy_city/windy_city.fat");
+	//Scan Audio
+	tfDirOpen(&dir, "D:/Desktop/bin/sound_unpack/soundbinary/manual");
+	while (dir.has_next) {
+		tfFILE file;
+		tfReadFile(&dir, &file);
 
-	//df.openRead("worlds/windy_city/generated/wlu/wlu_data_near233.xml.data.fcb");
+		if (!file.is_dir && strcmp(file.ext, "sbao") == 0) {
+			printf("Loading %s\n", file.name);
+
+			sbaoFile spk;
+			spk.open(file.path);
+		}
+
+		tfDirNext(&dir);
+	}
+	tfDirClose(&dir);
+
+	//Scan CSeq
+	/*tfDirOpen(&dir, (wd + std::string("sequences")).c_str());
+	while (dir.has_next) {
+		tfFILE file;
+		tfReadFile(&dir, &file);
+
+		if (!file.is_dir && strcmp(file.ext, "cseq") == 0) {
+			printf("Loading %s\n", file.name);
+
+			cseqFile cseq;
+			cseq.open(file.path);
+
+			FILE *fp = fopen("cseq.xml", "w");
+			tinyxml2::XMLPrinter printer(fp);
+			cseq.root.serializeXML(printer);
+			fclose(fp);
+		}
+
+		tfDirNext(&dir);
+	}
+	tfDirClose(&dir);*/
 
 	Uint32 ticks = SDL_GetTicks();
+	wluFile &wlu = wlus.begin()->second;
 
 	bool windowOpen = true;
 	while (windowOpen) {
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		ImGui_ImplSdlGL3_NewFrame(window);
-		ImGuizmo::BeginFrame();
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		glBindVertexArray(VertexArrayID);
 
 		float delta = (SDL_GetTicks() - ticks) / 1000.f;
 		ticks = SDL_GetTicks();
+		if (delta > 0.5f)
+			delta = 0.5f;
 
 		ivec2 windowSize;
 		SDL_GetWindowSize(window, &windowSize.x, &windowSize.y);
 		glViewport(0, 0, windowSize.x, windowSize.y);
-		camera.update(delta);
+ 		camera.update(delta);
 		mat4 view = MATlookAt(camera.location, camera.lookingAt, camera.up);
 		mat4 projection = MATperspective(camera.fov, (float)windowSize.x / windowSize.y, camera.near_plane, camera.far_plane);
 		mat4 vp = projection * view;
@@ -374,169 +471,201 @@ int main(int argc, char **argv) {
 
 		dd::xzSquareGrid(-50.0f, 50.0f, 0.f, 1.f, white);
 
-		ImGui::SetNextWindowPos(ImVec2(5.f, 5.f));
+		/*ImGui::SetNextWindowPos(ImVec2(5.f, 5.f));
 		ImGui::Begin("##Top", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
 		ImGui::DragFloat3("##Camera", (float*)&camera.location);
-		ImGui::End();
+		ImGui::End();*/
 
-		ImGui::Begin("Scripts");
-
-
-
-		ImGui::End();
-
-		//Draw Layer Window
-		ImGui::Begin("Layers");
-
-		static int cur = -1;
-		std::vector<const char*> items;
-		for (auto it = wlus.begin(); it != wlus.end(); ++it)
-			items.push_back(it->first.c_str());
-		ImGui::ListBox("##WLU", &cur, items.data(), items.size());
-
-		if (cur > -1 && cur < wlus.size()) {
-			ImGui::Text("%s", items[cur]);
-
-			wluFile &wlu = wlus[items[cur]];
-
-			if (ImGui::Button("XML")) {
-				FILE *fp = fopen("test.xml", "wb");
-				tinyxml2::XMLPrinter printer(fp);
-				wlu.root.serializeXML(printer);
-				fclose(fp);
-			}
-			ImGui::SameLine();
-			if (ImGui::Button("Import XML")) {
-				tinyxml2::XMLDocument doc;
-				doc.LoadFile("test.xml");
-				wlu.root.deserializeXML(doc.RootElement());
-			}
-
-			Node *Entities = wlu.root.findFirstChild("Entities");
-			assert(Entities);
-
-			for (auto &entity : Entities->children) {
-				bool needsCross = true;
-
-				char imguiHash[18];
-				snprintf(imguiHash, sizeof(imguiHash), "%p", &entity);
-
-				Attribute *hidName = entity.getAttribute("hidName");
-				assert(hidName);
-
-				Attribute *disEntityId = entity.getAttribute("disEntityId");
-				assert(disEntityId);
-				char disEntityIdS[26];
-				snprintf(disEntityIdS, sizeof(disEntityIdS), "%llu", *(uint64_t*)disEntityId->buffer.data());
-
-				Attribute *hidPos = entity.getAttribute("hidPos");
-				if (!hidPos) continue;
-				Attribute *hidPos_precise = entity.getAttribute("hidPos_precise");
-				assert(hidPos_precise);
-
-				vec3 pos = swapYZ(*(vec3*)hidPos->buffer.data());
-
-				ImGui::Separator();
-				if (ImGui::Selectable((char*)hidName->buffer.data())) {
-					camera.phi = 2.43159294f;
-					camera.theta = 3.36464548f;
-					camera.location = pos + vec3(1.f, 1.f, 0.f);
-				}
-				if (ImGui::Selectable(disEntityIdS)) {
-					SDL_SetClipboardText(disEntityIdS);
-				}
-				
-				ImGui::DragFloat3((std::string("hidPos##") + imguiHash).c_str(), (float*)hidPos->buffer.data());
-				
-				Node *hidBBox = entity.findFirstChild("hidBBox");
-
-				Node *Components = entity.findFirstChild("Components");
-				assert(Components);
-
-				Node* CGraphicComponent = Components->findFirstChild("CGraphicComponent");
-				if (CGraphicComponent) {
-					Attribute* XBG = CGraphicComponent->getAttribute(0x3182766C);
-
-					if (XBG && XBG->buffer.size() > 5) {
-						ImGui::Text("%s", XBG->buffer.data());
-						if (xbgs.count((char*)XBG->buffer.data()) == 0) {
-							auto &model = xbgs[(char*)XBG->buffer.data()];
-							printf("Loading %s...\n", XBG->buffer.data());
-							model.open(getPathToFileXBG((char*)(XBG->buffer.data())).c_str());
-						}
-
-						auto &model = xbgs[(char*)XBG->buffer.data()];
-						renderInterface.model.use();
-						mat4 MVP = vp * MATtranslate(mat4(), pos);
-						glUniformMatrix4fv(renderInterface.model.uniforms["MVP"], 1, GL_FALSE, &MVP[0][0]);
-						model.draw();
-					}
-				}
-
-				Attribute *ArchetypeGuid = entity.getAttribute("ArchetypeGuid");
-				if (ArchetypeGuid) {
-					bool selected;
-					if (ImGui::Selectable((char*)ArchetypeGuid->buffer.data())) {
-						SDL_SetClipboardText((char*)ArchetypeGuid->buffer.data());
-					}
-				}
-
-				Node *CProximityTriggerComponent = Components->findFirstChild("CProximityTriggerComponent");
-				if (CProximityTriggerComponent) {
-					needsCross = false;
-					vec3 extent = swapYZ(*(vec3*)CProximityTriggerComponent->getAttribute("vectorSize")->buffer.data());
-					dd::box(&pos.x, red, extent.x, extent.y, extent.z);
-				}
-
-				if (hidBBox && false) {
-					vec3 boxMin = swapYZ(*((vec3*)hidBBox->getAttribute("vectorBBoxMin")->buffer.data()));
-					vec3 boxMax = swapYZ(*((vec3*)hidBBox->getAttribute("vectorBBoxMax")->buffer.data()));
-					vec3 boxExtent = boxMax - boxMin;
-					dd::box(&pos.x, blue, boxExtent.x, boxExtent.y, boxExtent.z);
-				}
-
-				Node* PatrolDescription = entity.findFirstChild("PatrolDescription");
-				if (PatrolDescription) {
-					needsCross = false;
-					Node* PatrolPointList = PatrolDescription->findFirstChild("PatrolPointList");
-
-					vec3 last;
-					for (Node &PatrolPoint : PatrolPointList->children) {
-						vec3 pos = swapYZ(*(vec3*)PatrolPoint.getAttribute("vecPos")->buffer.data());
-
-						if (last != vec3())
-							dd::line(&last[0], &pos[0], red);
-						else
-							dd::projectedText((char*)hidName->buffer.data(), &pos.x, red, &vp[0][0], 0, 0, windowSize.x, windowSize.y, 0.5f);
-						last = pos;
-					}
-				}
-
-				//.batch is source files for .cbatch
-				/*Attribute* ExportPath = entity.getAttribute("ExportPath");
-				if (ExportPath) {
-					ImGui::Text("%s", (char*)ExportPath->buffer.data());
-				}*/
-
-				if (pos.distance(camera.location) < 5.f)
-					dd::projectedText((char*)hidName->buffer.data(), &pos.x, white, &vp[0][0], 0, 0, windowSize.x, windowSize.y, 0.5f);
-				if(needsCross)
-					dd::cross(&pos.x, 0.25f);
-			}
-
-			Node *Phys = wlu.root.findFirstChild(0x211f3057);
-			if (Phys) {
-				for (Node &CBatch : Phys->children) {
-					std::string CBatchPath = (char*)CBatch.getAttribute(0xc7673122)->buffer.data();
-				}
+		/*if (nk_begin(ctx, "Dare", nk_rect(0, 0, 450, 500), 0)) {
+			nk_layout_row_dynamic(ctx, 20, 1);
+			if (nk_button_label(ctx, "Convert OGG to SBAO")) {
+				const char *src = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "ogg\0*.ogg\0", NULL, NULL);
+				const char *dst = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "sbao\0*.sbao\0", NULL, "00000000");
 			}
 		}
-		ImGui::End();
+		nk_end(ctx);
+
+		if (nk_begin(ctx, "Scripts", nk_rect(0, 0, 450, 500), 0)) {
+			nk_layout_row_dynamic(ctx, 20, 1);
+		}
+		nk_end(ctx);*/
+
+		//Draw Layer Window
+		nk_begin(ctx, "Layers", nk_rect(0, 0, 450, windowSize.y), NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_SCALABLE | NK_WINDOW_CLOSABLE | NK_WINDOW_MINIMIZABLE | NK_WINDOW_TITLE);
+
+		static char searchWluBuffer[255] = { 0 };
+		nk_layout_row_dynamic(ctx, 20, 1);
+		nk_edit_string_zero_terminated(ctx, NK_EDIT_FIELD, searchWluBuffer, sizeof(searchWluBuffer), nk_filter_default);
+
+		nk_layout_row_dynamic(ctx, 100, 1);
+		if (nk_group_begin(ctx, "WLUs", NK_WINDOW_BORDER)) {
+			nk_layout_row_dynamic(ctx, 10, 1);
+			for (auto it = wlus.begin(); it != wlus.end(); ++it) {
+				if (nk_strmatch_fuzzy_string(it->first.c_str(), searchWluBuffer, NULL)) {
+					int selected = wlu.origFilename == it->second.origFilename;
+					if (nk_selectable_label(ctx, it->first.c_str(), NK_TEXT_LEFT, &selected))
+						wlu = it->second;
+				}
+			}
+			nk_group_end(ctx);
+		}
+
+		nk_layout_row_dynamic(ctx, 20, 5);
+		if (nk_button_label(ctx, "Save")) {
+			std::string backup = wlu.origFilename;
+			backup += ".bak";
+			CopyFileA(wlu.origFilename.c_str(), backup.c_str(), TRUE);
+
+			FILE *fp = fopen(wlu.origFilename.c_str(), "wb");
+			wlu.serialize(fp);
+			fclose(fp);
+		}
+		if (nk_button_label(ctx, "Reload")) {
+			assert(wlu.open(wlu.origFilename.c_str()));
+		}
+		if (nk_button_label(ctx, "Restore")) {
+			std::string backup = wlu.origFilename;
+			backup += ".bak";
+			CopyFileA(backup.c_str(), wlu.origFilename.c_str(), FALSE);
+			wlu.open(wlu.origFilename.c_str());
+		}
+		if (nk_button_label(ctx, "XML")) {
+			FILE *fp = fopen("test.xml", "wb");
+			tinyxml2::XMLPrinter printer(fp);
+			wlu.root.serializeXML(printer);
+			fclose(fp);
+		}
+		if (nk_button_label(ctx, "Import XML")) {
+			tinyxml2::XMLDocument doc;
+			doc.LoadFile("test.xml");
+			wlu.root.deserializeXML(doc.RootElement());
+		}
+		nk_layout_row_dynamic(ctx, 20, 1);
+
+		Node *Entities = wlu.root.findFirstChild("Entities");
+		if (!Entities) continue;
+
+		for (auto &entity : Entities->children) {
+			bool needsCross = true;
+
+			char imguiHash[18];
+			snprintf(imguiHash, sizeof(imguiHash), "%p", &entity);
+
+			Attribute *hidName = entity.getAttribute("hidName");
+			assert(hidName);
+
+			Attribute *disEntityId = entity.getAttribute("disEntityId");
+			assert(disEntityId);
+			char disEntityIdS[26];
+			snprintf(disEntityIdS, sizeof(disEntityIdS), "%llu", *(uint64_t*)disEntityId->buffer.data());
+
+			Attribute *hidPos = entity.getAttribute("hidPos");
+			if (!hidPos) continue;
+			Attribute *hidPos_precise = entity.getAttribute("hidPos_precise");
+			assert(hidPos_precise);
+
+			vec3 pos = swapYZ(*(vec3*)hidPos->buffer.data());
+
+			if (nk_button_label(ctx, (char*)hidName->buffer.data())) {
+				camera.phi = 2.43159294f;
+				camera.theta = 3.36464548f;
+				camera.location = pos + vec3(1.f, 1.f, 0.f);
+			}
+			if (nk_button_label(ctx, disEntityIdS)) {
+				SDL_SetClipboardText(disEntityIdS);
+			}
+				
+			//ImGui::DragFloat3((std::string("hidPos##") + imguiHash).c_str(), (float*)hidPos->buffer.data());
+				
+			Node *hidBBox = entity.findFirstChild("hidBBox");
+
+			Node *Components = entity.findFirstChild("Components");
+			assert(Components);
+
+			Node* CGraphicComponent = Components->findFirstChild("CGraphicComponent");
+			if (CGraphicComponent) {
+				Attribute* XBG = CGraphicComponent->getAttribute(0x3182766C);
+
+				if (XBG && XBG->buffer.size() > 5) {
+					nk_label(ctx, (const char*)XBG->buffer.data(), NK_TEXT_LEFT);
+					if (xbgs.count((char*)XBG->buffer.data()) == 0) {
+						auto &model = xbgs[(char*)XBG->buffer.data()];
+						printf("Loading %s...\n", XBG->buffer.data());
+						model.open(getPathToFileXBG((char*)(XBG->buffer.data())).c_str());
+					}
+
+					auto &model = xbgs[(char*)XBG->buffer.data()];
+					renderInterface.model.use();
+					mat4 MVP = vp * MATtranslate(mat4(), pos);
+					glUniformMatrix4fv(renderInterface.model.uniforms["MVP"], 1, GL_FALSE, &MVP[0][0]);
+					model.draw();
+				}
+			}
+
+			Attribute *ArchetypeGuid = entity.getAttribute("ArchetypeGuid");
+			if (ArchetypeGuid) {
+				bool selected;
+				if (nk_button_label(ctx, (char*)ArchetypeGuid->buffer.data())) {
+					SDL_SetClipboardText((char*)ArchetypeGuid->buffer.data());
+				}
+			}
+
+			Node *CProximityTriggerComponent = Components->findFirstChild("CProximityTriggerComponent");
+			if (CProximityTriggerComponent) {
+				needsCross = false;
+				vec3 extent = swapYZ(*(vec3*)CProximityTriggerComponent->getAttribute("vectorSize")->buffer.data());
+				dd::box(&pos.x, red, extent.x, extent.y, extent.z);
+			}
+
+			if (hidBBox && false) {
+				vec3 boxMin = swapYZ(*((vec3*)hidBBox->getAttribute("vectorBBoxMin")->buffer.data()));
+				vec3 boxMax = swapYZ(*((vec3*)hidBBox->getAttribute("vectorBBoxMax")->buffer.data()));
+				vec3 boxExtent = boxMax - boxMin;
+				dd::box(&pos.x, blue, boxExtent.x, boxExtent.y, boxExtent.z);
+			}
+
+			Node* PatrolDescription = entity.findFirstChild("PatrolDescription");
+			if (PatrolDescription) {
+				needsCross = false;
+				Node* PatrolPointList = PatrolDescription->findFirstChild("PatrolPointList");
+
+				vec3 last;
+				for (Node &PatrolPoint : PatrolPointList->children) {
+					vec3 pos = swapYZ(*(vec3*)PatrolPoint.getAttribute("vecPos")->buffer.data());
+
+					if (last != vec3())
+						dd::line(&last[0], &pos[0], red);
+					else
+						dd::projectedText((char*)hidName->buffer.data(), &pos.x, red, &vp[0][0], 0, 0, windowSize.x, windowSize.y, 0.5f);
+					last = pos;
+				}
+			}
+
+			//.batch is source files for .cbatch
+			/*Attribute* ExportPath = entity.getAttribute("ExportPath");
+			if (ExportPath) {
+				ImGui::Text("%s", (char*)ExportPath->buffer.data());
+			}*/
+
+			if (pos.distance(camera.location) < 5.f)
+				dd::projectedText((char*)hidName->buffer.data(), &pos.x, white, &vp[0][0], 0, 0, windowSize.x, windowSize.y, 0.5f);
+			if(needsCross)
+				dd::cross(&pos.x, 0.25f);
+		}
+
+		Node *Phys = wlu.root.findFirstChild(0x211f3057);
+		if (Phys) {
+			for (Node &CBatch : Phys->children) {
+				std::string CBatchPath = (char*)CBatch.getAttribute(0xc7673122)->buffer.data();
+			}
+		}
+		nk_end(ctx);
 
 		dd::flush(0);
-		ImGui::Render();
-
+		nk_sdl_render(NK_ANTI_ALIASING_ON, 4 * 1024 * 1024, 2 * 1024 * 1024);
 		SDL_GL_SwapWindow(window);
+
+		nk_input_begin(ctx);
 		SDL_Event event;
 		while (SDL_PollEvent(&event)) {
 			switch (event.type) {
@@ -546,8 +675,9 @@ int main(int argc, char **argv) {
 					break;
 			}
 
-			ImGui_ImplSdlGL3_ProcessEvent(&event);
+			nk_sdl_handle_event(&event);
 		}
+		nk_input_end(ctx);
 	}
 
 	return 0;

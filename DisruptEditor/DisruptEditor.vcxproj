@@ -107,7 +107,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>../lib/SDL2.lib;../lib/SDL2main.lib;Winmm.lib;Ws2_32.lib;Version.lib;Imm32.lib;XInput.lib;XAudio2.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>../lib/SDL2.lib;../lib/SDL2main.lib;../lib/libvorbisfile_static.lib;../lib/libvorbis_static.lib;../lib/libogg_static.lib;Shlwapi.lib;Winmm.lib;Ws2_32.lib;Version.lib;Imm32.lib;XInput.lib;XAudio2.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -136,53 +136,48 @@
       </PrecompiledHeader>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <IntrinsicFunctions>false</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>../include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>../lib/SDL2.lib;../lib/SDL2main.lib;Winmm.lib;Ws2_32.lib;Version.lib;Imm32.lib;XInput.lib;XAudio2.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>../lib/SDL2.lib;../lib/SDL2main.lib;../lib/libvorbisfile_static.lib;../lib/libvorbis_static.lib;../lib/libogg_static.lib;Shlwapi.lib;Winmm.lib;Ws2_32.lib;Version.lib;Imm32.lib;XInput.lib;XAudio2.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="BinaryObject.cpp" />
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="cseqFile.cpp" />
     <ClCompile Include="DatFat.cpp" />
     <ClCompile Include="DominoBox.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="Hash.cpp" />
-    <ClCompile Include="imgui.cpp" />
-    <ClCompile Include="ImGuizmo.cpp" />
-    <ClCompile Include="imgui_draw.cpp" />
-    <ClCompile Include="imgui_impl_sdl_gl3.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Math\Matrix3.cpp" />
     <ClCompile Include="Math\Matrix4.cpp" />
     <ClCompile Include="Math\Vector2.cpp" />
     <ClCompile Include="Math\Vector3.cpp" />
     <ClCompile Include="Math\Vector4.cpp" />
+    <ClCompile Include="NBCF.cpp" />
+    <ClCompile Include="sbaoFile.cpp" />
+    <ClCompile Include="spkFile.cpp" />
     <ClCompile Include="tinyxml2.cpp" />
     <ClCompile Include="wluFile.cpp" />
     <ClCompile Include="xbgFile.cpp" />
     <ClCompile Include="xbtFile.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BinaryObject.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="cseqFile.h" />
     <ClInclude Include="DatFat.h" />
     <ClInclude Include="debug_draw.hpp" />
     <ClInclude Include="DominoBox.h" />
     <ClInclude Include="glad.h" />
     <ClInclude Include="GLHelper.h" />
     <ClInclude Include="Hash.h" />
-    <ClInclude Include="imconfig.h" />
-    <ClInclude Include="imgui.h" />
-    <ClInclude Include="ImGuizmo.h" />
-    <ClInclude Include="imgui_impl_sdl_gl3.h" />
-    <ClInclude Include="imgui_internal.h" />
     <ClInclude Include="khrplatform.h" />
     <ClInclude Include="Math\AABB.h" />
     <ClInclude Include="Math\Frustum.h" />
@@ -193,6 +188,12 @@
     <ClInclude Include="Math\Vector2.h" />
     <ClInclude Include="Math\Vector3.h" />
     <ClInclude Include="Math\Vector4.h" />
+    <ClInclude Include="NBCF.h" />
+    <ClInclude Include="noc_file_dialog.h" />
+    <ClInclude Include="nuklear.h" />
+    <ClInclude Include="nuklear_sdl_gl3.h" />
+    <ClInclude Include="sbaoFile.h" />
+    <ClInclude Include="spkFile.h" />
     <ClInclude Include="stb_rect_pack.h" />
     <ClInclude Include="stb_textedit.h" />
     <ClInclude Include="stb_truetype.h" />

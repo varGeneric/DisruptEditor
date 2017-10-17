@@ -31,7 +31,7 @@ void DatFat::addFat(const std::string &filename) {
 
 	uint32_t flags;
 	fread(&flags, sizeof(flags), 1, fp);
-	assert(flags == 3278084);
+	assert((flags & ~0xFFFFFF) == 0);
 
 	uint32_t entries;
 	fread(&entries, sizeof(entries), 1, fp);
@@ -43,12 +43,16 @@ void DatFat::addFat(const std::string &filename) {
 	archives.push_back(dat);
 	int pos = archives.size() - 1;
 
+	FILE *out = fopen("out.txt", "w");
+
 	for (uint32_t i = 0; i < entries; ++i) {
 		uint32_t a, b, c, d;
 		fread(&a, sizeof(uint32_t), 1, fp);
 		fread(&b, sizeof(uint32_t), 1, fp);
 		fread(&c, sizeof(uint32_t), 1, fp);
 		fread(&d, sizeof(uint32_t), 1, fp);
+
+		fprintf(out, "%u\n", a);
 
 		FileEntry fe;
 		fe.archive = pos;
@@ -59,6 +63,8 @@ void DatFat::addFat(const std::string &filename) {
 		fe.size = (c >> 0) & 0x1FFFFFFFu;
 		files[a] = fe;
 	}
+
+	fclose(out);
 
 	//TODO: Parse Localization
 
@@ -76,7 +82,7 @@ std::shared_ptr<FileP> DatFat::openRead(std::string filename) {
 	std::replace(filename.begin(), filename.end(), '/', '\\');
 	if (filename[0] == '\\')
 		filename = filename.substr(1);
-	uint32_t hash = fnv_64_str(filename.c_str());
+	uint64_t hash = fnv_64_str(filename.c_str());
 
 	if (files.count(hash)) {
 		auto &fe = files.at(hash);
