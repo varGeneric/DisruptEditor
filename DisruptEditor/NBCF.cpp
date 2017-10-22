@@ -96,7 +96,7 @@ void Attribute::deserialize(FILE * fp) {
 		deserialize(fp);
 		fseek(fp, offset + 4, SEEK_SET);
 	} else {
-		if (c > 1000) {//Shouldn't be possible
+		if (c > 1024 * 100) {//Hard limit of 100 kb
 			bailOut = true;
 			return;
 		}

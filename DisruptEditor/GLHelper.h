@@ -10,14 +10,14 @@
 class Shader {
 public:
 	GLuint oglid;
-	void use() { glUseProgram(oglid); }
+	inline void use() { glUseProgram(oglid); }
 	std::map<std::string, GLint> uniforms;
 	enum UniformTypes { INT, FLOAT, MAT4, VEC2, VEC3, VEC4, TEXTURE2D, TEXTURE3D };
 	std::map<std::string, std::string> uniformTypes;
 	std::vector<std::string> samplerAttributes;
 };
 
-inline bool loadShader(Shader *shader, const char * vertex, const char * fragment) {
+static inline bool loadShader(Shader *shader, const char * vertex, const char * fragment) {
 	// Create the shaders
 	GLuint VertexShaderID = glCreateShader(GL_VERTEX_SHADER);
 	GLuint FragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
@@ -90,9 +90,6 @@ inline Shader loadShaders(const char *program) {
 	Shader shader;
 
 	// Create the shaders
-	GLuint VertexShaderID = glCreateShader(GL_VERTEX_SHADER);
-	GLuint FragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
-
 	tinyxml2::XMLDocument doc;
 	doc.LoadFile(program);
 
@@ -112,7 +109,7 @@ inline Shader loadShaders(const char *program) {
 		uniform = uniform->NextSiblingElement("uniform");
 	}
 
-	assert(loadShader(&shader, root->FirstChildElement("vertex")->GetText(), root->FirstChildElement("fragment")->GetText()));
+	loadShader(&shader, root->FirstChildElement("vertex")->GetText(), root->FirstChildElement("fragment")->GetText());
 
 	return shader;
 }

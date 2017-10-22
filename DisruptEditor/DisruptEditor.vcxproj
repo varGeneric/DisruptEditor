@@ -150,11 +150,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="Common.cpp" />
     <ClCompile Include="cseqFile.cpp" />
     <ClCompile Include="DatFat.cpp" />
+    <ClCompile Include="DDRenderInterface.cpp" />
     <ClCompile Include="DominoBox.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="Hash.cpp" />
+    <ClCompile Include="Implementation.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Math\Matrix3.cpp" />
     <ClCompile Include="Math\Matrix4.cpp" />
@@ -171,13 +174,17 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="Common.h" />
     <ClInclude Include="cseqFile.h" />
     <ClInclude Include="DatFat.h" />
+    <ClInclude Include="DDRenderInterface.h" />
     <ClInclude Include="debug_draw.hpp" />
     <ClInclude Include="DominoBox.h" />
     <ClInclude Include="glad.h" />
     <ClInclude Include="GLHelper.h" />
     <ClInclude Include="Hash.h" />
+    <ClInclude Include="Implementation.h" />
+    <ClInclude Include="ini.h" />
     <ClInclude Include="khrplatform.h" />
     <ClInclude Include="Math\AABB.h" />
     <ClInclude Include="Math\Frustum.h" />

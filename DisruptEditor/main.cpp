@@ -1,283 +1,11 @@
 #include "glad.h"
 #include <SDL.h>
-
-#define NK_INCLUDE_FIXED_TYPES
-#define NK_INCLUDE_STANDARD_IO
-#define NK_INCLUDE_DEFAULT_ALLOCATOR
-#define NK_INCLUDE_STANDARD_VARARGS
-#define NK_INCLUDE_VERTEX_BUFFER_OUTPUT
-#define NK_INCLUDE_FONT_BAKING
-#define NK_INCLUDE_DEFAULT_FONT
-#define NK_IMPLEMENTATION
-#include "nuklear.h"
-#define NK_SDL_GL3_IMPLEMENTATION
-#include "nuklear_sdl_gl3.h"
-
-#define DEBUG_DRAW_IMPLEMENTATION
-#include "debug_draw.hpp"
-#include <stdio.h>
-#include <string>
-#include <algorithm>
-#include <cctype>
-
-#include "wluFile.h"
-#include "xbgFile.h"
-#include "DatFat.h"
-#include "DominoBox.h"
-#define TINYFILES_IMPL
-#include "tinyfiles.h"
-#include <ogg/ogg.h>
-#include <vorbis/vorbisfile.h>
-#include "Camera.h"
-#define NOC_FILE_DIALOG_IMPLEMENTATION
-#define NOC_FILE_DIALOG_WIN32
-#include "noc_file_dialog.h"
-#include "GLHelper.h"
-#include <Shlwapi.h>
-
+#include "Implementation.h"
+#include "Common.h"
+#include "DDRenderInterface.h"
 #include "spkFile.h"
 #include "sbaoFile.h"
 #include "cseqFile.h"
-
-const static char* wd = "D:/Desktop/bin/windy_city_unpack/";
-
-uint64_t fileHash(std::string file) {
-	std::transform(file.begin(), file.end(), file.begin(), ::tolower);
-
-	uint64_t hash = 0xCBF29CE484222325;
-	for (auto it = file.begin(); it != file.end(); ++it) {
-		hash *= 0x100000001B3;
-		hash ^= *it;
-	}
-
-	return hash;
-}
-
-std::string getPathToFile(const char* file) {
-	std::string realPath = wd;
-	realPath.append(file);
-	if (PathFileExistsA(realPath.c_str()))
-		return realPath;
-
-	uint32_t hash = fileHash(file);
-	char buffer[500];
-	snprintf(buffer, sizeof(buffer), "__UNKNOWN\\unknown\\%08X", hash);
-
-	return wd + std::string(buffer);
-}
-
-std::string getPathToFileXBG(const char* file) {
-	std::string realPath = wd;
-	realPath.append(file);
-	if(PathFileExistsA(realPath.c_str()))
-		return realPath;
-
-	uint32_t hash = fileHash(file);
-	char buffer[500];
-	snprintf(buffer, sizeof(buffer), "__UNKNOWN\\gfx\\%08X.xbg", hash);
-
-	return wd + std::string(buffer);
-}
-
-vec3 swapYZ(const vec3 &ref) {
-	return vec3(ref.x, ref.z, ref.y);
-}
-
-class RenderInterface : public dd::RenderInterface {
-public:
-	RenderInterface();
-	//
-	// These are called by dd::flush() before any drawing and after drawing is finished.
-	// User can override these to perform any common setup for subsequent draws and to
-	// cleanup afterwards. By default, no-ops stubs are provided.
-	//
-	void beginDraw() {}
-	void endDraw() {}
-
-	//
-	// Create/free the glyph bitmap texture used by the debug text drawing functions.
-	// The debug renderer currently only creates one of those on startup.
-	//
-	// You're not required to implement these two if you don't care about debug text drawing.
-	// Default no-op stubs are provided by default, which disable debug text rendering.
-	//
-	// Texture dimensions are in pixels, data format is always 8-bits per pixel (Grayscale/GL_RED).
-	// The pixel values range from 255 for a pixel within a glyph to 0 for a transparent pixel.
-	// If createGlyphTexture() returns null, the renderer will disable all text drawing functions.
-	//
-	dd::GlyphTextureHandle createGlyphTexture(int width, int height, const void * pixels);
-	void destroyGlyphTexture(dd::GlyphTextureHandle glyphTex);
-
-	//
-	// Batch drawing methods for the primitives used by the debug renderer.
-	// If you don't wish to support a given primitive type, don't override the method.
-	//
-	void drawPointList(const dd::DrawVertex * points, int count, bool depthEnabled);
-	void drawLineList(const dd::DrawVertex * lines, int count, bool depthEnabled);
-	void drawGlyphList(const dd::DrawVertex * glyphs, int count, dd::GlyphTextureHandle glyphTex);
-
-	Shader lines, tex, model;
-	VertexBuffer linesBuffer, texBuffer;
-
-	mat4 VP;
-	ivec2 windowSize;
-};
-
-RenderInterface::RenderInterface() {
-	lines = loadShaders("gldd.xml");
-	linesBuffer = createVertexBuffer(NULL, 0, BUFFER_STREAM);
-	glEnable(GL_PROGRAM_POINT_SIZE);
-
-	tex = loadShaders("tex.xml");
-	texBuffer = createVertexBuffer(NULL, 0, BUFFER_STREAM);
-
-	model = loadShaders("model.xml");
-}
-
-void RenderInterface::drawPointList(const dd::DrawVertex *points, int count, bool depthEnabled) {
-	updateVertexBuffer(points, count * sizeof(dd::DrawVertex), linesBuffer);
-
-	lines.use();
-	glUniformMatrix4fv(lines.uniforms["MVP"], 1, GL_FALSE, &VP[0][0]);
-	// 1rst attribute buffer : vertices
-	glEnableVertexAttribArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, linesBuffer.buffer_id);
-	glVertexAttribPointer(
-		0,                  // attribute. No particular reason for 0, but must match the layout in the shader.
-		3,                  // size
-		GL_FLOAT,           // type
-		GL_FALSE,           // normalized?
-		sizeof(float) * 7,  // stride
-		(void*)0            // array buffer offset
-	);
-
-	// 2nd attribute buffer : colors
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(
-		1,                                // attribute. No particular reason for 1, but must match the layout in the shader.
-		4,                                // size
-		GL_FLOAT,                         // type
-		GL_FALSE,                         // normalized?
-		sizeof(float) * 7,                // stride
-		(GLvoid*)(3 * sizeof(GLfloat))    // array buffer offset
-	);
-
-	// Draw the triangles
-	glDrawArrays(GL_POINTS, 0, count);
-	glDisableVertexAttribArray(0);
-	glDisableVertexAttribArray(1);
-}
-
-void RenderInterface::drawLineList(const dd::DrawVertex *points, int count, bool depthEnabled) {
-	updateVertexBuffer(points, count * sizeof(dd::DrawVertex), linesBuffer);
-
-	lines.use();
-	glUniformMatrix4fv(lines.uniforms["MVP"], 1, GL_FALSE, &VP[0][0]);
-	// 1rst attribute buffer : vertices
-	glEnableVertexAttribArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, linesBuffer.buffer_id);
-	glVertexAttribPointer(
-		0,                  // attribute. No particular reason for 0, but must match the layout in the shader.
-		3,                  // size
-		GL_FLOAT,           // type
-		GL_FALSE,           // normalized?
-		sizeof(float) * 7,  // stride
-		(void*)0            // array buffer offset
-	);
-
-	// 2nd attribute buffer : colors
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(
-		1,                                // attribute. No particular reason for 1, but must match the layout in the shader.
-		4,                                // size
-		GL_FLOAT,                         // type
-		GL_FALSE,                         // normalized?
-		sizeof(float) * 7,                // stride
-		(GLvoid*)(3 * sizeof(GLfloat))    // array buffer offset
-	);
-
-	// Draw the triangles
-	glDrawArrays(GL_LINES, 0, count);
-	glDisableVertexAttribArray(0);
-	glDisableVertexAttribArray(1);
-}
-
-void RenderInterface::drawGlyphList(const dd::DrawVertex * glyphs, int count, dd::GlyphTextureHandle glyphTex) {
-	updateVertexBuffer(glyphs, count * sizeof(dd::DrawVertex), texBuffer);
-
-	tex.use();
-	glUniform2f(tex.uniforms["windowSize"], windowSize.x, windowSize.y);
-	glBindBuffer(GL_ARRAY_BUFFER, texBuffer.buffer_id);
-	// 1rst attribute buffer : vertices
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(
-		0,                  // attribute. No particular reason for 0, but must match the layout in the shader.
-		2,                  // size
-		GL_FLOAT,           // type
-		GL_FALSE,           // normalized?
-		sizeof(float) * 7,  // stride
-		(void*)0            // array buffer offset
-	);
-
-	// 2nd attribute buffer : colors
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(
-		1,                                // attribute. No particular reason for 1, but must match the layout in the shader.
-		2,                                // size
-		GL_FLOAT,                         // type
-		GL_FALSE,                         // normalized?
-		sizeof(float) * 7,                // stride
-		(GLvoid*)(2 * sizeof(GLfloat))    // array buffer offset
-	);
-
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(
-		2,                                // attribute. No particular reason for 1, but must match the layout in the shader.
-		3,                                // size
-		GL_FLOAT,                         // type
-		GL_FALSE,                         // normalized?
-		sizeof(float) * 7,                // stride
-		(GLvoid*)(4 * sizeof(GLfloat))    // array buffer offset
-	);
-
-	// Draw the triangles
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glDisable(GL_DEPTH_TEST);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, (GLuint)glyphTex);
-	glDrawArrays(GL_TRIANGLES, 0, count);
-	glDisable(GL_BLEND);
-	glEnable(GL_DEPTH_TEST);
-
-	glDisableVertexAttribArray(0);
-	glDisableVertexAttribArray(1);
-	glDisableVertexAttribArray(2);
-}
-
-dd::GlyphTextureHandle RenderInterface::createGlyphTexture(int width, int height, const void * pixels) {
-	GLuint textureId;
-	glGenTextures(1, &textureId);
-	glBindTexture(GL_TEXTURE_2D, textureId);
-
-	glPixelStorei(GL_PACK_ALIGNMENT, 1);
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, pixels);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-	return (dd::GlyphTextureHandle)textureId;
-}
-
-void RenderInterface::destroyGlyphTexture(dd::GlyphTextureHandle glyphTex) {
-	glDeleteTextures(1, (GLuint*)&glyphTex);
-}
 
 const ddVec3 red = { 1.0f, 0.0f, 0.0f };
 const ddVec3 blue = { 0.0f, 0.0f, 1.0f };
@@ -291,6 +19,19 @@ const ddVec3 green = { 0.0f, 0.6f, 0.0f };
 
 int main(int argc, char **argv) {
 	SDL_Init(SDL_INIT_EVERYTHING);
+
+	//Setup INI
+	std::string wludir;
+	float textDrawDistance = 5.f;
+	{
+		ini_t* ini = ini_load(loadFile("settings.ini").c_str(), NULL);
+
+		int settings_section = ini_find_section(ini, "settings", 0);
+		wludir = ini_property_value(ini, settings_section, ini_find_property(ini, settings_section, "wludir", 0));
+		textDrawDistance = atof(ini_property_value(ini, settings_section, ini_find_property(ini, settings_section, "textDrawDistance", 0)));
+
+		ini_destroy(ini);
+	}
 
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
@@ -374,22 +115,22 @@ int main(int argc, char **argv) {
 	RenderInterface renderInterface;
 	dd::initialize(&renderInterface);
 
-	const std::string wd = "C:/Program Files/Ubisoft/WATCH_DOGS/data_win64/";
-	DatFat df;
-	df.addFat(wd + "common.fat");
+	//const std::string wd = "C:/Program Files/Ubisoft/WATCH_DOGS/data_win64/";
+	//DatFat df;
+	//df.addFat(wd + "common.fat");
 	//return 0;
 	//df.addFat(wd + "worlds/windy_city/windy_city.fat");
 
-	df.openRead("domino/user/windycity/main_missions/act_02/mission_09c/a02_m09c.a02_m09c_activation.debug.lua");
+	//df.openRead("domino/user/windycity/main_missions/act_02/mission_09c/a02_m09c.a02_m09c_activation.debug.lua");
 
 
 	std::map<std::string, wluFile> wlus;
 	std::map<std::string, xbgFile> xbgs;
 
-	DominoBox db("D:\\Desktop\\bin\\dlc_solo_unpack\\domino\\user\\windycity\\tests\\ai_carfleeing_patterns\\ai_carfleeing_patterns.main.lua");
+	//DominoBox db("D:\\Desktop\\bin\\dlc_solo\\domino\\user\\windycity\\tests\\ai_carfleeing_patterns\\ai_carfleeing_patterns.main.lua");
 
 	tfDIR dir;
-	tfDirOpen(&dir, (wd + std::string("worlds/windy_city/generated/wlu")).c_str());
+	tfDirOpen(&dir, (wludir + std::string("/worlds/windy_city/generated/wlu")).c_str());
 	while (dir.has_next) {
 		tfFILE file;
 		tfReadFile(&dir, &file);
@@ -400,7 +141,6 @@ int main(int argc, char **argv) {
 			if (!wlus[file.name].open(file.path)) {
 				wlus.erase(file.name);
 			}
-			break;
 		}
 
 		tfDirNext(&dir);
@@ -408,7 +148,7 @@ int main(int argc, char **argv) {
 	tfDirClose(&dir);
 
 	//Scan Audio
-	tfDirOpen(&dir, "D:/Desktop/bin/sound_unpack/soundbinary/manual");
+	/*tfDirOpen(&dir, "D:/Desktop/bin/sound_unpack/soundbinary/manual");
 	while (dir.has_next) {
 		tfFILE file;
 		tfReadFile(&dir, &file);
@@ -448,6 +188,7 @@ int main(int argc, char **argv) {
 
 	Uint32 ticks = SDL_GetTicks();
 	wluFile &wlu = wlus.begin()->second;
+	wlu.shortName = wlus.begin()->first;
 
 	bool windowOpen = true;
 	while (windowOpen) {
@@ -503,8 +244,10 @@ int main(int argc, char **argv) {
 			for (auto it = wlus.begin(); it != wlus.end(); ++it) {
 				if (nk_strmatch_fuzzy_string(it->first.c_str(), searchWluBuffer, NULL)) {
 					int selected = wlu.origFilename == it->second.origFilename;
-					if (nk_selectable_label(ctx, it->first.c_str(), NK_TEXT_LEFT, &selected))
+					if (nk_selectable_label(ctx, it->first.c_str(), NK_TEXT_LEFT, &selected)) {
 						wlu = it->second;
+						wlu.shortName = it->first;
+					}
 				}
 			}
 			nk_group_end(ctx);
@@ -529,15 +272,16 @@ int main(int argc, char **argv) {
 			CopyFileA(backup.c_str(), wlu.origFilename.c_str(), FALSE);
 			wlu.open(wlu.origFilename.c_str());
 		}
+		std::string xmlFileName = wlu.shortName + ".xml";
 		if (nk_button_label(ctx, "XML")) {
-			FILE *fp = fopen("test.xml", "wb");
+			FILE *fp = fopen(xmlFileName.c_str(), "wb");
 			tinyxml2::XMLPrinter printer(fp);
 			wlu.root.serializeXML(printer);
 			fclose(fp);
 		}
 		if (nk_button_label(ctx, "Import XML")) {
 			tinyxml2::XMLDocument doc;
-			doc.LoadFile("test.xml");
+			doc.LoadFile(xmlFileName.c_str());
 			wlu.root.deserializeXML(doc.RootElement());
 		}
 		nk_layout_row_dynamic(ctx, 20, 1);
@@ -591,7 +335,7 @@ int main(int argc, char **argv) {
 					if (xbgs.count((char*)XBG->buffer.data()) == 0) {
 						auto &model = xbgs[(char*)XBG->buffer.data()];
 						printf("Loading %s...\n", XBG->buffer.data());
-						model.open(getPathToFileXBG((char*)(XBG->buffer.data())).c_str());
+						model.open(getAbsoluteFilePath((char*)(XBG->buffer.data())).c_str());
 					}
 
 					auto &model = xbgs[(char*)XBG->buffer.data()];
@@ -647,7 +391,7 @@ int main(int argc, char **argv) {
 				ImGui::Text("%s", (char*)ExportPath->buffer.data());
 			}*/
 
-			if (pos.distance(camera.location) < 5.f)
+			if (pos.distance(camera.location) < textDrawDistance)
 				dd::projectedText((char*)hidName->buffer.data(), &pos.x, white, &vp[0][0], 0, 0, windowSize.x, windowSize.y, 0.5f);
 			if(needsCross)
 				dd::cross(&pos.x, 0.25f);
@@ -661,6 +405,7 @@ int main(int argc, char **argv) {
 		}
 		nk_end(ctx);
 
+		glBindVertexArray(VertexArrayID);
 		dd::flush(0);
 		nk_sdl_render(NK_ANTI_ALIASING_ON, 4 * 1024 * 1024, 2 * 1024 * 1024);
 		SDL_GL_SwapWindow(window);
