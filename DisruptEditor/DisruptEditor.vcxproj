@@ -215,6 +215,12 @@
     <ClInclude Include="xbgFile.h" />
     <ClInclude Include="xbtFile.h" />
   </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Res.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Icon.ico" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
