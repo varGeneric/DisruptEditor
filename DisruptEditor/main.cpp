@@ -6,6 +6,7 @@
 #include "spkFile.h"
 #include "sbaoFile.h"
 #include "cseqFile.h"
+#include "materialFile.h"
 #include <unordered_map>
 
 const ddVec3 red = { 1.0f, 0.0f, 0.0f };
@@ -25,7 +26,6 @@ struct BuildingEntity {
 };
 std::vector<BuildingEntity> buildingEntities;
 std::map<std::string, wluFile> wlus;
-std::unordered_map<std::string, xbgFile> xbgs;
 
 void reloadBuildingEntities() {
 	buildingEntities.clear();
@@ -203,6 +203,23 @@ int main(int argc, char **argv) {
 		tfDirNext(&dir);
 	}
 	tfDirClose(&dir);
+
+	//Scan Materials
+	/*tfDirOpen(&dir, "D:/Desktop/bin/windy_city/graphics/_materials");
+	while (dir.has_next) {
+		tfFILE file;
+		tfReadFile(&dir, &file);
+
+		if (!file.is_dir) {
+			printf("Loading %s\n", file.name);
+
+			materialFile spk;
+			spk.open(file.path);
+		}
+
+		tfDirNext(&dir);
+	}
+	tfDirClose(&dir);*/
 
 	//Scan Audio
 	/*tfDirOpen(&dir, "D:/Desktop/bin/sound_unpack/soundbinary/manual");
@@ -390,13 +407,7 @@ int main(int argc, char **argv) {
 
 					if (XBG && XBG->buffer.size() > 5) {
 						nk_label(ctx, (const char*)XBG->buffer.data(), NK_TEXT_LEFT);
-						if (xbgs.count((char*)XBG->buffer.data()) == 0) {
-							auto &model = xbgs[(char*)XBG->buffer.data()];
-							printf("Loading %s...\n", XBG->buffer.data());
-							model.open(getAbsoluteFilePath((char*)(XBG->buffer.data())).c_str());
-						}
-
-						auto &model = xbgs[(char*)XBG->buffer.data()];
+						auto &model = loadXBG((char*)XBG->buffer.data());
 						renderInterface.model.use();
 						mat4 MVP = vp * MATtranslate(mat4(), pos);
 						glUniformMatrix4fv(renderInterface.model.uniforms["MVP"], 1, GL_FALSE, &MVP[0][0]);
@@ -454,8 +465,8 @@ int main(int argc, char **argv) {
 				if (needsCross)
 					dd::cross(&pos.x, 0.25f);
 			}
-			nk_end(ctx);
 		}
+		nk_end(ctx);
 
 		//Render Buildings
 		if (buildingEntities.empty())
@@ -465,30 +476,21 @@ int main(int argc, char **argv) {
 		for (const BuildingEntity &Entity : buildingEntities) {
 			dd::aabb(&Entity.min.x, &Entity.max.x, blue);
 
-			mat4 translate = MATtranslate(mat4(), Entity.pos);
+			mat4 translate = MATtranslate(mat4(), Entity.pos + vec3(0.f, 64.f, 0.f));
 			mat4 MVP = vp * MATscale(translate, vec3(128.f));
 			glUniformMatrix4fv(renderInterface.model.uniforms["MVP"], 1, GL_FALSE, &MVP[0][0]);
 
 			{
 				std::string CBatchXbgPath = Entity.CBatchPath + "_building_low.xbg";
-				if (xbgs.count(CBatchXbgPath) == 0) {
-					auto &model = xbgs[CBatchXbgPath];
-					printf("Loading %s...\n", CBatchXbgPath.c_str());
-					model.open(getAbsoluteFilePath(CBatchXbgPath).c_str());
-				}
-				auto &model = xbgs[CBatchXbgPath];
+				auto &model = loadXBG(CBatchXbgPath);
+				if (model.meshes.empty()) continue;
 				model.draw();
 			}
 
 			//Draw roof
 			{
 				std::string CBatchXbgPath = Entity.CBatchPath + "_building_roofs.xbg";
-				if (xbgs.count(CBatchXbgPath) == 0) {
-					auto &model = xbgs[CBatchXbgPath];
-					printf("Loading %s...\n", CBatchXbgPath.c_str());
-					model.open(getAbsoluteFilePath(CBatchXbgPath).c_str());
-				}
-				auto &model = xbgs[CBatchXbgPath];
+				auto &model = loadXBG(CBatchXbgPath);
 				model.draw();
 			}
 		}

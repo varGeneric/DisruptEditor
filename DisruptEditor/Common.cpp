@@ -1,10 +1,18 @@
 #include "Common.h"
 
 #include <vector>
+#include <unordered_map>
 #include <assert.h>
 #include <Shlwapi.h>
 
+#include "xbgFile.h"
+#include "materialFile.h"
+#include "xbtFile.h"
+
 std::vector<std::string> searchPaths;
+std::unordered_map<std::string, xbgFile> xbgs;
+std::unordered_map<std::string, materialFile> materials;
+std::unordered_map<std::string, xbtFile> textures;
 
 std::string loadFile(const std::string & file) {
 	FILE* fp = fopen(file.c_str(), "r");
@@ -34,4 +42,31 @@ std::string getAbsoluteFilePath(const std::string &path) {
 
 void addSearchPath(const std::string &path) {
 	searchPaths.push_back(path);
+}
+
+xbgFile& loadXBG(const std::string &path) {
+	if (xbgs.count(path) == 0) {
+		auto &model = xbgs[path];
+		printf("Loading %s...\n", path.c_str());
+		model.open(getAbsoluteFilePath(path).c_str());
+	}
+	return xbgs[path];
+}
+
+materialFile &loadMaterial(const std::string & path) {
+	if (materials.count(path) == 0) {
+		auto &model = materials[path];
+		printf("Loading %s...\n", path.c_str());
+		model.open(getAbsoluteFilePath(path).c_str());
+	}
+	return materials[path];
+}
+
+xbtFile & loadTexture(const std::string & path) {
+	if (textures.count(path) == 0) {
+		auto &model = textures[path];
+		printf("Loading %s...\n", path.c_str());
+		model.open(getAbsoluteFilePath(path).c_str());
+	}
+	return textures[path];
 }

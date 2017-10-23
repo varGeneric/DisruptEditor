@@ -1,7 +1,11 @@
 #pragma once
+
+#include "nv_dds.h"
+
 class xbtFile {
 public:
-	xbtFile();
-	~xbtFile();
+	bool open(const char* file);
+	nv_dds::CDDSImage image;
+	GLuint id;
 };
 

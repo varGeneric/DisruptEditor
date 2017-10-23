@@ -160,12 +160,14 @@
     <ClCompile Include="Hash.cpp" />
     <ClCompile Include="Implementation.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="materialFile.cpp" />
     <ClCompile Include="Math\Matrix3.cpp" />
     <ClCompile Include="Math\Matrix4.cpp" />
     <ClCompile Include="Math\Vector2.cpp" />
     <ClCompile Include="Math\Vector3.cpp" />
     <ClCompile Include="Math\Vector4.cpp" />
     <ClCompile Include="NBCF.cpp" />
+    <ClCompile Include="nv_dds.cpp" />
     <ClCompile Include="sbaoFile.cpp" />
     <ClCompile Include="spkFile.cpp" />
     <ClCompile Include="tinyxml2.cpp" />
@@ -187,6 +189,7 @@
     <ClInclude Include="Implementation.h" />
     <ClInclude Include="ini.h" />
     <ClInclude Include="khrplatform.h" />
+    <ClInclude Include="materialFile.h" />
     <ClInclude Include="Math\AABB.h" />
     <ClInclude Include="Math\Frustum.h" />
     <ClInclude Include="Math\LinMath.h" />
@@ -200,6 +203,7 @@
     <ClInclude Include="noc_file_dialog.h" />
     <ClInclude Include="nuklear.h" />
     <ClInclude Include="nuklear_sdl_gl3.h" />
+    <ClInclude Include="nv_dds.h" />
     <ClInclude Include="sbaoFile.h" />
     <ClInclude Include="spkFile.h" />
     <ClInclude Include="stb_rect_pack.h" />

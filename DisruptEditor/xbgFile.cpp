@@ -3,6 +3,9 @@
 #include <iostream>
 #include <vector>
 #include <stdlib.h>
+#include "Common.h"
+#include "materialFile.h"
+#include "xbtFile.h"
 
 xbgFile::xbgFile() {}
 
@@ -44,13 +47,17 @@ void xbgFile::open(const char *file) {
 		int32_t count;
 		fread(&count, sizeof(count), 1, fp);
 		for (int32_t i = 0; i < count; ++i) {
-			char hash[4];
-			fread(hash, sizeof(hash), 1, fp);
+			Material mat;
+
+			fread(&mat.hash, sizeof(mat.hash), 1, fp);
 			int32_t matFileSize;
 			fread(&matFileSize, sizeof(matFileSize), 1, fp);
-			std::string matFile(matFileSize, '\0');
-			fread(&matFile[0], 1, matFileSize, fp);
+
+			mat.file.resize(matFileSize+1, '\0');
+			fread(&mat.file[0], 1, matFileSize, fp);
 			seekpad(fp, 4);
+
+			materials.push_back(mat);
 		}
 	}
 
@@ -333,7 +340,15 @@ void xbgFile::open(const char *file) {
 }
 
 void xbgFile::draw() {
+	auto material = materials.begin();
 	for (auto &mesh : meshes) {
+		auto &mat = loadMaterial(material->file);
+		if (!mat.entries.empty()) {
+			auto &texture = loadTexture(mat.entries.begin()->texture);
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, texture.id);
+		}
+
 		glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo.buffer_id);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.ibo.buffer_id);
 		// 1rst attribute buffer : vertices
@@ -346,6 +361,15 @@ void xbgFile::draw() {
 			mesh.vertexStride,  // stride
 			(void*)0            // array buffer offset
 		);
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(
+			1,                  // attribute. No particular reason for 0, but must match the layout in the shader.
+			2,                  // size
+			GL_SHORT,  // type
+			GL_TRUE,           // normalized?
+			mesh.vertexStride,  // stride
+			(void*)(8)            // array buffer offset
+		);
 
 		// Draw the triangles
 		GLint id;
@@ -353,5 +377,8 @@ void xbgFile::draw() {
 		glDrawElements(GL_TRIANGLES, mesh.faceCount * 3, GL_UNSIGNED_SHORT, 0);
 
 		glDisableVertexAttribArray(0);
+		glDisableVertexAttribArray(1);
+
+		++material;
 	}
 }

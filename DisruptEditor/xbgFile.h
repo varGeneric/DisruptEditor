@@ -18,6 +18,13 @@ public:
 		VertexBuffer vbo, ibo;
 	};
 	std::vector<Mesh> meshes;
+
+	struct Material {
+		uint32_t hash;
+		std::string file;
+	};
+	std::vector<Material> materials;
+
 	void draw();
 };
 
