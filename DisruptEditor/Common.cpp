@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <assert.h>
+#include <Shlwapi.h>
 
 std::vector<std::string> searchPaths;
 
@@ -22,6 +23,12 @@ std::string loadFile(const std::string & file) {
 }
 
 std::string getAbsoluteFilePath(const std::string &path) {
+	for (const std::string &base : searchPaths) {
+		std::string fullPath = base + path;
+		if (PathFileExistsA(fullPath.c_str()))
+			return fullPath;
+	}
+
 	return std::string();
 }
 

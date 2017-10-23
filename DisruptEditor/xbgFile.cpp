@@ -160,16 +160,84 @@ void xbgFile::open(const char *file) {
 
 		int32_t count;
 		fread(&count, sizeof(count), 1, fp);
-		if (count != 0) return;
+		if (count != 0)
+			return;
 		for (int32_t i = 0; i < count; ++i) {
 			Unknown u;
 			fread(&u, sizeof(u), 1, fp);
 
-			if (u.type == 2) {
-
+			/*if (u.type == 2) {
+				count=g.i(1)[0]
+				count=g.i(1)[0]
+				for m in range(count):
+					hash=g.i(1)[0]
+					m,g.word(g.i(1)[0])
+					g.seekpad(16)
+					g.f(4)	
+					g.f(4)	
+					g.f(4)	
+					g.f(4)	
+					g.f(1)
+				g.i(1)[0]
+				count=g.i(1)[0]
+				for m in range(count):
+					hash=g.i(1)[0]
+					m,g.word(g.i(1)[0])
+					g.seekpad(16)
+					g.f(4)	
+					g.f(4)	
+					g.f(4)	
+					g.f(4)	
+					g.f(7)
+				count=g.i(1)[0]
+				for m in range(count):
+					hash=g.i(1)[0]
+					m,g.word(g.i(1)[0])
+					g.seekpad(16)
+					g.f(4)	
+					g.f(4)	
+					g.f(4)	
+					g.f(4)	
+					g.f(6)
+				count=g.i(1)[0]	
+				for m in range(count):
+					cv=g.i(1)[0]
+					g.tell()
+					count=g.i(1)[0]
+					for m in range(count):
+						g.f(5)
+				count=g.i(1)[0]		
+				for m in range(count):
+					cv=g.i(1)[0]
+					count=g.i(1)[0]	
+					for m in range(count):
+						g.f(9)
+				count=g.i(1)[0]		
+				for m in range(count):
+					cv=g.i(1)[0]
+					count=g.i(1)[0]	
+					for m in range(count):
+						g.f(9)
+				count=g.i(1)[0]
+				for m in range(count):
+					hash=g.i(1)[0]
+					m,g.word(g.i(1)[0])
+					g.seekpad(4)
+					g.f(4)
+				
+				count=g.i(1)[0]
+				for m in range(count):
+					hash=g.i(1)[0]
+					m,g.word(g.i(1)[0])
+					g.seekpad(4)
+					
+				count=g.i(1)[0]
+				count=g.i(1)[0]
+				count=g.i(1)[0]
+				count=g.i(1)[0]
 			} else {
 
-			}
+			}*/
 
 		}
 	}

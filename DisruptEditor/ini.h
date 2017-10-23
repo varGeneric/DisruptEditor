@@ -383,6 +383,33 @@ the length is determined automatically, but in this case `value` has to be zero-
 ----------------------
 */
 
+struct ini_internal_section_t {
+	char name[32];
+	char* name_large;
+};
+
+
+struct ini_internal_property_t {
+	int section;
+	char name[32];
+	char* name_large;
+	char value[64];
+	char* value_large;
+};
+
+
+struct ini_t {
+	struct ini_internal_section_t* sections;
+	int section_capacity;
+	int section_count;
+
+	struct ini_internal_property_t* properties;
+	int property_capacity;
+	int property_count;
+
+	void* memctx;
+};
+
 #ifdef INI_IMPLEMENTATION
 #undef INI_IMPLEMENTATION
 
@@ -425,37 +452,6 @@ the length is determined automatically, but in this case `value` has to be zero-
         #define INI_STRICMP( s1, s2 ) ( strcasecmp( s1, s2 ) )        
     #endif
 #endif 
-
-
-struct ini_internal_section_t
-    {
-    char name[ 32 ];
-    char* name_large;
-    };
-
-
-struct ini_internal_property_t
-    {
-    int section;
-    char name[ 32 ];
-    char* name_large;
-    char value[ 64 ];
-    char* value_large;
-    };
-
-
-struct ini_t
-    {
-    struct ini_internal_section_t* sections;
-    int section_capacity;
-    int section_count;
-
-    struct ini_internal_property_t* properties;
-    int property_capacity;
-    int property_count;
-
-    void* memctx;
-    };
 
 
 static int ini_internal_property_index( ini_t const* ini, int section, int property )
