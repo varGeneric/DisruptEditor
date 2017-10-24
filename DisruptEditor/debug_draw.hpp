@@ -2361,7 +2361,7 @@ void projectedText(ddStrParam str, ddVec3Param pos, ddVec3Param color, ddMat4x4P
     matTransformPointXYZW(tempPoint, pos, vpMatrix);
 
     // Bail if W ended up as zero.
-    if (DD_FABS(tempPoint[W]) < DD_EPSILON)
+    if (tempPoint[W] < DD_EPSILON)
     {
         return;
     }
@@ -2377,8 +2377,6 @@ void projectedText(ddStrParam str, ddVec3Param pos, ddVec3Param color, ddMat4x4P
     // Need to invert the direction because on OGL the screen origin is the bottom-left corner.
     // NOTE: This is not renderer agnostic, I think... Should add a #define or something!
     scrY = static_cast<float>(sh) - scrY;
-
-	//if (scrY < -1.f || scrY > 1.f) return;
 
     DebugString & dstr    = g_debugStrings[g_debugStringsCount++];
     dstr.expiryDateMillis = g_currentTimeMillis + durationMillis;

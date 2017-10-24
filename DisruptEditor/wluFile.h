@@ -9,8 +9,8 @@
 struct baseHeader {
 	char magic[4];
 	uint32_t size;
-	uint32_t unknown1;
-	uint32_t unknown2;
+	uint32_t unknown1;//0 or 1 or 2 or 3
+	uint32_t unknown2;//0
 };
 
 struct wluHeader {
@@ -39,6 +39,7 @@ public:
 
 	void serialize(FILE *fp);
 
+	wluHeader wluhead;
 	Node root;
 	std::string origFilename;
 	std::string shortName;

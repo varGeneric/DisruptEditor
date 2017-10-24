@@ -53,7 +53,6 @@ void writeSize(FILE *fp, size_t osize) {
 		uint32_t size = osize;
 		size = size << 8;
 		size |= 0xFF;
-		//TODO, Check if this works
 		fwrite(&size, sizeof(size), 1, fp);
 	} else {
 		uint8_t size = osize;

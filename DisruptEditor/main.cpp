@@ -20,6 +20,7 @@ const ddVec3 black = { 0.f, 0.f, 0.f };
 const ddVec3 green = { 0.0f, 0.6f, 0.0f };
 
 struct BuildingEntity {
+	std::string wlu;
 	std::string CBatchPath;
 	vec3 pos;
 	vec3 min, max;
@@ -38,6 +39,7 @@ void reloadBuildingEntities() {
 
 			if (*(uint32_t*)hidEntityClass->buffer.data() == 138694286) {
 				BuildingEntity be;
+				be.wlu = it->first;
 				be.CBatchPath = (char*)Entity.getAttribute("ExportPath")->buffer.data();
 
 				//Cut off .batch
@@ -475,6 +477,8 @@ int main(int argc, char **argv) {
 		renderInterface.model.use();
 		for (const BuildingEntity &Entity : buildingEntities) {
 			dd::aabb(&Entity.min.x, &Entity.max.x, blue);
+			if (Entity.pos.distance(camera.location) < 256)
+				dd::projectedText(Entity.wlu.c_str(), &Entity.pos.x, white, &vp[0][0], 0, 0, windowSize.x, windowSize.y, 0.5f);
 
 			mat4 translate = MATtranslate(mat4(), Entity.pos + vec3(0.f, 64.f, 0.f));
 			mat4 MVP = vp * MATscale(translate, vec3(128.f));

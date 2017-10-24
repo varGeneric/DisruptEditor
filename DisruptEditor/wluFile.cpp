@@ -22,7 +22,7 @@ static inline void writepad(FILE *fp, long pad) {
 	long size = ftell(fp);
 	long seek = (pad - (size % pad)) % pad;
 
-	char zero[32] = { 0 };
+	uint8_t zero[32] = { 0 };
 	fwrite(zero, 1, seek, fp);
 }
 
@@ -33,12 +33,14 @@ bool wluFile::open(const char *filename) {
 		return false;
 	}
 
-	wluHeader wluhead;
 	fread(&wluhead, sizeof(wluhead), 1, fp);
 
 	assert(memcmp(wluhead.base.magic, "ESAB", 4) == 0);
+	assert(wluhead.base.unknown1 == 3 || wluhead.base.unknown1 == 0 || wluhead.base.unknown1 == 1 || wluhead.base.unknown1 == 2);
+	assert(wluhead.base.unknown2 == 0);
 	assert(memcmp(wluhead.fcb.magic, "nbCF", 4) == 0);
 	assert(wluhead.fcb.version == 16389);
+	assert(wluhead.fcb.headerFlags == 0);
 	assert(wluhead.fcb.totalObjectCount == wluhead.fcb.totalValueCount + 1);
 
 	fseek(fp, 0, SEEK_END);
@@ -58,13 +60,13 @@ bool wluFile::open(const char *filename) {
 	fseek(fp, wluhead.base.size + sizeof(wluhead.base), SEEK_SET);
 	seekpad(fp, 4);
 
-	/*size_t offset = ftell(fp);
+	size_t offset = ftell(fp);
 	if (offset != size + sizeof(wluhead.base)) {
 		handleHeaders(fp, size + sizeof(wluhead.base));
 
 		offset = ftell(fp);
 		assert(offset == size + sizeof(wluhead.base));
-	}*/
+	}
 
 	fclose(fp);
 
@@ -77,7 +79,6 @@ void wluFile::handleHeaders(FILE * fp, size_t size) {
 	fread(magic, 4, 1, fp);
 	magic[4] = '\0';
 	fseek(fp, -4, SEEK_CUR);
-	uint32_t magicNum = *(uint32_t*)(magic);
 
 	//LAUQ - LoadQuality
 	//ROAD - 
@@ -87,22 +88,12 @@ void wluFile::handleHeaders(FILE * fp, size_t size) {
 		fread(&road, sizeof(road), 1, fp);
 		fseek(fp, road.size, SEEK_CUR);
 		printf("Road %i\n", road.size);
+		seekpad(fp, 16);
 	} else if (magic == std::string("LAUQ")) {
 		qualityHeader qual;
 		fread(&qual, sizeof(qual), 1, fp);
 		fseek(fp, qual.size, SEEK_CUR);
 		printf("Qual %i\n", qual.size);
-	} else if (magicNum == 1242679104) {
-		fseek(fp, 4, SEEK_CUR);
-
-		//Read Zeros
-		uint8_t c;
-		do {
-			fread(&c, 1, 1, fp);
-		} while (c == 0);
-		fseek(fp, -1, SEEK_CUR);
-
-		printf("What?\n");
 	} else {
 		size_t offset = ftell(fp);
 		assert(false);
@@ -114,10 +105,8 @@ void wluFile::handleHeaders(FILE * fp, size_t size) {
 }
 
 void wluFile::serialize(FILE *fp) {
-	wluHeader wluhead;
-
 	memcpy(wluhead.base.magic, "ESAB", 4);
-	wluhead.base.unknown1 = wluhead.base.unknown2 = 0;
+	//wluhead.base.unknown1 = wluhead.base.unknown2 = 0;
 
 	memcpy(wluhead.fcb.magic, "nbCF", 4);
 	wluhead.fcb.version = 16389;
