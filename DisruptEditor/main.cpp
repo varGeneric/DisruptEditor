@@ -8,6 +8,9 @@
 #include "cseqFile.h"
 #include "materialFile.h"
 #include <unordered_map>
+#include "Hash.h"
+#include "imgui.h"
+#include "imgui_impl_sdl_gl3.h"
 
 const ddVec3 red = { 1.0f, 0.0f, 0.0f };
 const ddVec3 blue = { 0.0f, 0.0f, 1.0f };
@@ -64,7 +67,7 @@ void reloadBuildingEntities() {
 }
 
 int main(int argc, char **argv) {
-	freopen("debug.log", "wb", stdout);
+	//freopen("debug.log", "wb", stdout);
 	SDL_Init(SDL_INIT_EVERYTHING);
 
 	/*sbaoFile sb;
@@ -140,41 +143,56 @@ int main(int argc, char **argv) {
 	glGenVertexArrays(1, &VertexArrayID);
 	glBindVertexArray(VertexArrayID);
 	
-	nk_context *ctx = nk_sdl_init(window);
-	nk_font_atlas *atlas;
-	nk_sdl_font_stash_begin(&atlas);
-	nk_sdl_font_stash_end();
+	ImGui_ImplSdlGL3_Init(window);
+
 	//Style
-	struct nk_color table[NK_COLOR_COUNT];
-	table[NK_COLOR_TEXT] = nk_rgba(70, 70, 70, 255);
-	table[NK_COLOR_WINDOW] = nk_rgba(175, 175, 175, 255);
-	table[NK_COLOR_HEADER] = nk_rgba(175, 175, 175, 255);
-	table[NK_COLOR_BORDER] = nk_rgba(0, 0, 0, 255);
-	table[NK_COLOR_BUTTON] = nk_rgba(185, 185, 185, 255);
-	table[NK_COLOR_BUTTON_HOVER] = nk_rgba(170, 170, 170, 255);
-	table[NK_COLOR_BUTTON_ACTIVE] = nk_rgba(160, 160, 160, 255);
-	table[NK_COLOR_TOGGLE] = nk_rgba(150, 150, 150, 255);
-	table[NK_COLOR_TOGGLE_HOVER] = nk_rgba(120, 120, 120, 255);
-	table[NK_COLOR_TOGGLE_CURSOR] = nk_rgba(175, 175, 175, 255);
-	table[NK_COLOR_SELECT] = nk_rgba(190, 190, 190, 255);
-	table[NK_COLOR_SELECT_ACTIVE] = nk_rgba(175, 175, 175, 255);
-	table[NK_COLOR_SLIDER] = nk_rgba(190, 190, 190, 255);
-	table[NK_COLOR_SLIDER_CURSOR] = nk_rgba(80, 80, 80, 255);
-	table[NK_COLOR_SLIDER_CURSOR_HOVER] = nk_rgba(70, 70, 70, 255);
-	table[NK_COLOR_SLIDER_CURSOR_ACTIVE] = nk_rgba(60, 60, 60, 255);
-	table[NK_COLOR_PROPERTY] = nk_rgba(175, 175, 175, 255);
-	table[NK_COLOR_EDIT] = nk_rgba(150, 150, 150, 255);
-	table[NK_COLOR_EDIT_CURSOR] = nk_rgba(0, 0, 0, 255);
-	table[NK_COLOR_COMBO] = nk_rgba(175, 175, 175, 255);
-	table[NK_COLOR_CHART] = nk_rgba(160, 160, 160, 255);
-	table[NK_COLOR_CHART_COLOR] = nk_rgba(45, 45, 45, 255);
-	table[NK_COLOR_CHART_COLOR_HIGHLIGHT] = nk_rgba(255, 0, 0, 255);
-	table[NK_COLOR_SCROLLBAR] = nk_rgba(180, 180, 180, 255);
-	table[NK_COLOR_SCROLLBAR_CURSOR] = nk_rgba(140, 140, 140, 255);
-	table[NK_COLOR_SCROLLBAR_CURSOR_HOVER] = nk_rgba(150, 150, 150, 255);
-	table[NK_COLOR_SCROLLBAR_CURSOR_ACTIVE] = nk_rgba(160, 160, 160, 255);
-	table[NK_COLOR_TAB_HEADER] = nk_rgba(180, 180, 180, 255);
-	nk_style_from_table(ctx, table);
+	ImVec4* colors = ImGui::GetStyle().Colors;
+	colors[ImGuiCol_Text] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+	colors[ImGuiCol_TextDisabled] = ImVec4(0.40f, 0.40f, 0.40f, 1.00f);
+	colors[ImGuiCol_WindowBg] = ImVec4(0.06f, 0.06f, 0.06f, 0.94f);
+	colors[ImGuiCol_Border] = ImVec4(1.00f, 1.00f, 1.00f, 0.19f);
+	colors[ImGuiCol_ChildWindowBg] = ImVec4(1.00f, 1.00f, 1.00f, 0.00f);
+	colors[ImGuiCol_PopupBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.94f);
+	colors[ImGuiCol_FrameBg] = ImVec4(0.16f, 0.29f, 0.48f, 0.54f);
+	colors[ImGuiCol_FrameBgHovered] = ImVec4(0.26f, 0.59f, 0.98f, 0.40f);
+	colors[ImGuiCol_FrameBgActive] = ImVec4(0.26f, 0.59f, 0.98f, 0.67f);
+	colors[ImGuiCol_TitleBg] = ImVec4(0.04f, 0.04f, 0.04f, 1.00f);
+	colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.00f, 0.00f, 0.00f, 0.51f);
+	colors[ImGuiCol_TitleBgActive] = ImVec4(0.18f, 0.18f, 0.18f, 1.00f);
+	colors[ImGuiCol_MenuBarBg] = ImVec4(0.14f, 0.14f, 0.14f, 1.00f);
+	colors[ImGuiCol_ScrollbarBg] = ImVec4(0.02f, 0.02f, 0.02f, 0.53f);
+	colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.31f, 0.31f, 0.31f, 1.00f);
+	colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.41f, 0.41f, 0.41f, 1.00f);
+	colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.51f, 0.51f, 0.51f, 1.00f);
+	colors[ImGuiCol_ComboBg] = ImVec4(0.14f, 0.14f, 0.14f, 0.99f);
+	colors[ImGuiCol_CheckMark] = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
+	colors[ImGuiCol_SliderGrab] = ImVec4(0.24f, 0.52f, 0.88f, 1.00f);
+	colors[ImGuiCol_SliderGrabActive] = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
+	colors[ImGuiCol_Button] = ImVec4(0.26f, 0.59f, 0.98f, 0.40f);
+	colors[ImGuiCol_ButtonHovered] = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
+	colors[ImGuiCol_ButtonActive] = ImVec4(0.06f, 0.53f, 0.98f, 1.00f);
+	colors[ImGuiCol_Header] = ImVec4(0.26f, 0.59f, 0.98f, 0.31f);
+	colors[ImGuiCol_HeaderHovered] = ImVec4(0.26f, 0.59f, 0.98f, 0.80f);
+	colors[ImGuiCol_HeaderActive] = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
+	colors[ImGuiCol_Separator] = colors[ImGuiCol_Border];
+	colors[ImGuiCol_SeparatorHovered] = ImVec4(0.26f, 0.59f, 0.98f, 0.78f);
+	colors[ImGuiCol_SeparatorActive] = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
+	colors[ImGuiCol_ResizeGrip] = ImVec4(0.26f, 0.59f, 0.98f, 0.25f);
+	colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.26f, 0.59f, 0.98f, 0.67f);
+	colors[ImGuiCol_ResizeGripActive] = ImVec4(0.26f, 0.59f, 0.98f, 0.95f);
+	colors[ImGuiCol_CloseButton] = ImVec4(0.41f, 0.41f, 0.41f, 0.50f);
+	colors[ImGuiCol_CloseButtonHovered] = ImVec4(0.98f, 0.39f, 0.36f, 1.00f);
+	colors[ImGuiCol_CloseButtonActive] = ImVec4(0.98f, 0.39f, 0.36f, 1.00f);
+	colors[ImGuiCol_PlotLines] = ImVec4(0.61f, 0.61f, 0.61f, 1.00f);
+	colors[ImGuiCol_PlotLinesHovered] = ImVec4(1.00f, 0.43f, 0.35f, 1.00f);
+	colors[ImGuiCol_PlotHistogram] = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
+	colors[ImGuiCol_PlotHistogramHovered] = ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
+	colors[ImGuiCol_TextSelectedBg] = ImVec4(0.26f, 0.59f, 0.98f, 0.35f);
+	colors[ImGuiCol_ModalWindowDarkening] = ImVec4(0.80f, 0.80f, 0.80f, 0.35f);
+#ifdef IMGUI_HAS_NAV
+	colors[ImGuiCol_NavHighlight] = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
+	colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1.00f, 1.00f, 1.00f, 0.12f);
+#endif
 
 	Camera camera;
 	camera.type = Camera::FLYCAM;
@@ -273,6 +291,7 @@ int main(int argc, char **argv) {
 
 	bool windowOpen = true;
 	while (windowOpen) {
+		ImGui_ImplSdlGL3_NewFrame(window);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		glBindVertexArray(VertexArrayID);
 		glEnable(GL_DEPTH_TEST);
@@ -292,12 +311,10 @@ int main(int argc, char **argv) {
 		renderInterface.VP = vp;
 		renderInterface.windowSize = windowSize;
 
-		//dd::xzSquareGrid(-50.0f, 50.0f, 0.f, 1.f, white);
-
-		/*ImGui::SetNextWindowPos(ImVec2(5.f, 5.f));
+		ImGui::SetNextWindowPos(ImVec2(5.f, 5.f));
 		ImGui::Begin("##Top", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
 		ImGui::DragFloat3("##Camera", (float*)&camera.location);
-		ImGui::End();*/
+		ImGui::End();
 
 		/*if (nk_begin(ctx, "Dare", nk_rect(0, 0, 450, 500), 0)) {
 			nk_layout_row_dynamic(ctx, 20, 1);
@@ -314,29 +331,25 @@ int main(int argc, char **argv) {
 		nk_end(ctx);*/
 
 		//Draw Layer Window
-		if (nk_begin(ctx, "Layers", nk_rect(0, 0, 450, windowSize.y), NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_SCALABLE | NK_WINDOW_CLOSABLE | NK_WINDOW_MINIMIZABLE | NK_WINDOW_TITLE)) {
+		ImGui::SetNextWindowSize(ImVec2(600, windowSize.y), ImGuiCond_FirstUseEver);
+		if (ImGui::Begin("Layers")) {
 
 			static char searchWluBuffer[255] = { 0 };
-			nk_layout_row_dynamic(ctx, 20, 1);
-			nk_edit_string_zero_terminated(ctx, NK_EDIT_FIELD, searchWluBuffer, sizeof(searchWluBuffer), nk_filter_default);
+			ImGui::InputText("Search", searchWluBuffer, sizeof(searchWluBuffer));
 
-			nk_layout_row_dynamic(ctx, 100, 1);
-			if (nk_group_begin(ctx, "WLUs", NK_WINDOW_BORDER)) {
-				nk_layout_row_dynamic(ctx, 10, 1);
-				for (auto it = wlus.begin(); it != wlus.end(); ++it) {
-					if (nk_strmatch_fuzzy_string(it->first.c_str(), searchWluBuffer, NULL)) {
-						int selected = wlu.origFilename == it->second.origFilename;
-						if (nk_selectable_label(ctx, it->first.c_str(), NK_TEXT_LEFT, &selected)) {
-							wlu = it->second;
-							wlu.shortName = it->first;
-						}
+			ImGui::ListBoxHeader("##WLU List");
+			for (auto it = wlus.begin(); it != wlus.end(); ++it) {
+				if (it->first.find(searchWluBuffer) != std::string::npos) {
+					int selected = wlu.origFilename == it->second.origFilename;
+					if (ImGui::Selectable(it->first.c_str())) {
+						wlu = it->second;
+						wlu.shortName = it->first;
 					}
 				}
-				nk_group_end(ctx);
 			}
+			ImGui::ListBoxFooter();
 
-			nk_layout_row_dynamic(ctx, 20, 5);
-			if (nk_button_label(ctx, "Save")) {
+			if (ImGui::Button("Save")) {
 				std::string backup = wlu.origFilename;
 				backup += ".bak";
 				CopyFileA(wlu.origFilename.c_str(), backup.c_str(), TRUE);
@@ -345,64 +358,45 @@ int main(int argc, char **argv) {
 				wlu.serialize(fp);
 				fclose(fp);
 			}
-			if (nk_button_label(ctx, "Reload")) {
+			ImGui::SameLine();
+			if (ImGui::Button("Reload")) {
 				assert(wlu.open(wlu.origFilename.c_str()));
 			}
-			if (nk_button_label(ctx, "Restore")) {
+			ImGui::SameLine();
+			if (ImGui::Button("Restore")) {
 				std::string backup = wlu.origFilename;
 				backup += ".bak";
 				CopyFileA(backup.c_str(), wlu.origFilename.c_str(), FALSE);
 				wlu.open(wlu.origFilename.c_str());
 			}
+			ImGui::SameLine();
 			std::string xmlFileName = wlu.shortName + ".xml";
-			if (nk_button_label(ctx, "XML")) {
+			if (ImGui::Button("XML")) {
 				FILE *fp = fopen(xmlFileName.c_str(), "wb");
 				tinyxml2::XMLPrinter printer(fp);
 				wlu.root.serializeXML(printer);
 				fclose(fp);
 			}
-			if (nk_button_label(ctx, "Import XML")) {
+			ImGui::SameLine();
+			if (ImGui::Button("Import XML")) {
 				tinyxml2::XMLDocument doc;
 				doc.LoadFile(xmlFileName.c_str());
 				wlu.root.deserializeXML(doc.RootElement());
 			}
-			nk_layout_row_dynamic(ctx, 20, 1);
+			ImGui::Separator();
 
 			Node *Entities = wlu.root.findFirstChild("Entities");
 			if (!Entities) continue;
 
 			for (auto &entity : Entities->children) {
 				bool needsCross = true;
-
-				char imguiHash[18];
-				snprintf(imguiHash, sizeof(imguiHash), "%p", &entity);
+				char imguiHash[512];
 
 				Attribute *hidName = entity.getAttribute("hidName");
-				assert(hidName);
-
-				Attribute *disEntityId = entity.getAttribute("disEntityId");
-				assert(disEntityId);
-				char disEntityIdS[26];
-				snprintf(disEntityIdS, sizeof(disEntityIdS), "%llu", *(uint64_t*)disEntityId->buffer.data());
-
 				Attribute *hidPos = entity.getAttribute("hidPos");
-				if (!hidPos) continue;
-				Attribute *hidPos_precise = entity.getAttribute("hidPos_precise");
-				assert(hidPos_precise);
-
 				vec3 pos = swapYZ(*(vec3*)hidPos->buffer.data());
 
-				if (nk_button_label(ctx, (char*)hidName->buffer.data())) {
-					camera.phi = 2.43159294f;
-					camera.theta = 3.36464548f;
-					camera.location = pos + vec3(1.f, 1.f, 0.f);
-				}
-				if (nk_button_label(ctx, disEntityIdS)) {
-					SDL_SetClipboardText(disEntityIdS);
-				}
-
-				//ImGui::DragFloat3((std::string("hidPos##") + imguiHash).c_str(), (float*)hidPos->buffer.data());
-
+				//
 				Node *hidBBox = entity.findFirstChild("hidBBox");
 
 				Node *Components = entity.findFirstChild("Components");
@@ -413,20 +407,12 @@ int main(int argc, char **argv) {
 					Attribute* XBG = CGraphicComponent->getAttribute(0x3182766C);
 
 					if (XBG && XBG->buffer.size() > 5) {
-						nk_label(ctx, (const char*)XBG->buffer.data(), NK_TEXT_LEFT);
+						ImGui::Text("%s", XBG->buffer.data());
 						auto &model = loadXBG((char*)XBG->buffer.data());
 						renderInterface.model.use();
 						mat4 MVP = vp * MATtranslate(mat4(), pos);
 						glUniformMatrix4fv(renderInterface.model.uniforms["MVP"], 1, GL_FALSE, &MVP[0][0]);
 						model.draw();
-					}
-				}
-
-				Attribute *ArchetypeGuid = entity.getAttribute("ArchetypeGuid");
-				if (ArchetypeGuid) {
-					bool selected;
-					if (nk_button_label(ctx, (char*)ArchetypeGuid->buffer.data())) {
-						SDL_SetClipboardText((char*)ArchetypeGuid->buffer.data());
 					}
 				}
 
@@ -461,19 +447,70 @@ int main(int argc, char **argv) {
 					}
 				}
 
-				//.batch is source files for .cbatch
-				/*Attribute* ExportPath = entity.getAttribute("ExportPath");
-				if (ExportPath) {
-					ImGui::Text("%s", (char*)ExportPath->buffer.data());
-				}*/
+				//Iterate through Entity Attributes
+				if (ImGui::TreeNode((char*)hidName->buffer.data())) {
+					snprintf(imguiHash, sizeof(imguiHash), "Goto##%p", &entity);
+					if (ImGui::Button(imguiHash)) {
+						camera.phi = 2.43159294f;
+						camera.theta = 3.36464548f;
+						camera.location = pos + vec3(1.f, 1.f, 0.f);
+					}
+
+					for (Attribute &attr : entity.attributes) {
+						char name[1024];
+						snprintf(name, sizeof(name), "%s##%p", Hash::instance().getReverseHash(attr.hash).c_str(), &attr);
+
+						Hash::Types type = Hash::instance().getHashType(attr.hash);
+
+						switch (type) {
+							case Hash::STRING:
+							{
+								char temp[1024] = { '\0' };
+								strncpy(temp, (char*)attr.buffer.data(), sizeof(temp));
+								if (ImGui::InputText(name, temp, sizeof(temp))) {
+									attr.buffer.resize(strlen(temp) + 1);
+									strcpy((char*)attr.buffer.data(), temp);
+								}
+								break;
+							}
+							case Hash::FLOAT:
+								ImGui::InputFloat(name, (float*)attr.buffer.data());
+								break;
+							case Hash::VEC2:
+								ImGui::InputFloat2(name, (float*)attr.buffer.data());
+								break;
+							case Hash::VEC3:
+								ImGui::InputFloat3(name, (float*)attr.buffer.data());
+								break;
+							case Hash::VEC4:
+								ImGui::InputFloat4(name, (float*)attr.buffer.data());
+								break;
+							default:
+								ImGui::LabelText(name, "BinHex %u", attr.buffer.size());
+								break;
+						}
+					}
+
+					//Handle Components
+					if (PatrolDescription && ImGui::TreeNode("PatrolDescription")) {
+						Node* PatrolPointList = PatrolDescription->findFirstChild("PatrolPointList");
+						for (Node &PatrolPoint : PatrolPointList->children) {
+							ImGui::InputFloat3("##a", (float*)PatrolPoint.getAttribute("vecPos")->buffer.data());
+						}
+						ImGui::TreePop();
+					}
+
+					ImGui::TreePop();
+				}
 
 				if (pos.distance(camera.location) < textDrawDistance)
 					dd::projectedText((char*)hidName->buffer.data(), &pos.x, white, &vp[0][0], 0, 0, windowSize.x, windowSize.y, 0.5f);
 				if (needsCross)
 					dd::cross(&pos.x, 0.25f);
+
 			}
+			ImGui::End();
 		}
-		nk_end(ctx);
 
 		//Render Buildings
 		if (buildingEntities.empty())
@@ -506,12 +543,12 @@ int main(int argc, char **argv) {
 
 		glBindVertexArray(VertexArrayID);
 		dd::flush(0);
-		nk_sdl_render(NK_ANTI_ALIASING_ON, 4 * 1024 * 1024, 2 * 1024 * 1024);
+		ImGui::Render();
 		SDL_GL_SwapWindow(window);
 
-		nk_input_begin(ctx);
 		SDL_Event event;
 		while (SDL_PollEvent(&event)) {
+			ImGui_ImplSdlGL3_ProcessEvent(&event);
 			switch (event.type) {
 				case SDL_WINDOWEVENT:
 					if (event.window.event == SDL_WINDOWEVENT_CLOSE) {
@@ -520,10 +557,7 @@ int main(int argc, char **argv) {
 					}
 					break;
 			}
-
-			nk_sdl_handle_event(&event);
 		}
-		nk_input_end(ctx);
 	}
 
 	return 0;

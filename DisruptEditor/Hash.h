@@ -1,6 +1,6 @@
 #pragma once
 
-#include <map>
+#include <unordered_map>
 #include <string>
 
 class Hash {
@@ -10,7 +10,14 @@ public:
 	static Hash& instance();
 	std::string getReverseHash(uint32_t hash);
 	uint32_t getHash(const char* str);
+
+	enum Types { STRING, STRINGHASH, BINHEX, BOOL, FLOAT, INT16, INT32, UINT8, UINT16, UINT32, UINT64, VEC2, VEC3, VEC4 };
+	Types getHashType(const char* str);
+	Types getHashType(uint32_t hash);
 private:
-	std::map<uint32_t, std::string> reverseHash;
+	void handleFile(const char* file);
+	void handleTypes(const char* file);
+	std::unordered_map<uint32_t, std::string> reverseHash;
+	std::unordered_map<uint32_t, Types> hashTypes;
 };
 

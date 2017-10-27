@@ -87,6 +87,15 @@
     <ClCompile Include="nv_dds.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="imgui_impl_sdl_gl3.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui_draw.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stb_rect_pack.h">
@@ -167,12 +176,6 @@
     <ClInclude Include="noc_file_dialog.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="nuklear_sdl_gl3.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="nuklear.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="spkFile.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -204,6 +207,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="dr_wav.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui_impl_sdl_gl3.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

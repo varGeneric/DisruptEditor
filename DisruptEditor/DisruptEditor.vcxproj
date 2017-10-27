@@ -107,7 +107,7 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <AdditionalDependencies>../lib/SDL2.lib;../lib/SDL2main.lib;../lib/libvorbisfile_static.lib;../lib/libvorbis_static.lib;../lib/libogg_static.lib;Shlwapi.lib;Winmm.lib;Ws2_32.lib;Version.lib;Imm32.lib;XInput.lib;XAudio2.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -143,7 +143,7 @@
       <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>../lib/SDL2.lib;../lib/SDL2main.lib;../lib/libvorbisfile_static.lib;../lib/libvorbis_static.lib;../lib/libogg_static.lib;Shlwapi.lib;Winmm.lib;Ws2_32.lib;Version.lib;Imm32.lib;XInput.lib;XAudio2.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -158,6 +158,9 @@
     <ClCompile Include="DominoBox.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="Hash.cpp" />
+    <ClCompile Include="imgui.cpp" />
+    <ClCompile Include="imgui_draw.cpp" />
+    <ClCompile Include="imgui_impl_sdl_gl3.cpp" />
     <ClCompile Include="Implementation.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="materialFile.cpp" />
@@ -187,6 +190,7 @@
     <ClInclude Include="glad.h" />
     <ClInclude Include="GLHelper.h" />
     <ClInclude Include="Hash.h" />
+    <ClInclude Include="imgui_impl_sdl_gl3.h" />
     <ClInclude Include="Implementation.h" />
     <ClInclude Include="ini.h" />
     <ClInclude Include="khrplatform.h" />
@@ -202,8 +206,6 @@
     <ClInclude Include="Math\Vector4.h" />
     <ClInclude Include="NBCF.h" />
     <ClInclude Include="noc_file_dialog.h" />
-    <ClInclude Include="nuklear.h" />
-    <ClInclude Include="nuklear_sdl_gl3.h" />
     <ClInclude Include="nv_dds.h" />
     <ClInclude Include="sbaoFile.h" />
     <ClInclude Include="spkFile.h" />

@@ -122,5 +122,5 @@ void wluFile::serialize(FILE *fp) {
 	fwrite(&wluhead, sizeof(wluhead), 1, fp);
 
 	fseek(fp, 0, SEEK_END);
-	writepad(fp, 4);
+	//writepad(fp, 4);
 }
