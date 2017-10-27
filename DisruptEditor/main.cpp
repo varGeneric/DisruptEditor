@@ -64,7 +64,12 @@ void reloadBuildingEntities() {
 }
 
 int main(int argc, char **argv) {
+	freopen("debug.log", "wb", stdout);
 	SDL_Init(SDL_INIT_EVERYTHING);
+
+	/*sbaoFile sb;
+	sb.open("D:\\Desktop\\bin\\default\\000fac53.sbao");
+	return 0;*/
 
 	//Setup INI
 	std::string wludir;

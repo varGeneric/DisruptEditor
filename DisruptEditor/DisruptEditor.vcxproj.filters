@@ -203,6 +203,9 @@
     <ClInclude Include="nv_dds.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="dr_wav.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Res.rc">

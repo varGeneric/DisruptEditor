@@ -1,4 +1,6 @@
 *.xml.data.fcb.xml
+*.log
+*.ogg
 imgui.ini
 
 ## Ignore Visual Studio temporary files, build results, and

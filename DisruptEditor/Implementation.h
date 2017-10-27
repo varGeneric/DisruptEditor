@@ -29,3 +29,4 @@
 #include <Shlwapi.h>
 
 #include "ini.h"
+#include "dr_wav.h"
