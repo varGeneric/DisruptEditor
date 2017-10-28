@@ -33,7 +33,7 @@ struct roadHeader {
 class wluFile {
 public:
 	wluFile() {};
-	bool open(const char* filename);
+	bool open(std::string filename);
 
 	void handleHeaders(FILE *fp, size_t size);
 
@@ -42,6 +42,7 @@ public:
 	void draw();
 	void drawImGui();
 
+	bool bailOut;
 	wluHeader wluhead;
 	Node root;
 	std::string origFilename;

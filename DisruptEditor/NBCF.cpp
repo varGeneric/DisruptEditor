@@ -99,17 +99,6 @@ void Attribute::deserialize(FILE * fp, bool &bailOut) {
 		}
 		buffer.resize(c);
 		fread(buffer.data(), 1, c, fp);
-		/*if (this.Type == DataType.BinHex)
-		return;
-		int attributeTypeSize = Utils.GetAttributeTypeSize(this.Type);
-		if (attributeTypeSize == -1)
-		return;
-		if (this.Type == DataType.StringHash) {
-		if ((count > 1?1:(count != 1?0:((int)this.Buffer[0] == 0?1:0))) == 0 || count == 4)
-		return;
-		this.Type = DataType.String;
-		} else if (count > attributeTypeSize)
-		throw new InvalidOperationException(string.Format("Data type '{0}' buffer has overflowed (size: 0x{1:X})", (object)this.Type.ToString(), (object)count));*/
 	}
 }
 
@@ -255,6 +244,7 @@ void Node::deserialize(FILE* fp, bool &bailOut) {
 				printf("Warning! This file could not be read!\n");
 				bailOut = true;
 				return;
+				fseek(fp, num2, SEEK_SET);
 			}
 		}
 
@@ -296,12 +286,10 @@ void Node::serialize(FILE * fp) {
 
 	//Calc Attribute Size
 	uint16_t num1 = 0;
-	if (!attributes.empty()) {
-		if (attributes.size() > 254)
-			num1 += 4;
-		else
-			num1 += 1;
-	}
+	if (attributes.size() > 254)
+		num1 += 4;
+	else
+		num1 += 1;
 	for (auto &attribute : attributes) {
 		num1 += sizeof(attribute.hash);
 		num1 += attribute.buffer.size();
@@ -313,9 +301,7 @@ void Node::serialize(FILE * fp) {
 	fwrite(&num1, sizeof(num1), 1, fp);
 
 	//Write Attribute Hashes
-	if (!attributes.empty()) {
-		writeSize(fp, attributes.size());
-	}
+	writeSize(fp, attributes.size());
 	for (auto &attribute : attributes) {
 		fwrite(&attribute.hash, sizeof(attribute.hash), 1, fp);
 	}

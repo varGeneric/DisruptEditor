@@ -27,9 +27,9 @@ static inline void writepad(FILE *fp, long pad) {
 	fwrite(zero, 1, seek, fp);
 }
 
-bool wluFile::open(const char *filename) {
-	origFilename.assign(filename);
-	FILE *fp = fopen(filename, "rb");
+bool wluFile::open(std::string filename) {
+	origFilename = filename;
+	FILE *fp = fopen(filename.c_str(), "rb");
 	if (!fp) {
 		return false;
 	}
@@ -55,7 +55,7 @@ bool wluFile::open(const char *filename) {
 	//2296 size
 	//2265 wlu base size + 16
 
-	bool bailOut = false;
+	bailOut = false;
 	root.deserialize(fp, bailOut);
 
 	fseek(fp, wluhead.base.size + sizeof(wluhead.base), SEEK_SET);
@@ -136,9 +136,10 @@ void wluFile::drawImGui() {
 		vec3 pos = swapYZ(*(vec3*)hidPos->buffer.data());
 
 		//Iterate through Entity Attributes
-		if (ImGui::TreeNode((char*)hidName->buffer.data())) {
+		snprintf(imguiHash, sizeof(imguiHash), "%s##%p", hidName->buffer.data(), &entity);
+		if (ImGui::TreeNode(imguiHash)) {
 			if (ImGui::IsItemHovered()) {
-				dd::sphere((float*)&pos, red, 5.f);
+				dd::sphere((float*)&pos, red, 5.f, 0, false);
 			}
 
 			for (Attribute &attr : entity.attributes) {
@@ -150,7 +151,7 @@ void wluFile::drawImGui() {
 				switch (type) {
 					case Hash::STRING:
 					{
-						char temp[1024] = { '\0' };
+						char temp[1024];
 						strncpy(temp, (char*)attr.buffer.data(), sizeof(temp));
 						if (ImGui::InputText(name, temp, sizeof(temp))) {
 							attr.buffer.resize(strlen(temp) + 1);
@@ -191,7 +192,7 @@ void wluFile::drawImGui() {
 
 			ImGui::TreePop();
 		} else if (ImGui::IsItemHovered()) {
-			dd::sphere((float*)&pos, red, 5.f);
+			dd::sphere((float*)&pos, red, 5.f, 0, false);
 		}
 	}
 }

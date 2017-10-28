@@ -15,6 +15,7 @@
 #include "Hash.h"
 #include "imgui.h"
 #include "imgui_impl_sdl_gl3.h"
+#include <future>
 
 struct BuildingEntity {
 	std::string wlu;
@@ -208,6 +209,8 @@ int main(int argc, char **argv) {
 
 	//DominoBox db("D:\\Desktop\\bin\\dlc_solo\\domino\\user\\windycity\\tests\\ai_carfleeing_patterns\\ai_carfleeing_patterns.main.lua");
 
+	std::vector< std::future<bool> > tasks;
+
 	tfDIR dir;
 	tfDirOpen(&dir, (wludir + std::string("/worlds/windy_city/generated/wlu")).c_str());
 	while (dir.has_next) {
@@ -216,17 +219,20 @@ int main(int argc, char **argv) {
 
 		if (!file.is_dir && strcmp(file.ext, "xml.data.fcb") == 0) {
 			printf("Loading %s\n", file.name);
-
-			if (!wlus[file.name].open(file.path)) {
-				wlus.erase(file.name);
-			} else {
-				wlus[file.name].shortName = file.name;
-			}
+			wlus[file.name].shortName = file.name;
+			//tasks.push_back(std::async(std::launch::async, &wluFile::open, &wlus[file.name], file.path));
+			wlus[file.name].open(file.path);
 		}
 
 		tfDirNext(&dir);
 	}
 	tfDirClose(&dir);
+
+	//Wait for tasks
+	/*for (auto &it : tasks) {
+		it.wait();
+	}
+	tasks.clear();*/
 
 	//Scan Materials
 	/*tfDirOpen(&dir, "D:/Desktop/bin/windy_city/graphics/_materials");
@@ -415,6 +421,8 @@ int main(int argc, char **argv) {
 				doc.LoadFile(xmlFileName.c_str());
 				wlu.root.deserializeXML(doc.RootElement());
 			}
+			if (wlu.bailOut)
+				ImGui::TextColored(ImVec4(1.f, 0.f, 0.f, 1.f), "This file could not be completely read, do not save it!");
 			ImGui::Separator();
 
 			wlu.drawImGui();
