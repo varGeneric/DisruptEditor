@@ -18,7 +18,7 @@ public:
 		fread(&hash, sizeof(hash), 1, fp);
 	};
 	void deserializeA(FILE *fp);
-	void deserialize(FILE *fp);
+	void deserialize(FILE *fp, bool &bailOut);
 	void serialize(FILE *fp);
 	void deserializeXML(const tinyxml2::XMLAttribute *attr);
 	void serializeXML(tinyxml2::XMLPrinter &printer);
@@ -33,7 +33,7 @@ public:
 class Node {
 public:
 	Node() {};
-	void deserialize(FILE *fp);
+	void deserialize(FILE *fp, bool &bailOut);
 	void deserializeA(FILE *fp);
 	void serialize(FILE *fp);
 	void deserializeXML(const tinyxml2::XMLElement *node);

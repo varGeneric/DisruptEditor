@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Implementation.h"
+#include "GLHelper.h"
+#include "Math/LinMath.h"
 
 class RenderInterface : public dd::RenderInterface {
 public:

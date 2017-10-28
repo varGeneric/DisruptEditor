@@ -6,21 +6,15 @@
 #include "spkFile.h"
 #include "sbaoFile.h"
 #include "cseqFile.h"
+#include "wluFile.h"
+#include "xbgFile.h"
 #include "materialFile.h"
+#include "Camera.h"
+#include <map>
 #include <unordered_map>
 #include "Hash.h"
 #include "imgui.h"
 #include "imgui_impl_sdl_gl3.h"
-
-const ddVec3 red = { 1.0f, 0.0f, 0.0f };
-const ddVec3 blue = { 0.0f, 0.0f, 1.0f };
-const ddVec3 cyan = { 0.0f, 1.0f, 1.0f };
-const ddVec3 magenta = { 1.0f, 0.2f, 0.8f };
-const ddVec3 yellow = { 1.0f, 1.0f, 0.0f };
-const ddVec3 orange = { 1.0f, 0.5f, 0.0f };
-const ddVec3 white = { 1.0f, 1.0f, 1.0f };
-const ddVec3 black = { 0.f, 0.f, 0.f };
-const ddVec3 green = { 0.0f, 0.6f, 0.0f };
 
 struct BuildingEntity {
 	std::string wlu;
@@ -67,7 +61,7 @@ void reloadBuildingEntities() {
 }
 
 int main(int argc, char **argv) {
-	//freopen("debug.log", "wb", stdout);
+	freopen("debug.log", "wb", stdout);
 	SDL_Init(SDL_INIT_EVERYTHING);
 
 	/*sbaoFile sb;
@@ -77,12 +71,15 @@ int main(int argc, char **argv) {
 	//Setup INI
 	std::string wludir;
 	float textDrawDistance = 5.f;
+	bool drawBuildings = true;
+	std::unordered_map<std::string, bool> windows;
 	{
 		ini_t* ini = ini_load(loadFile("settings.ini").c_str(), NULL);
 
 		int settings_section = ini_find_section(ini, "settings", 0);
 		wludir = ini_property_value(ini, settings_section, ini_find_property(ini, settings_section, "wludir", 0));
 		textDrawDistance = atof(ini_property_value(ini, settings_section, ini_find_property(ini, settings_section, "textDrawDistance", 0)));
+		drawBuildings = atoi(ini_property_value(ini, settings_section, ini_find_property(ini, settings_section, "displayBuildings", 0)));
 
 		//Pack Files
 		int pack_section = ini_find_section(ini, "pack", 0);
@@ -222,6 +219,8 @@ int main(int argc, char **argv) {
 
 			if (!wlus[file.name].open(file.path)) {
 				wlus.erase(file.name);
+			} else {
+				wlus[file.name].shortName = file.name;
 			}
 		}
 
@@ -286,8 +285,7 @@ int main(int argc, char **argv) {
 	tfDirClose(&dir);*/
 
 	Uint32 ticks = SDL_GetTicks();
-	wluFile &wlu = wlus.begin()->second;
-	wlu.shortName = wlus.begin()->first;
+	std::string currentWlu = wlus.begin()->first;
 
 	bool windowOpen = true;
 	while (windowOpen) {
@@ -314,40 +312,72 @@ int main(int argc, char **argv) {
 		ImGui::SetNextWindowPos(ImVec2(5.f, 5.f));
 		ImGui::Begin("##Top", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
 		ImGui::DragFloat3("##Camera", (float*)&camera.location);
+		if (ImGui::BeginMenu("Assets")) {
+			ImGui::Text("Coming soon!");
+			ImGui::EndMenu();
+		}
+		if (ImGui::BeginMenu("Batch")) {
+			if (ImGui::MenuItem("Export Wlu XML")) {
+				for (auto it = wlus.begin(); it != wlus.end(); ++it) {
+				}
+			}
+			ImGui::EndMenu();
+		}
+		if (ImGui::BeginMenu("Tools")) {
+			if (ImGui::MenuItem("WLU Editor")) {
+				windows["Layers"] = true;
+			}
+			if (ImGui::MenuItem("DARE Converter")) {
+				ImGui::SetTooltip("Coming soon!");
+			}
+			if (ImGui::MenuItem("Domino Editor")) {
+				ImGui::SetTooltip("Coming soon!");
+			}
+			if (ImGui::MenuItem("CSequence Editor")) {
+				ImGui::SetTooltip("Coming soon!");
+			}
+			ImGui::EndMenu();
+		}
+		if (ImGui::BeginMenu("Settings")) {
+			ImGui::DragFloat("Camera Fly Multiplier", &camera.flyMultiplier, 0.02f, 1.f, 10.f);
+			ImGui::DragFloat("Label Draw Distance", &textDrawDistance, 0.05f, 0.f, 4096.f);
+			ImGui::Checkbox("Draw Buildings", &drawBuildings);
+			ImGui::EndMenu();
+		}
 		ImGui::End();
-
-		/*if (nk_begin(ctx, "Dare", nk_rect(0, 0, 450, 500), 0)) {
-			nk_layout_row_dynamic(ctx, 20, 1);
-			if (nk_button_label(ctx, "Convert OGG to SBAO")) {
+		
+		if (windows["DARE"] && ImGui::Begin("DARE Converter", &windows["DARE"], 0)) {
+			if (ImGui::Button("Convert OGG to SBAO")) {
 				const char *src = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "ogg\0*.ogg\0", NULL, NULL);
 				const char *dst = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "sbao\0*.sbao\0", NULL, "00000000");
 			}
+			ImGui::End();
 		}
-		nk_end(ctx);
 
-		if (nk_begin(ctx, "Scripts", nk_rect(0, 0, 450, 500), 0)) {
-			nk_layout_row_dynamic(ctx, 20, 1);
+		if (windows["Domino"] && ImGui::Begin("Domino!", &windows["Domino"], 0)) {
+			ImGui::End();
 		}
-		nk_end(ctx);*/
 
 		//Draw Layer Window
 		ImGui::SetNextWindowSize(ImVec2(600, windowSize.y), ImGuiCond_FirstUseEver);
 		if (ImGui::Begin("Layers")) {
-
+			//Wlu List
+			ImGui::PushItemWidth(-1.f);
 			static char searchWluBuffer[255] = { 0 };
-			ImGui::InputText("Search", searchWluBuffer, sizeof(searchWluBuffer));
+			ImGui::InputText("##Search", searchWluBuffer, sizeof(searchWluBuffer));
 
 			ImGui::ListBoxHeader("##WLU List");
 			for (auto it = wlus.begin(); it != wlus.end(); ++it) {
 				if (it->first.find(searchWluBuffer) != std::string::npos) {
-					int selected = wlu.origFilename == it->second.origFilename;
-					if (ImGui::Selectable(it->first.c_str())) {
-						wlu = it->second;
-						wlu.shortName = it->first;
-					}
+					bool selected = currentWlu == it->first;
+					if (ImGui::Selectable(it->first.c_str(), selected))
+						currentWlu = it->first;
 				}
 			}
 			ImGui::ListBoxFooter();
+			ImGui::PopItemWidth();
+
+			wluFile &wlu = wlus[currentWlu];
 
 			if (ImGui::Button("Save")) {
 				std::string backup = wlu.origFilename;
@@ -385,12 +415,13 @@ int main(int argc, char **argv) {
 			}
 			ImGui::Separator();
 
+			wlu.drawImGui();
+
 			Node *Entities = wlu.root.findFirstChild("Entities");
 			if (!Entities) continue;
 
 			for (auto &entity : Entities->children) {
 				bool needsCross = true;
-				char imguiHash[512];
 
 				Attribute *hidName = entity.getAttribute("hidName");
 				Attribute *hidPos = entity.getAttribute("hidPos");
@@ -407,7 +438,6 @@ int main(int argc, char **argv) {
 					Attribute* XBG = CGraphicComponent->getAttribute(0x3182766C);
 
 					if (XBG && XBG->buffer.size() > 5) {
-						ImGui::Text("%s", XBG->buffer.data());
 						auto &model = loadXBG((char*)XBG->buffer.data());
 						renderInterface.model.use();
 						mat4 MVP = vp * MATtranslate(mat4(), pos);
@@ -447,62 +477,6 @@ int main(int argc, char **argv) {
 					}
 				}
 
-				//Iterate through Entity Attributes
-				if (ImGui::TreeNode((char*)hidName->buffer.data())) {
-					snprintf(imguiHash, sizeof(imguiHash), "Goto##%p", &entity);
-					if (ImGui::Button(imguiHash)) {
-						camera.phi = 2.43159294f;
-						camera.theta = 3.36464548f;
-						camera.location = pos + vec3(1.f, 1.f, 0.f);
-					}
-
-					for (Attribute &attr : entity.attributes) {
-						char name[1024];
-						snprintf(name, sizeof(name), "%s##%p", Hash::instance().getReverseHash(attr.hash).c_str(), &attr);
-
-						Hash::Types type = Hash::instance().getHashType(attr.hash);
-
-						switch (type) {
-							case Hash::STRING:
-							{
-								char temp[1024] = { '\0' };
-								strncpy(temp, (char*)attr.buffer.data(), sizeof(temp));
-								if (ImGui::InputText(name, temp, sizeof(temp))) {
-									attr.buffer.resize(strlen(temp) + 1);
-									strcpy((char*)attr.buffer.data(), temp);
-								}
-								break;
-							}
-							case Hash::FLOAT:
-								ImGui::InputFloat(name, (float*)attr.buffer.data());
-								break;
-							case Hash::VEC2:
-								ImGui::InputFloat2(name, (float*)attr.buffer.data());
-								break;
-							case Hash::VEC3:
-								ImGui::InputFloat3(name, (float*)attr.buffer.data());
-								break;
-							case Hash::VEC4:
-								ImGui::InputFloat4(name, (float*)attr.buffer.data());
-								break;
-							default:
-								ImGui::LabelText(name, "BinHex %u", attr.buffer.size());
-								break;
-						}
-					}
-
-					//Handle Components
-					if (PatrolDescription && ImGui::TreeNode("PatrolDescription")) {
-						Node* PatrolPointList = PatrolDescription->findFirstChild("PatrolPointList");
-						for (Node &PatrolPoint : PatrolPointList->children) {
-							ImGui::InputFloat3("##a", (float*)PatrolPoint.getAttribute("vecPos")->buffer.data());
-						}
-						ImGui::TreePop();
-					}
-
-					ImGui::TreePop();
-				}
-
 				if (pos.distance(camera.location) < textDrawDistance)
 					dd::projectedText((char*)hidName->buffer.data(), &pos.x, white, &vp[0][0], 0, 0, windowSize.x, windowSize.y, 0.5f);
 				if (needsCross)
@@ -513,31 +487,33 @@ int main(int argc, char **argv) {
 		}
 
 		//Render Buildings
-		if (buildingEntities.empty())
-			reloadBuildingEntities();
+		if (drawBuildings) {
+			if (buildingEntities.empty())
+				reloadBuildingEntities();
 
-		renderInterface.model.use();
-		for (const BuildingEntity &Entity : buildingEntities) {
-			dd::aabb(&Entity.min.x, &Entity.max.x, blue);
-			if (Entity.pos.distance(camera.location) < 256)
-				dd::projectedText(Entity.wlu.c_str(), &Entity.pos.x, white, &vp[0][0], 0, 0, windowSize.x, windowSize.y, 0.5f);
+			renderInterface.model.use();
+			for (const BuildingEntity &Entity : buildingEntities) {
+				dd::aabb(&Entity.min.x, &Entity.max.x, blue);
+				if (Entity.pos.distance(camera.location) < 256)
+					dd::projectedText(Entity.wlu.c_str(), &Entity.pos.x, white, &vp[0][0], 0, 0, windowSize.x, windowSize.y, 0.5f);
 
-			mat4 translate = MATtranslate(mat4(), Entity.pos + vec3(0.f, 64.f, 0.f));
-			mat4 MVP = vp * MATscale(translate, vec3(128.f));
-			glUniformMatrix4fv(renderInterface.model.uniforms["MVP"], 1, GL_FALSE, &MVP[0][0]);
+				mat4 translate = MATtranslate(mat4(), Entity.pos + vec3(0.f, 64.f, 0.f));
+				mat4 MVP = vp * MATscale(translate, vec3(128.f));
+				glUniformMatrix4fv(renderInterface.model.uniforms["MVP"], 1, GL_FALSE, &MVP[0][0]);
 
-			{
-				std::string CBatchXbgPath = Entity.CBatchPath + "_building_low.xbg";
-				auto &model = loadXBG(CBatchXbgPath);
-				if (model.meshes.empty()) continue;
-				model.draw();
-			}
+				{
+					std::string CBatchXbgPath = Entity.CBatchPath + "_building_low.xbg";
+					auto &model = loadXBG(CBatchXbgPath);
+					if (model.meshes.empty()) continue;
+					model.draw();
+				}
 
-			//Draw roof
-			{
-				std::string CBatchXbgPath = Entity.CBatchPath + "_building_roofs.xbg";
-				auto &model = loadXBG(CBatchXbgPath);
-				model.draw();
+				//Draw roof
+				{
+					std::string CBatchXbgPath = Entity.CBatchPath + "_building_roofs.xbg";
+					auto &model = loadXBG(CBatchXbgPath);
+					model.draw();
+				}
 			}
 		}
 

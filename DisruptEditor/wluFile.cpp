@@ -7,8 +7,9 @@
 
 #include "tinyxml2.h"
 #include "Hash.h"
-
-extern bool bailOut;
+#include "Common.h"
+#include "imgui.h"
+#include "Implementation.h"
 
 static inline void seekpad(FILE *fp, long pad) {
 	//16-byte chunk alignment
@@ -54,8 +55,8 @@ bool wluFile::open(const char *filename) {
 	//2296 size
 	//2265 wlu base size + 16
 
-	bailOut = false;
-	root.deserialize(fp);
+	bool bailOut = false;
+	root.deserialize(fp, bailOut);
 
 	fseek(fp, wluhead.base.size + sizeof(wluhead.base), SEEK_SET);
 	seekpad(fp, 4);
@@ -117,10 +118,80 @@ void wluFile::serialize(FILE *fp) {
 
 	root.serialize(fp);
 
+	fseek(fp, 0, SEEK_END);
+	writepad(fp, 4);
 	wluhead.base.size = ftell(fp) - sizeof(wluhead.base);
 	fseek(fp, 0, SEEK_SET);
 	fwrite(&wluhead, sizeof(wluhead), 1, fp);
+}
 
-	fseek(fp, 0, SEEK_END);
-	//writepad(fp, 4);
+void wluFile::drawImGui() {
+	Node *Entities = root.findFirstChild("Entities");
+	if (!Entities) return;
+
+	for (auto &entity : Entities->children) {
+		char imguiHash[512];
+		Attribute *hidName = entity.getAttribute("hidName");
+		Attribute *hidPos = entity.getAttribute("hidPos");
+		vec3 pos = swapYZ(*(vec3*)hidPos->buffer.data());
+
+		//Iterate through Entity Attributes
+		if (ImGui::TreeNode((char*)hidName->buffer.data())) {
+			if (ImGui::IsItemHovered()) {
+				dd::sphere((float*)&pos, red, 5.f);
+			}
+
+			for (Attribute &attr : entity.attributes) {
+				char name[1024];
+				snprintf(name, sizeof(name), "%s##%p", Hash::instance().getReverseHash(attr.hash).c_str(), &attr);
+
+				Hash::Types type = Hash::instance().getHashType(attr.hash);
+
+				switch (type) {
+					case Hash::STRING:
+					{
+						char temp[1024] = { '\0' };
+						strncpy(temp, (char*)attr.buffer.data(), sizeof(temp));
+						if (ImGui::InputText(name, temp, sizeof(temp))) {
+							attr.buffer.resize(strlen(temp) + 1);
+							strcpy((char*)attr.buffer.data(), temp);
+						}
+						break;
+					}
+					case Hash::FLOAT:
+						ImGui::DragFloat(name, (float*)attr.buffer.data());
+						break;
+					case Hash::UINT64:
+						ImGui::InputUInt64(name, (uint64_t*)attr.buffer.data());
+						break;
+					case Hash::VEC2:
+						ImGui::DragFloat2(name, (float*)attr.buffer.data());
+						break;
+					case Hash::VEC3:
+						ImGui::DragFloat3(name, (float*)attr.buffer.data());
+						break;
+					case Hash::VEC4:
+						ImGui::DragFloat4(name, (float*)attr.buffer.data());
+						break;
+					default:
+						ImGui::LabelText(name, "BinHex %u", attr.buffer.size());
+						break;
+				}
+			}
+
+			//Handle Components
+			Node* PatrolDescription = entity.findFirstChild("PatrolDescription");
+			if (PatrolDescription && ImGui::TreeNode("PatrolDescription")) {
+				Node* PatrolPointList = PatrolDescription->findFirstChild("PatrolPointList");
+				for (Node &PatrolPoint : PatrolPointList->children) {
+					ImGui::InputFloat3("##a", (float*)PatrolPoint.getAttribute("vecPos")->buffer.data());
+				}
+				ImGui::TreePop();
+			}
+
+			ImGui::TreePop();
+		} else if (ImGui::IsItemHovered()) {
+			dd::sphere((float*)&pos, red, 5.f);
+		}
+	}
 }

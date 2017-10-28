@@ -3,8 +3,6 @@
 #include <assert.h>
 #include "Hash.h"
 
-bool bailOut = false;
-
 uint32_t ReadCountA(FILE *fp, bool &isOffset) {
 	uint8_t value;
 	fread(&value, sizeof(value), 1, fp);
@@ -85,14 +83,14 @@ void Attribute::deserializeA(FILE * fp) {
 	}
 }
 
-void Attribute::deserialize(FILE * fp) {
+void Attribute::deserialize(FILE * fp, bool &bailOut) {
 	size_t offset = ftell(fp);
 
 	bool isOffset;
 	int32_t c = ReadCountB(fp, isOffset);
 	if (isOffset) {
 		fseek(fp, c, SEEK_SET);
-		deserialize(fp);
+		deserialize(fp, bailOut);
 		fseek(fp, offset + 4, SEEK_SET);
 	} else {
 		if (c > 1024 * 100) {//Hard limit of 100 kb
@@ -206,7 +204,7 @@ std::string Attribute::getByteString() {
 	return str;
 }
 
-void Node::deserialize(FILE* fp) {
+void Node::deserialize(FILE* fp, bool &bailOut) {
 	if (bailOut) return;
 	size_t pos = ftell(fp);
 
@@ -215,7 +213,7 @@ void Node::deserialize(FILE* fp) {
 
 	if (isOffset) {
 		fseek(fp, c, SEEK_SET);
-		deserialize(fp);
+		deserialize(fp, bailOut);
 		fseek(fp, pos + 4, SEEK_SET);
 	} else {
 		offset = pos;
@@ -247,7 +245,7 @@ void Node::deserialize(FILE* fp) {
 			if (flag)
 				fseek(fp, pos2, SEEK_SET);
 			for (auto &attribute : attributes) {
-				attribute.deserialize(fp);
+				attribute.deserialize(fp, bailOut);
 				if (bailOut)
 					return;
 			}
@@ -262,7 +260,7 @@ void Node::deserialize(FILE* fp) {
 
 		children.resize(c);
 		for (int index = 0; index < c; ++index)
-			children[index].deserialize(fp);
+			children[index].deserialize(fp, bailOut);
 	}
 }
 

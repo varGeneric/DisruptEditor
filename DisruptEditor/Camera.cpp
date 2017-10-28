@@ -22,7 +22,7 @@ void Camera::update(float delta) {
 			bool moveUp = state[SDL_SCANCODE_R];
 			bool moveDown = state[SDL_SCANCODE_F];
 
-			float actualMoveSpeed = delta * 10.f;
+			float actualMoveSpeed = delta * 10.f * flyMultiplier;
 			if (SDL_GetModState() & KMOD_LCTRL)
 				actualMoveSpeed /= 10.f;
 			if (SDL_GetModState() & KMOD_LSHIFT)

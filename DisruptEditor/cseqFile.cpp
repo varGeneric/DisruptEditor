@@ -2,8 +2,6 @@
 
 #include <assert.h>
 
-extern bool bailOut;
-
 #pragma pack(push, 1)
 struct cseqHeader {
 	uint64_t magic;
@@ -20,7 +18,7 @@ bool cseqFile::open(const char *filename) {
 	fcbHeader fcbHead;
 	fread(&fcbHead, sizeof(fcbHead), 1, fp);
 
-	bailOut = false;
+	bool bailOut = false;
 	root.deserializeA(fp);
 
 	assert(!bailOut);

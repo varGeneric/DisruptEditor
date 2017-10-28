@@ -3,6 +3,7 @@
     <!-- Disrupt Editor Specific Types -->
 	<Attribute Name="hidName" Type="String" />
 	<Attribute Name="ArchetypeGuid" Type="String" />
+	<Attribute Name="ExportPath" Type="String" />
 	<Attribute Name="text_hidEntityClass" Type="String" />
 	<Attribute Name="disEntityId" Type="UInt64" />
 	<Attribute Name="hidEntityClass" Type="UInt32" />

@@ -39,6 +39,9 @@ public:
 
 	void serialize(FILE *fp);
 
+	void draw();
+	void drawImGui();
+
 	wluHeader wluhead;
 	Node root;
 	std::string origFilename;
