@@ -1,14 +1,14 @@
 #include "DDRenderInterface.h"
 
 RenderInterface::RenderInterface() {
-	lines = loadShaders("gldd.xml");
+	lines = loadShaders("res/gldd.xml");
 	linesBuffer = createVertexBuffer(NULL, 0, BUFFER_STREAM);
 	glEnable(GL_PROGRAM_POINT_SIZE);
 
-	tex = loadShaders("tex.xml");
+	tex = loadShaders("res/tex.xml");
 	texBuffer = createVertexBuffer(NULL, 0, BUFFER_STREAM);
 
-	model = loadShaders("model.xml");
+	model = loadShaders("res/model.xml");
 }
 
 void RenderInterface::drawPointList(const dd::DrawVertex *points, int count, bool depthEnabled) {

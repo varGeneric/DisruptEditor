@@ -1,0 +1,36 @@
+<shader>
+	<uniform name="MVP" type="mat4" />
+	<vertex>
+#version 330
+layout(location = 0) in vec3 vertexPosition;
+layout(location = 1) in vec2 vertexUV;
+
+out vec3 pos;
+out vec2 uv;
+
+uniform mat4 MVP;
+
+void main(){
+	gl_Position = MVP * vec4(vertexPosition.xzy,1);
+	pos = vertexPosition.xzy;
+	uv = vertexUV;
+}
+	</vertex>
+	<uniform name="diffuse" type="sampler2D" />
+	<fragment>
+#version 330
+in vec3 pos;
+in vec2 uv;
+
+//G Buffers
+layout (location = 0) out vec4 gAlbedoSpec;
+
+uniform sampler2D diffuse;
+
+void main() {
+	gAlbedoSpec = vec4(texture(diffuse, uv).rgb, 1.0);
+}
+	</fragment>
+</shader>
+
+

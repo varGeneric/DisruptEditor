@@ -205,9 +205,8 @@ uint32_t crc32buf(const char *buf, size_t len) {
 }
 
 Hash::Hash() {
-	handleFile("strings.txt");
-	handleFile("strings.user.txt");
-	handleTypes("types.xml");
+	handleFile("res/strings.txt");
+	handleTypes("res/types.xml");
 }
 
 uint32_t Hash::crcHash(void * data, size_t size) {

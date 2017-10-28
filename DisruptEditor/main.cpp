@@ -319,6 +319,11 @@ int main(int argc, char **argv) {
 		if (ImGui::BeginMenu("Batch")) {
 			if (ImGui::MenuItem("Export Wlu XML")) {
 				for (auto it = wlus.begin(); it != wlus.end(); ++it) {
+					std::string xmlFileName = it->second.shortName + ".xml";
+					FILE *fp = fopen(xmlFileName.c_str(), "wb");
+					tinyxml2::XMLPrinter printer(fp);
+					it->second.root.serializeXML(printer);
+					fclose(fp);
 				}
 			}
 			ImGui::EndMenu();
@@ -328,13 +333,10 @@ int main(int argc, char **argv) {
 				windows["Layers"] = true;
 			}
 			if (ImGui::MenuItem("DARE Converter")) {
-				ImGui::SetTooltip("Coming soon!");
 			}
 			if (ImGui::MenuItem("Domino Editor")) {
-				ImGui::SetTooltip("Coming soon!");
 			}
 			if (ImGui::MenuItem("CSequence Editor")) {
-				ImGui::SetTooltip("Coming soon!");
 			}
 			ImGui::EndMenu();
 		}
