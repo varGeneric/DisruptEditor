@@ -129,7 +129,30 @@ void wluFile::drawImGui() {
 	Node *Entities = root.findFirstChild("Entities");
 	if (!Entities) return;
 
-	for (auto &entity : Entities->children) {
+	//Draw List of Entites
+	ImGui::PushItemWidth(-1.f);
+	static char searchWluBuffer[255] = { 0 };
+	ImGui::InputText("##Search", searchWluBuffer, sizeof(searchWluBuffer));
+	ImGui::ListBoxHeader("##Entity List");
+	for (Node &entity : Entities->children) {
+		Attribute *hidName = entity.getAttribute("hidName");
+
+		char tempName[255] = { '\0' };
+		snprintf(tempName, sizeof(tempName), "%s##%p", hidName->buffer.data(), &entity);
+
+		if (std::string(tempName).find(searchWluBuffer) == std::string::npos) continue;
+
+		bool selected = &entity == selectedEntity;
+		if (ImGui::Selectable(tempName, selected))
+			selectedEntity = &entity;
+	}
+	ImGui::ListBoxFooter();
+	ImGui::PopItemWidth();
+
+	if(selectedEntity) {
+		ImGui::Separator();
+		Node &entity = *selectedEntity;
+
 		char imguiHash[512];
 		Attribute *hidName = entity.getAttribute("hidName");
 		Attribute *hidPos = entity.getAttribute("hidPos");
@@ -137,62 +160,78 @@ void wluFile::drawImGui() {
 
 		//Iterate through Entity Attributes
 		snprintf(imguiHash, sizeof(imguiHash), "%s##%p", hidName->buffer.data(), &entity);
-		if (ImGui::TreeNode(imguiHash)) {
-			if (ImGui::IsItemHovered()) {
-				dd::sphere((float*)&pos, red, 5.f, 0, false);
+		
+		dd::sphere((float*)&pos, red, 5.f, 0, false);
+
+		Attribute *ArchetypeGuid = entity.getAttribute("ArchetypeGuid");
+		if (ArchetypeGuid) {
+			uint32_t uid = Hash::instance().getFilenameHash((const char*)ArchetypeGuid->buffer.data());
+			char temp[40];
+			snprintf(temp, sizeof(temp), "UID: %u", uid);
+			if (ImGui::Selectable(temp)) {
+				snprintf(temp, sizeof(temp), "%u", uid);
+				ImGui::SetClipboardText(temp);
 			}
+		}
 
-			for (Attribute &attr : entity.attributes) {
-				char name[1024];
-				snprintf(name, sizeof(name), "%s##%p", Hash::instance().getReverseHash(attr.hash).c_str(), &attr);
+		for (Attribute &attr : entity.attributes) {
+			char name[1024];
+			snprintf(name, sizeof(name), "%s##%p", Hash::instance().getReverseHash(attr.hash).c_str(), &attr);
 
-				Hash::Types type = Hash::instance().getHashType(attr.hash);
+			Hash::Types type = Hash::instance().getHashType(attr.hash);
 
-				switch (type) {
-					case Hash::STRING:
-					{
-						char temp[1024];
-						strncpy(temp, (char*)attr.buffer.data(), sizeof(temp));
-						if (ImGui::InputText(name, temp, sizeof(temp))) {
-							attr.buffer.resize(strlen(temp) + 1);
-							strcpy((char*)attr.buffer.data(), temp);
-						}
-						break;
+			switch (type) {
+				case Hash::STRING:
+				{
+					char temp[1024];
+					strncpy(temp, (char*)attr.buffer.data(), sizeof(temp));
+					if (ImGui::InputText(name, temp, sizeof(temp))) {
+						attr.buffer.resize(strlen(temp) + 1);
+						strcpy((char*)attr.buffer.data(), temp);
 					}
-					case Hash::FLOAT:
-						ImGui::DragFloat(name, (float*)attr.buffer.data());
-						break;
-					case Hash::UINT64:
-						ImGui::InputUInt64(name, (uint64_t*)attr.buffer.data());
-						break;
-					case Hash::VEC2:
-						ImGui::DragFloat2(name, (float*)attr.buffer.data());
-						break;
-					case Hash::VEC3:
-						ImGui::DragFloat3(name, (float*)attr.buffer.data());
-						break;
-					case Hash::VEC4:
-						ImGui::DragFloat4(name, (float*)attr.buffer.data());
-						break;
-					default:
-						ImGui::LabelText(name, "BinHex %u", attr.buffer.size());
-						break;
+					break;
 				}
+				case Hash::FLOAT:
+					ImGui::DragFloat(name, (float*)attr.buffer.data());
+					break;
+				case Hash::UINT64:
+					ImGui::InputUInt64(name, (uint64_t*)attr.buffer.data());
+					break;
+				case Hash::VEC2:
+					ImGui::DragFloat2(name, (float*)attr.buffer.data());
+					break;
+				case Hash::VEC3:
+					ImGui::DragFloat3(name, (float*)attr.buffer.data());
+					break;
+				case Hash::VEC4:
+					ImGui::DragFloat4(name, (float*)attr.buffer.data());
+					break;
+				default:
+					ImGui::LabelText(name, "BinHex %u", attr.buffer.size());
+					break;
 			}
+		}
 
-			//Handle Components
-			Node* PatrolDescription = entity.findFirstChild("PatrolDescription");
-			if (PatrolDescription && ImGui::TreeNode("PatrolDescription")) {
-				Node* PatrolPointList = PatrolDescription->findFirstChild("PatrolPointList");
-				for (Node &PatrolPoint : PatrolPointList->children) {
-					ImGui::InputFloat3("##a", (float*)PatrolPoint.getAttribute("vecPos")->buffer.data());
-				}
-				ImGui::TreePop();
-			}
+		//Handle Components
+		Node* Components = entity.findFirstChild("Components");
+
+		Node *CGraphicComponent = Components->findFirstChild("CGraphicComponent");
+		if (CGraphicComponent && ImGui::TreeNode("CGraphicComponent")) {
+
+			Attribute *_3182766c = CGraphicComponent->getAttribute(0x3182766c);
+			ImGui::Text("_3182766c: %s", _3182766c->buffer.data());
 
 			ImGui::TreePop();
-		} else if (ImGui::IsItemHovered()) {
-			dd::sphere((float*)&pos, red, 5.f, 0, false);
 		}
+
+		Node* PatrolDescription = entity.findFirstChild("PatrolDescription");
+		if (PatrolDescription && ImGui::TreeNode("PatrolDescription")) {
+			Node* PatrolPointList = PatrolDescription->findFirstChild("PatrolPointList");
+			for (Node &PatrolPoint : PatrolPointList->children) {
+				ImGui::InputFloat3("##a", (float*)PatrolPoint.getAttribute("vecPos")->buffer.data());
+			}
+			ImGui::TreePop();
+		}
+
 	}
 }

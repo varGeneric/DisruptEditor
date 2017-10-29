@@ -62,7 +62,7 @@ void reloadBuildingEntities() {
 }
 
 int main(int argc, char **argv) {
-	freopen("debug.log", "wb", stdout);
+	//freopen("debug.log", "wb", stdout);
 	SDL_Init(SDL_INIT_EVERYTHING);
 
 	/*sbaoFile sb;
@@ -290,14 +290,33 @@ int main(int argc, char **argv) {
 	}
 	tfDirClose(&dir);*/
 
-	/*Node entityLibrary;
 	{
 		FILE *fp = fopen(getAbsoluteFilePath("worlds\\windy_city\\generated\\entitylibrary_rt.fcb").c_str(), "rb");
-		fseek(fp, sizeof(fcbHeader) + 8, SEEK_SET);
-		bool bailOut = false;
-		entityLibrary.deserialize(fp, bailOut);
+
+		uint32_t infoOffset, infoCount;
+		fread(&infoOffset, sizeof(infoOffset), 1, fp);
+		fread(&infoCount, sizeof(infoCount), 1, fp);
+		fseek(fp, infoOffset, SEEK_SET);
+
+		for (uint32_t i = 0; i < infoCount; ++i) {
+			uint32_t UID, offset;
+			fread(&UID, sizeof(UID), 1, fp);
+			fread(&offset, sizeof(offset), 1, fp);
+			offset += 8;
+
+			size_t curOffset = ftell(fp) + 4;
+
+			fseek(fp, offset, SEEK_SET);
+			bool bailOut = false;
+			Node entityParent;
+			entityParent.deserialize(fp, bailOut);
+			assert(!bailOut);
+			entityLibrary[UID] = *entityParent.children.begin();
+
+			fseek(fp, curOffset, SEEK_SET);
+		}
 		fclose(fp);
-	}*/
+	}
 
 	Uint32 ticks = SDL_GetTicks();
 	std::string currentWlu = wlus.begin()->first;
@@ -317,7 +336,8 @@ int main(int argc, char **argv) {
 		ivec2 windowSize;
 		SDL_GetWindowSize(window, &windowSize.x, &windowSize.y);
 		glViewport(0, 0, windowSize.x, windowSize.y);
- 		camera.update(delta);
+		if(!ImGui::IsWindowFocused())
+ 			camera.update(delta);
 		mat4 view = MATlookAt(camera.location, camera.lookingAt, camera.up);
 		mat4 projection = MATperspective(camera.fov, (float)windowSize.x / windowSize.y, camera.near_plane, camera.far_plane);
 		mat4 vp = projection * view;
@@ -328,7 +348,24 @@ int main(int argc, char **argv) {
 		ImGui::Begin("##Top", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
 		ImGui::DragFloat3("##Camera", (float*)&camera.location);
 		if (ImGui::BeginMenu("Assets")) {
-			ImGui::Text("Coming soon!");
+			ImGui::PushItemWidth(600.f);
+			static char searchBuffer[255] = { '\0' };
+			ImGui::InputText("##Search", searchBuffer, sizeof(searchBuffer));
+
+			ImGui::ListBoxHeader("##Entity List");
+			for (auto it = entityLibrary.begin(); it != entityLibrary.end(); ++it) {
+				Node &entity = it->second;
+
+				int i = entity.children.size();
+
+				std::string name = (const char*)entity.getAttribute("hidName")->buffer.data();
+				if (name.find(searchBuffer) != std::string::npos && ImGui::Selectable(name.c_str())) {
+					
+				}
+			}
+			ImGui::ListBoxFooter();
+
+			ImGui::PopItemWidth();
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("Batch")) {
@@ -370,6 +407,7 @@ int main(int argc, char **argv) {
 			}
 			ImGui::EndMenu();
 		}
+
 		if (ImGui::BeginMenu("Tools")) {
 			if (ImGui::MenuItem("WLU Editor")) {
 				windows["Layers"] = true;
@@ -382,6 +420,7 @@ int main(int argc, char **argv) {
 			}
 			ImGui::EndMenu();
 		}
+
 		if (ImGui::BeginMenu("Settings")) {
 			ImGui::DragFloat("Camera Fly Multiplier", &camera.flyMultiplier, 0.02f, 1.f, 10.f);
 			ImGui::DragFloat("Label Draw Distance", &textDrawDistance, 0.05f, 0.f, 4096.f);
@@ -403,14 +442,18 @@ int main(int argc, char **argv) {
 		}
 
 		//Draw Layer Window
-		ImGui::SetNextWindowSize(ImVec2(600, windowSize.y), ImGuiCond_FirstUseEver);
+		ImGui::SetNextWindowSize(ImVec2(400, 200), ImGuiCond_FirstUseEver);
+		ImGui::SetNextWindowPos(ImVec2(1150.f, 5.f), ImGuiCond_FirstUseEver);
 		if (ImGui::Begin("Layers")) {
 			//Wlu List
 			ImGui::PushItemWidth(-1.f);
 			static char searchWluBuffer[255] = { 0 };
 			ImGui::InputText("##Search", searchWluBuffer, sizeof(searchWluBuffer));
 
-			ImGui::ListBoxHeader("##WLU List");
+			ImVec2 size = ImGui::GetWindowContentRegionMax();
+			size.y -= 75;
+			size.x -= 5;
+			ImGui::ListBoxHeader("##WLU List", size);
 			for (auto it = wlus.begin(); it != wlus.end(); ++it) {
 				if (it->first.find(searchWluBuffer) != std::string::npos) {
 					bool selected = currentWlu == it->first;
@@ -459,15 +502,27 @@ int main(int argc, char **argv) {
 			}
 			if (wlu.bailOut)
 				ImGui::TextColored(ImVec4(1.f, 0.f, 0.f, 1.f), "This file could not be completely read, do not save it!");
-			ImGui::Separator();
+			
+			ImGui::End();
+			ImGui::SetNextWindowSize(ImVec2(600, 400), ImGuiCond_FirstUseEver);
+			ImGui::Begin("Properties");
 
 			wlu.drawImGui();
 
 			Node *Entities = wlu.root.findFirstChild("Entities");
 			if (!Entities) continue;
 
-			for (auto &entity : Entities->children) {
+			for (Node &entityRef : Entities->children) {
 				bool needsCross = true;
+
+				Node *entityPtr = &entityRef;
+				Attribute *ArchetypeGuid = entityRef.getAttribute("ArchetypeGuid");
+				if (ArchetypeGuid) {
+					uint32_t uid = Hash::instance().getFilenameHash((const char*)ArchetypeGuid->buffer.data());
+					assert(entityLibrary.count(uid) > 0);
+					entityPtr = &entityLibrary[uid];
+				}
+				Node &entity = *entityPtr;
 
 				Attribute *hidName = entity.getAttribute("hidName");
 				Attribute *hidPos = entity.getAttribute("hidPos");

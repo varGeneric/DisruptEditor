@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <assert.h>
 #include <Shlwapi.h>
-
+#include "NBCF.h"
 #include "xbgFile.h"
 #include "materialFile.h"
 #include "xbtFile.h"
@@ -70,3 +70,6 @@ xbtFile & loadTexture(const std::string & path) {
 	}
 	return textures[path];
 }
+
+std::unordered_map<uint32_t, Node> entityLibrary;
+

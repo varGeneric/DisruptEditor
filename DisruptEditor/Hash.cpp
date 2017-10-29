@@ -2,6 +2,8 @@
 
 #include "tinyxml2.h"
 
+#include <algorithm>
+
 static const uint32_t crc_lookup[256] = {
 	0x00000000,0x04c11db7,0x09823b6e,0x0d4326d9,
 	0x130476dc,0x17c56b6b,0x1a864db2,0x1e475005,
@@ -230,6 +232,22 @@ std::string Hash::getReverseHash(uint32_t hash) {
 
 uint32_t Hash::getHash(const char *str) {
 	return crc32buf(str, strlen(str));
+}
+
+uint32_t Hash::getFilenameHash(std::string str) {
+	std::transform(str.begin(), str.end(), str.begin(), ::tolower);
+	std::replace(str.begin(), str.end(), '/', '\\');
+
+	uint64_t hash64 = 0xCBF29CE484222325;
+	for(char t : str) {
+		hash64 *= 0x100000001B3;
+		hash64 ^= t;
+	}
+	uint32_t hash32 = hash64;
+	if ((hash32 & 0xFFFF0000) == 0xFFFF0000) {
+		return hash32 & ~(1u << 16);
+	}
+	return hash32;
 }
 
 Hash::Types Hash::getHashType(const char *str) {

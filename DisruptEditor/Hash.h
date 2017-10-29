@@ -11,6 +11,9 @@ public:
 	std::string getReverseHash(uint32_t hash);
 	uint32_t getHash(const char* str);
 
+	//FNV Stuff
+	uint32_t getFilenameHash(std::string str);
+
 	enum Types { STRING, STRINGHASH, BINHEX, BOOL, FLOAT, INT16, INT32, UINT8, UINT16, UINT32, UINT64, VEC2, VEC3, VEC4 };
 	Types getHashType(const char* str);
 	Types getHashType(uint32_t hash);

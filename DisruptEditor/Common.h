@@ -1,11 +1,13 @@
 #pragma once
 
 #include <string>
+#include <unordered_map>
 #include "Math/Vector3.h"
 
 class xbgFile;
 class materialFile;
 class xbtFile;
+class Node;
 
 static inline vec3 swapYZ(const vec3 &ref) {
 	return vec3(ref.x, ref.z, ref.y);
@@ -22,6 +24,8 @@ xbgFile& loadXBG(const std::string &path);
 materialFile& loadMaterial(const std::string &path);
 
 xbtFile& loadTexture(const std::string &path);
+
+extern std::unordered_map<uint32_t, Node> entityLibrary;
 
 #include "imgui.h"
 

@@ -47,5 +47,7 @@ public:
 	Node root;
 	std::string origFilename;
 	std::string shortName;
+private:
+	Node* selectedEntity = NULL;
 };
 
