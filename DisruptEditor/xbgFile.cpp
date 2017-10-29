@@ -1,7 +1,7 @@
 #include "xbgFile.h"
 
 #include <iostream>
-#include <vector>
+#include "Vector.h"
 #include <stdlib.h>
 #include "Common.h"
 #include "materialFile.h"
@@ -307,7 +307,7 @@ void xbgFile::open(const char *file) {
 	struct Model {
 
 	};
-	std::vector<Model> models(head.lodCount);
+	Vector<Model> models(head.lodCount);
 
 	for (int32_t i = 0; i < max; ++i) {
 		int32_t meshCount;

@@ -1,6 +1,6 @@
 #include "Common.h"
 
-#include <vector>
+#include "Vector.h"
 #include <unordered_map>
 #include <assert.h>
 #include <Shlwapi.h>
@@ -9,7 +9,7 @@
 #include "materialFile.h"
 #include "xbtFile.h"
 
-std::vector<std::string> searchPaths;
+Vector<std::string> searchPaths;
 std::unordered_map<std::string, xbgFile> xbgs;
 std::unordered_map<std::string, materialFile> materials;
 std::unordered_map<std::string, xbtFile> textures;

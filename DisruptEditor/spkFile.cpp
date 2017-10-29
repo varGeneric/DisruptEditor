@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <assert.h>
-#include <vector>
+#include "Vector.h"
 
 #include <vorbis/vorbisfile.h>
 
@@ -23,7 +23,7 @@ void spkFile::open(const char * filename) {
 
 	printf("%i\n", head.numPackets);
 
-	/*std::vector<uint32_t> unk(head.numPackets);
+	/*Vector<uint32_t> unk(head.numPackets);
 	fread(unk.data(), sizeof(uint32_t), head.numPackets, fp);
 
 	//Skip 32 bytes

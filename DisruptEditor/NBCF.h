@@ -1,6 +1,7 @@
 #pragma once
 
-#include <vector>
+#include "Vector.h"
+#include <string>
 #include "tinyxml2.h"
 
 struct fcbHeader {
@@ -27,7 +28,7 @@ public:
 	std::string getHumanReadable();
 	std::string getByteString();
 	uint32_t hash;
-	std::vector<uint8_t> buffer;
+	Vector<uint8_t> buffer;
 };
 
 class Node {
@@ -51,6 +52,6 @@ public:
 	size_t offset;
 	uint32_t hash;
 
-	std::vector<Node> children;
-	std::vector<Attribute> attributes;
+	Vector<Node> children;
+	Vector<Attribute> attributes;
 };

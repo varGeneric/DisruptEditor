@@ -2,7 +2,7 @@
 
 #include <string>
 #include <map>
-#include <vector>
+#include "Vector.h"
 #include <stdio.h>
 #include <memory>
 #include <mutex>
@@ -10,7 +10,7 @@
 class FileP {
 public:
 	//Read Constructor
-	FileP(std::vector<uint8_t> &_data) : data(_data), mode(READ) {};
+	FileP(Vector<uint8_t> &_data) : data(_data), mode(READ) {};
 
 	~FileP();
 
@@ -26,7 +26,7 @@ private:
 	FILE *fp = nullptr;
 
 	//Read Mode
-	std::vector<uint8_t> data;
+	Vector<uint8_t> data;
 	long offset = 0;
 };
 
@@ -50,7 +50,7 @@ public:
 		};
 		Compression compression;
 	};
-	std::vector<FILE*> archives;
+	Vector<FILE*> archives;
 	std::map<uint32_t, FileEntry> files;
 	std::mutex mutex;
 };

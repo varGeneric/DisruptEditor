@@ -23,7 +23,7 @@ struct BuildingEntity {
 	vec3 pos;
 	vec3 min, max;
 };
-std::vector<BuildingEntity> buildingEntities;
+Vector<BuildingEntity> buildingEntities;
 std::map<std::string, wluFile> wlus;
 
 void reloadBuildingEntities() {
@@ -209,7 +209,7 @@ int main(int argc, char **argv) {
 
 	//DominoBox db("D:\\Desktop\\bin\\dlc_solo\\domino\\user\\windycity\\tests\\ai_carfleeing_patterns\\ai_carfleeing_patterns.main.lua");
 
-	std::vector< std::future<bool> > tasks;
+	Vector< std::future<bool> > tasks;
 
 	tfDIR dir;
 	tfDirOpen(&dir, (wludir + std::string("/worlds/windy_city/generated/wlu")).c_str());
@@ -290,6 +290,15 @@ int main(int argc, char **argv) {
 	}
 	tfDirClose(&dir);*/
 
+	/*Node entityLibrary;
+	{
+		FILE *fp = fopen(getAbsoluteFilePath("worlds\\windy_city\\generated\\entitylibrary_rt.fcb").c_str(), "rb");
+		fseek(fp, sizeof(fcbHeader) + 8, SEEK_SET);
+		bool bailOut = false;
+		entityLibrary.deserialize(fp, bailOut);
+		fclose(fp);
+	}*/
+
 	Uint32 ticks = SDL_GetTicks();
 	std::string currentWlu = wlus.begin()->first;
 
@@ -323,12 +332,39 @@ int main(int argc, char **argv) {
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("Batch")) {
+			if (ImGui::MenuItem("Import Wlu XML")) {
+				for (auto it = wlus.begin(); it != wlus.end(); ++it) {
+					std::string xmlFileName = it->second.shortName + ".xml";
+					tinyxml2::XMLDocument doc;
+					doc.LoadFile(xmlFileName.c_str());
+					it->second.root.deserializeXML(doc.RootElement());
+				}
+			}
 			if (ImGui::MenuItem("Export Wlu XML")) {
 				for (auto it = wlus.begin(); it != wlus.end(); ++it) {
 					std::string xmlFileName = it->second.shortName + ".xml";
 					FILE *fp = fopen(xmlFileName.c_str(), "wb");
 					tinyxml2::XMLPrinter printer(fp);
 					it->second.root.serializeXML(printer);
+					fclose(fp);
+				}
+			}
+			if (ImGui::MenuItem("Save Wlu")) {
+				for (auto it = wlus.begin(); it != wlus.end(); ++it) {
+					std::string backup = it->second.origFilename;
+					backup += ".bak";
+					CopyFileA(it->second.origFilename.c_str(), backup.c_str(), TRUE);
+
+					/*it->second.root.findFirstChild("Entities")->children.clear();//DEBUG
+					for (auto a = it->second.root.children.begin(); a != it->second.root.children.end();) {
+						if (a->getHashName() != "Entities")
+							a = it->second.root.children.erase(a);
+						else
+							++a;
+					}*/
+
+					FILE *fp = fopen(it->second.origFilename.c_str(), "wb");
+					it->second.serialize(fp);
 					fclose(fp);
 				}
 			}

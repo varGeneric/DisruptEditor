@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include "tinyxml2.h"
 #include <string>
-#include <vector>
+#include "Vector.h"
 #include "NBCF.h"
 
 struct baseHeader {

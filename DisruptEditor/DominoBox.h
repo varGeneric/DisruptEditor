@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vector>
+#include "Vector.h"
 #include <string>
 #include <map>
 
@@ -26,7 +26,7 @@ class DominoBox {
 public:
 	DominoBox(const char* filename);
 
-	std::vector<std::string> CBoxDeps;
+	Vector<std::string> CBoxDeps;
 	std::map<int, DominoCBox> boxes;
 	std::map<std::string, DominoFunction> functions;
 	std::map<std::string, std::string> localVariables;

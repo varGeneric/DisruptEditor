@@ -172,6 +172,7 @@
     <ClCompile Include="Math\Vector4.cpp" />
     <ClCompile Include="NBCF.cpp" />
     <ClCompile Include="nv_dds.cpp" />
+    <ClCompile Include="RoadNetwork.cpp" />
     <ClCompile Include="sbaoFile.cpp" />
     <ClCompile Include="spkFile.cpp" />
     <ClCompile Include="tinyxml2.cpp" />
@@ -208,6 +209,7 @@
     <ClInclude Include="NBCF.h" />
     <ClInclude Include="noc_file_dialog.h" />
     <ClInclude Include="nv_dds.h" />
+    <ClInclude Include="RoadNetwork.h" />
     <ClInclude Include="sbaoFile.h" />
     <ClInclude Include="spkFile.h" />
     <ClInclude Include="stb_rect_pack.h" />
@@ -215,6 +217,7 @@
     <ClInclude Include="stb_truetype.h" />
     <ClInclude Include="tinyfiles.h" />
     <ClInclude Include="tinyxml2.h" />
+    <ClInclude Include="Vector.h" />
     <ClInclude Include="wluFile.h" />
     <ClInclude Include="xbgFile.h" />
     <ClInclude Include="xbtFile.h" />

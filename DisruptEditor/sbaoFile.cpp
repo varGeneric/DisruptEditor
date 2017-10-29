@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <assert.h>
-#include <vector>
+#include "Vector.h"
 
 #include "Hash.h"
 #include <vorbis/vorbisfile.h>
@@ -49,12 +49,12 @@ struct vorbisIdentHeader {
 #pragma pack(pop)
 
 struct oggPacket {
-	std::vector<uint8_t> data;
+	Vector<uint8_t> data;
 };
 
 struct oggPage {
 	oggPageHeader header;
-	std::vector< oggPacket > packets;
+	Vector< oggPacket > packets;
 
 	size_t pos;
 
@@ -75,7 +75,7 @@ void sbaoFile::open(const char * filename) {
 
 	fseek(fp, 128, SEEK_SET); //DEBUG
 
-	std::vector<oggPage> pages;
+	Vector<oggPage> pages;
 	bool success = true;
 	printf("pos\tversion\theaderType\tgranulePos\tserialNo\tpageSeqNum\tnumSegments\n");
 	while (success) {
@@ -103,7 +103,7 @@ void sbaoFile::open(const char * filename) {
 
 			size_t posEnd = ftell(fp);
 			fseek(fp, posBegin, SEEK_SET);
-			std::vector<uint8_t> data(posEnd - posBegin);
+			Vector<uint8_t> data(posEnd - posBegin);
 			fread(data.data(), 1, data.size(), fp);
 			fwrite(data.data(), 1, data.size(), out);
 			fseek(fp, posEnd, SEEK_SET);
@@ -172,7 +172,7 @@ bool oggPage::decode(FILE *fp, bool assertDare) {
 		assert(header.serialNo == 0);
 	}*/
 
-	std::vector<uint8_t> segmentSizes(header.numSegments);
+	Vector<uint8_t> segmentSizes(header.numSegments);
 	fread(segmentSizes.data(), sizeof(uint8_t), header.numSegments, fp);
 
 	size_t packetSize = 0;
@@ -202,7 +202,7 @@ void oggPage::encode(FILE *fp) {
 	//size_t totalSegmentSize = data.size();
 	//segmentSizes.clear();
 
-	std::vector<uint8_t> temp(sizeof(header) /*+ segmentSizes.size() + data.size()*/);
+	Vector<uint8_t> temp(sizeof(header) /*+ segmentSizes.size() + data.size()*/);
 	uint8_t *ptr = temp.data();
 
 	memcpy(ptr, &header, sizeof(header));

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#include <vector>
+#include "Vector.h"
 #include <string>
 #include "GLHelper.h"
 
@@ -14,16 +14,16 @@ public:
 	struct Mesh {
 		uint16_t vertexStride, matID, vertexCount, totalVertexCount, faceCount, UVFlag, scaleFlag, boneMapID;
 		std::string mat;
-		std::vector<uint16_t> buffer, index;
+		Vector<uint16_t> buffer, index;
 		VertexBuffer vbo, ibo;
 	};
-	std::vector<Mesh> meshes;
+	Vector<Mesh> meshes;
 
 	struct Material {
 		uint32_t hash;
 		std::string file;
 	};
-	std::vector<Material> materials;
+	Vector<Material> materials;
 
 	void draw();
 };

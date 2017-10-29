@@ -3,7 +3,7 @@
 #include "glad.h"
 #include <map>
 #include <string>
-#include <vector>
+#include "Vector.h"
 #include <assert.h>
 #include "tinyxml2.h"
 
@@ -14,7 +14,7 @@ public:
 	std::map<std::string, GLint> uniforms;
 	enum UniformTypes { INT, FLOAT, MAT4, VEC2, VEC3, VEC4, TEXTURE2D, TEXTURE3D };
 	std::map<std::string, std::string> uniformTypes;
-	std::vector<std::string> samplerAttributes;
+	Vector<std::string> samplerAttributes;
 };
 
 static inline bool loadShader(Shader *shader, const char * vertex, const char * fragment) {
@@ -33,7 +33,7 @@ static inline bool loadShader(Shader *shader, const char * vertex, const char * 
 	glGetShaderiv(VertexShaderID, GL_COMPILE_STATUS, &Result);
 	if (Result == GL_FALSE) {
 		glGetShaderiv(VertexShaderID, GL_INFO_LOG_LENGTH, &InfoLogLength);
-		std::vector<char> VertexShaderErrorMessage(InfoLogLength + 1);
+		Vector<char> VertexShaderErrorMessage(InfoLogLength + 1);
 		glGetShaderInfoLog(VertexShaderID, InfoLogLength, NULL, &VertexShaderErrorMessage[0]);
 		return false;
 	}
@@ -46,7 +46,7 @@ static inline bool loadShader(Shader *shader, const char * vertex, const char * 
 	glGetShaderiv(FragmentShaderID, GL_COMPILE_STATUS, &Result);
 	if (Result == GL_FALSE) {
 		glGetShaderiv(FragmentShaderID, GL_INFO_LOG_LENGTH, &InfoLogLength);
-		std::vector<char> FragmentShaderErrorMessage(InfoLogLength + 1);
+		Vector<char> FragmentShaderErrorMessage(InfoLogLength + 1);
 		glGetShaderInfoLog(FragmentShaderID, InfoLogLength, NULL, &FragmentShaderErrorMessage[0]);
 		glDeleteShader(VertexShaderID);
 		glDeleteShader(FragmentShaderID);
@@ -67,7 +67,7 @@ static inline bool loadShader(Shader *shader, const char * vertex, const char * 
 	glGetProgramiv(shader->oglid, GL_LINK_STATUS, &Result);
 	if (Result == GL_FALSE) {
 		glGetProgramiv(shader->oglid, GL_INFO_LOG_LENGTH, &InfoLogLength);
-		std::vector<char> ProgramErrorMessage(InfoLogLength + 1);
+		Vector<char> ProgramErrorMessage(InfoLogLength + 1);
 		glGetProgramInfoLog(shader->oglid, InfoLogLength, NULL, &ProgramErrorMessage[0]);
 		glDeleteProgram(shader->oglid);
 		return false;

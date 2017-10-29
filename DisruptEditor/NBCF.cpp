@@ -61,7 +61,7 @@ void writeSize(FILE *fp, size_t osize) {
 void Attribute::deserializeA(FILE * fp) {
 	uint32_t nameHash;
 	fread(&nameHash, sizeof(nameHash), 1, fp);
-	std::vector<uint8_t> value;
+	Vector<uint8_t> value;
 
 	long position = ftell(fp);
 	bool isOffset;
@@ -227,10 +227,10 @@ void Node::deserialize(FILE* fp, bool &bailOut) {
 				flag = true;
 			}
 
-			attributes.clear();
-			attributes.reserve(c2);
-			for (int index = 0; index < c2; ++index)
-				attributes.emplace_back(fp);
+			attributes.resize(c2);
+			for (int index = 0; index < c2; ++index) {
+				attributes[index] = Attribute(fp);
+			}
 			if (flag)
 				fseek(fp, pos2, SEEK_SET);
 			for (auto &attribute : attributes) {
@@ -328,15 +328,13 @@ void Node::deserializeXML(const tinyxml2::XMLElement *node) {
 	//Load Attributes
 	attributes.clear();
 	for (auto it = node->FirstAttribute(); it; it = it->Next()) {
-		attributes.emplace_back();
-		attributes.back().deserializeXML(it);
+		attributes.push_back().deserializeXML(it);
 	}
 
 	//Load Children
 	children.clear();
 	for (auto it = node->FirstChildElement(); it; it = it->NextSiblingElement()) {
-		children.emplace_back();
-		children.back().deserializeXML(it);
+		children.push_back().deserializeXML(it);
 	}
 }
 

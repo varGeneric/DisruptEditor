@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#include <vector>
+#include "Vector.h"
 #include <string>
 
 struct matHeader {
@@ -28,6 +28,6 @@ struct matEntry {
 class materialFile {
 public:
 	bool open(const char *filename);
-	std::vector< matEntry > entries;
+	Vector< matEntry > entries;
 };
 

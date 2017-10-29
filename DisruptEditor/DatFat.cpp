@@ -91,7 +91,7 @@ std::shared_ptr<FileP> DatFat::openRead(std::string filename) {
 		fseek(ar, fe.offset, SEEK_SET);
 
 		if (fe.compression == FileEntry::Compression::None) {
-			std::vector<uint8_t> data(fe.size);
+			Vector<uint8_t> data(fe.size);
 			fread(data.data(), 1, fe.size, ar);
 			return std::make_shared<FileP>(data);
 		} else if (fe.compression == FileEntry::Compression::Xbox) {
@@ -148,8 +148,8 @@ std::shared_ptr<FileP> DatFat::openRead(std::string filename) {
 
 			assert(uncompressedSize == fe.realSize);
 
-			std::vector<uint8_t> uncompressedBytes(largestUncompressedChunkSize);
-			std::vector<uint8_t> compressedBytes(largestCompressedChunkSize);
+			Vector<uint8_t> uncompressedBytes(largestUncompressedChunkSize);
+			Vector<uint8_t> compressedBytes(largestCompressedChunkSize);
 
 			int64_t remaining = uncompressedSize;
 			while (remaining > 0) {
