@@ -16,6 +16,7 @@
 #include "imgui.h"
 #include "imgui_impl_sdl_gl3.h"
 #include "LoadingScreen.h"
+#include "Dialog.h"
 #include <future>
 
 struct BuildingEntity {
@@ -126,16 +127,16 @@ int main(int argc, char **argv) {
 		SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN // flags - see below
 	);
 	if (window == NULL) {
-		printf("Could not create window: %s\n", SDL_GetError());
+		SDL_Log("Could not create window: %s\n", SDL_GetError());
 		return 1;
 	}
 	SDL_GLContext glcontext = SDL_GL_CreateContext(window);
 	if (glcontext == NULL) {
-		printf("Could not create context: %s\n", SDL_GetError());
+		SDL_Log("Could not create context: %s\n", SDL_GetError());
 		return 1;
 	}
 	if (SDL_GL_MakeCurrent(window, glcontext) != 0) {
-		printf("Could not create context: %s\n", SDL_GetError());
+		SDL_Log("Could not create context: %s\n", SDL_GetError());
 		return 1;
 	}
 	SDL_GL_SetSwapInterval(1);
@@ -215,6 +216,12 @@ int main(int argc, char **argv) {
 
 	Vector< std::future<bool> > tasks;
 
+	loadingScreen->mutex.lock();
+	loadingScreen->title = "Loading Language Files...";
+	loadingScreen->message.clear();
+	loadingScreen->mutex.unlock();
+	Dialog::instance();
+
 	tfDIR dir;
 	tfDirOpen(&dir, (wludir + std::string("/worlds/windy_city/generated/wlu")).c_str());
 	while (dir.has_next) {
@@ -222,7 +229,7 @@ int main(int argc, char **argv) {
 		tfReadFile(&dir, &file);
 
 		if (!file.is_dir && strcmp(file.ext, "xml.data.fcb") == 0) {
-			printf("Loading %s\n", file.name);
+			SDL_Log("Loading %s\n", file.name);
 			wlus[file.name].shortName = file.name;
 			//tasks.push_back(std::async(std::launch::async, &wluFile::open, &wlus[file.name], file.path));
 			wlus[file.name].open(file.path);
@@ -251,7 +258,7 @@ int main(int argc, char **argv) {
 		tfReadFile(&dir, &file);
 
 		if (!file.is_dir) {
-			printf("Loading %s\n", file.name);
+			SDL_Log("Loading %s\n", file.name);
 
 			materialFile spk;
 			spk.open(file.path);
@@ -268,7 +275,7 @@ int main(int argc, char **argv) {
 		tfReadFile(&dir, &file);
 
 		if (!file.is_dir && strcmp(file.ext, "sbao") == 0) {
-			printf("Loading %s\n", file.name);
+			SDL_Log("Loading %s\n", file.name);
 
 			sbaoFile spk;
 			spk.open(file.path);
@@ -285,7 +292,7 @@ int main(int argc, char **argv) {
 		tfReadFile(&dir, &file);
 
 		if (!file.is_dir && strcmp(file.ext, "cseq") == 0) {
-			printf("Loading %s\n", file.name);
+			SDL_Log("Loading %s\n", file.name);
 
 			cseqFile cseq;
 			cseq.open(file.path);

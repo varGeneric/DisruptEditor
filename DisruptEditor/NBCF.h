@@ -35,7 +35,7 @@ class Node {
 public:
 	Node() {};
 	void deserialize(FILE *fp, bool &bailOut);
-	void deserializeA(FILE *fp);
+	void deserializeA(FILE *fp, Vector<Node*> &list);
 	void serialize(FILE *fp);
 	void deserializeXML(const tinyxml2::XMLElement *node);
 	void serializeXML(tinyxml2::XMLPrinter &printer);

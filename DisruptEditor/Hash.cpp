@@ -1,7 +1,7 @@
 #include "Hash.h"
 
 #include "tinyxml2.h"
-
+#include <SDL_log.h>
 #include <algorithm>
 
 static const uint32_t crc_lookup[256] = {

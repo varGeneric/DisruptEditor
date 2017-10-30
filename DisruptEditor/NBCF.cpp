@@ -1,6 +1,7 @@
 #include "NBCF.h"
 
 #include <SDL_assert.h>
+#include <SDL_log.h>
 #include "Hash.h"
 
 uint32_t ReadCountA(FILE *fp, bool &isOffset) {
@@ -59,27 +60,26 @@ void writeSize(FILE *fp, size_t osize) {
 }
 
 void Attribute::deserializeA(FILE * fp) {
-	uint32_t nameHash;
-	fread(&nameHash, sizeof(nameHash), 1, fp);
-	Vector<uint8_t> value;
+	fread(&hash, sizeof(hash), 1, fp);
 
-	long position = ftell(fp);
 	bool isOffset;
 	uint32_t size = ReadCountA(fp, isOffset);
+
+	size_t position = ftell(fp);
+
 	if (isOffset) {
 		fseek(fp, position - size, SEEK_SET);
 
 		size = ReadCountA(fp, isOffset);
 		SDL_assert_release(!isOffset);
 
-		value.resize(size);
-		fread(value.data(), 1, size, fp);
+		buffer.resize(size);
+		fread(buffer.data(), 1, size, fp);
 
 		fseek(fp, position, SEEK_SET);
-		ReadCountA(fp, isOffset);
 	} else {
-		value.resize(size);
-		fread(value.data(), 1, size, fp);
+		buffer.resize(size);
+		fread(buffer.data(), 1, size, fp);
 	}
 }
 
@@ -161,7 +161,7 @@ std::string Attribute::getHashName() {
 }
 
 std::string Attribute::getHumanReadable() {
-	if (buffer.size() > 1 && buffer.back() == '\0') {
+	if (buffer.size() > 1 && *buffer.back() == '\0') {
 		//Iterate over string for any non-ascii chars
 		bool valid = true;
 		for (auto byte = buffer.begin(); byte != buffer.end() - 1; ++byte) {
@@ -241,7 +241,7 @@ void Node::deserialize(FILE* fp, bool &bailOut) {
 
 			size_t a = ftell(fp);
 			if (a != num2) {
-				printf("Warning! This file could not be read!\n");
+				SDL_Log("Warning! This file could not be read!\n");
 				bailOut = true;
 				return;
 				fseek(fp, num2, SEEK_SET);
@@ -254,15 +254,14 @@ void Node::deserialize(FILE* fp, bool &bailOut) {
 	}
 }
 
-void Node::deserializeA(FILE * fp) {
+void Node::deserializeA(FILE * fp, Vector<Node*> &list) {
 	bool isOffset;
 	uint32_t childCount = ReadCountA(fp, isOffset);
 
-	size_t pos = ftell(fp);
 	if (isOffset) {
-		fseek(fp, childCount, SEEK_SET);
-		deserializeA(fp);
-		fseek(fp, pos, SEEK_SET);
+		SDL_assert_release(list.size() > childCount);
+		*this = *list[childCount];
+		return;
 	} else {
 		fread(&hash, sizeof(hash), 1, fp);
 
@@ -275,9 +274,11 @@ void Node::deserializeA(FILE * fp) {
 		}
 	}
 
+	list.push_back(this);
+
 	children.resize(childCount);
 	for (int index = 0; index < childCount; ++index)
-		children[index].deserializeA(fp);
+		children[index].deserializeA(fp, list);
 }
 
 void Node::serialize(FILE * fp) {

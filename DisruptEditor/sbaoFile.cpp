@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <SDL_assert.h>
+#include <SDL_log.h>
 #include "Vector.h"
 
 #include "Hash.h"
@@ -77,7 +78,7 @@ void sbaoFile::open(const char * filename) {
 
 	Vector<oggPage> pages;
 	bool success = true;
-	printf("pos\tversion\theaderType\tgranulePos\tserialNo\tpageSeqNum\tnumSegments\n");
+	SDL_Log("pos\tversion\theaderType\tgranulePos\tserialNo\tpageSeqNum\tnumSegments\n");
 	while (success) {
 		uint32_t magic;
 		fread(&magic, 1, sizeof(magic), fp);
@@ -218,5 +219,5 @@ void oggPage::encode(FILE *fp) {
 }
 
 void oggPage::print() {
-	printf("%u\t%u\t%u\t%u\t%u\t%u\t%u\n", pos, header.version, header.headerType, header.granulePos, header.serialNo, header.pageSeqNum, header.numSegments);
+	SDL_Log("%u\t%u\t%u\t%u\t%u\t%u\t%u\n", pos, header.version, header.headerType, header.granulePos, header.serialNo, header.pageSeqNum, header.numSegments);
 }

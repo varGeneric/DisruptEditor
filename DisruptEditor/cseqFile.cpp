@@ -19,7 +19,7 @@ bool cseqFile::open(const char *filename) {
 	fread(&fcbHead, sizeof(fcbHead), 1, fp);
 
 	bool bailOut = false;
-	root.deserializeA(fp);
+	//root.deserializeA(fp);
 
 	SDL_assert_release(!bailOut);
 

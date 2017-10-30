@@ -156,6 +156,7 @@
     <ClCompile Include="cseqFile.cpp" />
     <ClCompile Include="DatFat.cpp" />
     <ClCompile Include="DDRenderInterface.cpp" />
+    <ClCompile Include="Dialog.cpp" />
     <ClCompile Include="DominoBox.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="Hash.cpp" />
@@ -189,6 +190,7 @@
     <ClInclude Include="DatFat.h" />
     <ClInclude Include="DDRenderInterface.h" />
     <ClInclude Include="debug_draw.hpp" />
+    <ClInclude Include="Dialog.h" />
     <ClInclude Include="DominoBox.h" />
     <ClInclude Include="dr_wav.h" />
     <ClInclude Include="glad.h" />

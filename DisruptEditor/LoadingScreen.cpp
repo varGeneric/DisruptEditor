@@ -70,7 +70,7 @@ LoadingScreen::LoadingScreen() {
 	if (ret) {
 		//Quiet the volume
 		for (int i = 0; i < ret * channels; ++i)
-			audioData[i] /= 10;
+			audioData[i] /= 30;
 
 		//Randomly reverse the audio
 		if (rand() % 10 == 0)

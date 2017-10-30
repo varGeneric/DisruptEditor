@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <SDL_assert.h>
+#include <SDL_log.h>
 
 static inline void seekpad(FILE *fp, long pad) {
 	//16-byte chunk alignment
@@ -59,9 +60,9 @@ bool materialFile::open(const char *filename) {
 		fread(&me.texture[0], 1, size, fp);
 		seekpad(fp, 4);
 
-		printf("%s\n", me.name.c_str());
-		printf("%s\n", me.shader.c_str());
-		printf("%s\n", me.texture.c_str());
+		SDL_Log("%s\n", me.name.c_str());
+		SDL_Log("%s\n", me.shader.c_str());
+		SDL_Log("%s\n", me.texture.c_str());
 
 		entries.push_back(me);
 

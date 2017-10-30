@@ -6,6 +6,7 @@
 #include "Common.h"
 #include "materialFile.h"
 #include "xbtFile.h"
+#include <SDL_log.h>
 
 xbgFile::xbgFile() {}
 
@@ -29,7 +30,7 @@ static inline void seekpad(FILE *fp, long pad) {
 void xbgFile::open(const char *file) {
 	FILE* fp = fopen(file, "rb");
 	if (!fp) {
-		printf("Failed\n");
+		SDL_Log("Failed\n");
 		return;
 	}
 

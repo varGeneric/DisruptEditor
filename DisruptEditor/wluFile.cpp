@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <SDL_assert.h>
+#include <SDL_log.h>
 #include <stdlib.h>
 
 #include "tinyxml2.h"
@@ -88,13 +89,13 @@ void wluFile::handleHeaders(FILE * fp, size_t size) {
 		roadHeader road;
 		fread(&road, sizeof(road), 1, fp);
 		fseek(fp, road.size, SEEK_CUR);
-		printf("Road %i\n", road.size);
+		SDL_Log("Road %i\n", road.size);
 		seekpad(fp, 16);
 	} else if (magic == std::string("LAUQ")) {
 		qualityHeader qual;
 		fread(&qual, sizeof(qual), 1, fp);
 		fseek(fp, qual.size, SEEK_CUR);
-		printf("Qual %i\n", qual.size);
+		SDL_Log("Qual %i\n", qual.size);
 	} else {
 		size_t offset = ftell(fp);
 		SDL_assert_release(false);

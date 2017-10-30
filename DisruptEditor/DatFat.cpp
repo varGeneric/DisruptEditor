@@ -1,6 +1,7 @@
 #include "DatFat.h"
 
 #include <SDL_assert.h>
+#include <SDL_log.h>
 #include <algorithm>
 #include <SDL_endian.h>
 #include <Windows.h>

@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <SDL_assert.h>
 #include <Shlwapi.h>
+#include <SDL_log.h>
 #include "NBCF.h"
 #include "xbgFile.h"
 #include "materialFile.h"
@@ -47,7 +48,7 @@ void addSearchPath(const std::string &path) {
 xbgFile& loadXBG(const std::string &path) {
 	if (xbgs.count(path) == 0) {
 		auto &model = xbgs[path];
-		printf("Loading %s...\n", path.c_str());
+		SDL_Log("Loading %s...\n", path.c_str());
 		model.open(getAbsoluteFilePath(path).c_str());
 	}
 	return xbgs[path];
@@ -56,7 +57,7 @@ xbgFile& loadXBG(const std::string &path) {
 materialFile &loadMaterial(const std::string & path) {
 	if (materials.count(path) == 0) {
 		auto &model = materials[path];
-		printf("Loading %s...\n", path.c_str());
+		SDL_Log("Loading %s...\n", path.c_str());
 		model.open(getAbsoluteFilePath(path).c_str());
 	}
 	return materials[path];
@@ -65,7 +66,7 @@ materialFile &loadMaterial(const std::string & path) {
 xbtFile & loadTexture(const std::string & path) {
 	if (textures.count(path) == 0) {
 		auto &model = textures[path];
-		printf("Loading %s...\n", path.c_str());
+		SDL_Log("Loading %s...\n", path.c_str());
 		model.open(getAbsoluteFilePath(path).c_str());
 	}
 	return textures[path];

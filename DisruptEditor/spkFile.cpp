@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <SDL_assert.h>
+#include <SDL_log.h>
 #include "Vector.h"
 
 #include <vorbis/vorbisfile.h>
@@ -21,7 +22,7 @@ void spkFile::open(const char * filename) {
 	fread(&head, sizeof(head), 1, fp);
 	SDL_assert_release(head.magic == spkMagic);
 
-	printf("%i\n", head.numPackets);
+	SDL_Log("%i\n", head.numPackets);
 
 	/*Vector<uint32_t> unk(head.numPackets);
 	fread(unk.data(), sizeof(uint32_t), head.numPackets, fp);
