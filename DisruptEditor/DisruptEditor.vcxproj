@@ -184,6 +184,8 @@
     <ClCompile Include="xbtFile.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="bootSound.h" />
+    <ClInclude Include="bootTvTex.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Common.h" />
     <ClInclude Include="cseqFile.h" />
@@ -224,6 +226,7 @@
     <ClInclude Include="tinyfiles.h" />
     <ClInclude Include="tinyxml2.h" />
     <ClInclude Include="Vector.h" />
+    <ClInclude Include="WDTechPlain-Plain.h" />
     <ClInclude Include="wluFile.h" />
     <ClInclude Include="xbgFile.h" />
     <ClInclude Include="xbtFile.h" />

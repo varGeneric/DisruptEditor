@@ -17,6 +17,9 @@ static int LSThread(void *ptr) {
 	return 0;
 }
 
+#include "bootTvTex.h"
+#include "bootSound.h"
+#include "WDTechPlain-Plain.h"
 
 LoadingScreen::LoadingScreen() {
 	title = "Loading the Grid...";
@@ -25,7 +28,7 @@ LoadingScreen::LoadingScreen() {
 	//SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengl");
 
 	int x, y;
-	stbi_uc *ptr = stbi_load("res/bootTvTex.png", &x, &y, NULL, 3);
+	stbi_uc *ptr = stbi_load_from_memory(bootTvTex_png, sizeof(bootTvTex_png), &x, &y, NULL, 3);
 	SDL_assert_release(ptr);
 
 	window = SDL_CreateWindow(
@@ -44,13 +47,8 @@ LoadingScreen::LoadingScreen() {
 	STBI_FREE(ptr);
 
 	//Load Font
-	FILE *fp = fopen("res/WDTechPlain-Plain.ttf", "rb");
-	Vector<unsigned char> ttf_buffer(1 << 20);
-	fread(ttf_buffer.data(), 1, ttf_buffer.size(), fp);
-	fclose(fp);
-
 	Vector<unsigned char> temp_bitmap(FONTTEXSIZE * FONTTEXSIZE);
-	int ret = stbtt_BakeFontBitmap(ttf_buffer.data(), 0, 16.f, temp_bitmap.data(), FONTTEXSIZE, FONTTEXSIZE, 32, 96, cdata.data()); // no guarantee this fits!
+	int ret = stbtt_BakeFontBitmap(WDTechPlain_Plain_ttf, 0, 16.f, temp_bitmap.data(), FONTTEXSIZE, FONTTEXSIZE, 32, 96, cdata.data()); // no guarantee this fits!
 	Vector<unsigned char> bitmap(FONTTEXSIZE * FONTTEXSIZE * 4);
 	for (int i = 0; i < temp_bitmap.size(); ++i) {
 		bitmap[(i * 4)] = 255;
@@ -65,7 +63,7 @@ LoadingScreen::LoadingScreen() {
 
 	int channels, sample_rate;
 	short *audioData;
-	ret = stb_vorbis_decode_filename("res/bootSound.ogg", &channels, &sample_rate, &audioData);
+	ret = stb_vorbis_decode_memory(bootSound_ogg, sizeof(bootSound_ogg), &channels, &sample_rate, &audioData);
 
 	if (ret) {
 		//Quiet the volume

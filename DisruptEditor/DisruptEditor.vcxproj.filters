@@ -239,6 +239,15 @@
     <ClInclude Include="Dialog.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="WDTechPlain-Plain.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="bootSound.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="bootTvTex.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Res.rc">
