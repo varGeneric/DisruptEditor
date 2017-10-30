@@ -163,6 +163,7 @@
     <ClCompile Include="imgui_draw.cpp" />
     <ClCompile Include="imgui_impl_sdl_gl3.cpp" />
     <ClCompile Include="Implementation.cpp" />
+    <ClCompile Include="LoadingScreen.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="materialFile.cpp" />
     <ClCompile Include="Math\Matrix3.cpp" />
@@ -175,6 +176,7 @@
     <ClCompile Include="RoadNetwork.cpp" />
     <ClCompile Include="sbaoFile.cpp" />
     <ClCompile Include="spkFile.cpp" />
+    <ClCompile Include="stb_vorbis.c" />
     <ClCompile Include="tinyxml2.cpp" />
     <ClCompile Include="wluFile.cpp" />
     <ClCompile Include="xbgFile.cpp" />
@@ -196,6 +198,7 @@
     <ClInclude Include="Implementation.h" />
     <ClInclude Include="ini.h" />
     <ClInclude Include="khrplatform.h" />
+    <ClInclude Include="LoadingScreen.h" />
     <ClInclude Include="materialFile.h" />
     <ClInclude Include="Math\AABB.h" />
     <ClInclude Include="Math\Frustum.h" />
@@ -212,6 +215,7 @@
     <ClInclude Include="RoadNetwork.h" />
     <ClInclude Include="sbaoFile.h" />
     <ClInclude Include="spkFile.h" />
+    <ClInclude Include="stb_image.h" />
     <ClInclude Include="stb_rect_pack.h" />
     <ClInclude Include="stb_textedit.h" />
     <ClInclude Include="stb_truetype.h" />

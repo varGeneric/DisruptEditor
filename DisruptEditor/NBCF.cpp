@@ -1,6 +1,6 @@
 #include "NBCF.h"
 
-#include <assert.h>
+#include <SDL_assert.h>
 #include "Hash.h"
 
 uint32_t ReadCountA(FILE *fp, bool &isOffset) {
@@ -46,7 +46,7 @@ uint32_t ReadCountB(FILE *fp, bool &isOffset) {
 }
 
 void writeSize(FILE *fp, size_t osize) {
-	assert(osize != 254);
+	SDL_assert(osize != 254);
 	if (osize > 254) {
 		uint32_t size = osize;
 		size = size << 8;
@@ -70,7 +70,7 @@ void Attribute::deserializeA(FILE * fp) {
 		fseek(fp, position - size, SEEK_SET);
 
 		size = ReadCountA(fp, isOffset);
-		assert(!isOffset);
+		SDL_assert(!isOffset);
 
 		value.resize(size);
 		fread(value.data(), 1, size, fp);
@@ -222,7 +222,7 @@ void Node::deserialize(FILE* fp, bool &bailOut) {
 
 				bool isOffset3;
 				c2 = ReadCountB(fp, isOffset3);
-				assert(!isOffset3);
+				SDL_assert(!isOffset3);
 				pos2 += 4;
 				flag = true;
 			}
@@ -267,7 +267,7 @@ void Node::deserializeA(FILE * fp) {
 		fread(&hash, sizeof(hash), 1, fp);
 
 		uint32_t attributeCount = ReadCountA(fp, isOffset);
-		assert(!isOffset);
+		SDL_assert(!isOffset);
 
 		attributes.resize(attributeCount);
 		for (uint32_t i = 0; i < attributeCount; ++i) {

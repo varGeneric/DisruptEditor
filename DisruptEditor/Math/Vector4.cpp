@@ -1,6 +1,6 @@
 #include "Vector4.h"
 
-#include <assert.h>
+#include <SDL_assert.h>
 
 vec4::vec4() {
 	x = 0.f; y = 0.f; z = 0.f; w = 0.f;
@@ -91,7 +91,7 @@ vec4& vec4::operator/=(const float& rhs) {
 }
 
 float vec4::operator[](int index) const {
-	assert(index >= 0 && index < 4);
+	SDL_assert(index >= 0 && index < 4);
 	switch (index) {
 		case 0:
 			return x;
@@ -105,7 +105,7 @@ float vec4::operator[](int index) const {
 }
 
 float& vec4::operator[](int index) {
-	assert(index >= 0 && index < 4);
+	SDL_assert(index >= 0 && index < 4);
 	switch (index) {
 		case 0:
 			return x;

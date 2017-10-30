@@ -1,6 +1,6 @@
 #include "DatFat.h"
 
-#include <assert.h>
+#include <SDL_assert.h>
 #include <algorithm>
 #include <SDL_endian.h>
 #include <Windows.h>
@@ -19,19 +19,19 @@ uint64_t fnv_64_str(const char *str) {
 
 void DatFat::addFat(const std::string &filename) {
 	FILE *fp = fopen(filename.c_str(), "rb");
-	assert(fp);
+	SDL_assert(fp);
 
 	uint32_t magic;
 	fread(&magic, sizeof(magic), 1, fp);
-	assert(magic == 1178686515);
+	SDL_assert(magic == 1178686515);
 
 	int32_t version;
 	fread(&version, sizeof(version), 1, fp);
-	assert(version == 8);
+	SDL_assert(version == 8);
 
 	uint32_t flags;
 	fread(&flags, sizeof(flags), 1, fp);
-	assert((flags & ~0xFFFFFF) == 0);
+	SDL_assert((flags & ~0xFFFFFF) == 0);
 
 	uint32_t entries;
 	fread(&entries, sizeof(entries), 1, fp);
@@ -39,7 +39,7 @@ void DatFat::addFat(const std::string &filename) {
 	std::string datFile = filename;
 	datFile[datFile.size() - 3] = 'd';
 	FILE *dat = fopen(datFile.c_str(), "rb");
-	assert(dat);
+	SDL_assert(dat);
 	archives.push_back(dat);
 	int pos = archives.size() - 1;
 
@@ -98,22 +98,22 @@ std::shared_ptr<FileP> DatFat::openRead(std::string filename) {
 			uint32_t magic;
 			fread(&magic, sizeof(magic), 1, ar);
 			magic = SDL_Swap32(magic);
-			assert(magic == 0x0FF512EE);
+			SDL_assert(magic == 0x0FF512EE);
 
 			uint32_t version;
 			fread(&version, sizeof(version), 1, ar);
 			version = SDL_Swap32(version);
-			assert(version == 0x01030000);
+			SDL_assert(version == 0x01030000);
 
 			uint32_t unknown08;
 			fread(&unknown08, sizeof(unknown08), 1, ar);
 			unknown08 = SDL_Swap32(unknown08);
-			assert(unknown08 == 0);
+			SDL_assert(unknown08 == 0);
 
 			uint32_t unknown0C;
 			fread(&unknown0C, sizeof(unknown0C), 1, ar);
 			unknown0C = SDL_Swap32(unknown0C);
-			assert(unknown0C == 0);
+			SDL_assert(unknown0C == 0);
 
 			uint32_t windowSize;
 			fread(&windowSize, sizeof(windowSize), 1, ar);
@@ -143,10 +143,10 @@ std::shared_ptr<FileP> DatFat::openRead(std::string filename) {
 				compressedSize < 0 ||
 				largestUncompressedChunkSize < 0 ||
 				largestCompressedChunkSize < 0) {
-				assert(false);
+				SDL_assert(false);
 			}
 
-			assert(uncompressedSize == fe.realSize);
+			SDL_assert(uncompressedSize == fe.realSize);
 
 			Vector<uint8_t> uncompressedBytes(largestUncompressedChunkSize);
 			Vector<uint8_t> compressedBytes(largestCompressedChunkSize);
@@ -155,7 +155,7 @@ std::shared_ptr<FileP> DatFat::openRead(std::string filename) {
 			while (remaining > 0) {
 				HMODULE lib = LoadLibraryA("C:\\Windows\\System32\\XnaNative.dll");
 				DWORD a = GetLastError();
-				//assert(lib);
+				//SDL_assert(lib);
 				
 				/*0x10197A1D,
 					0x101979A1,
@@ -178,7 +178,7 @@ std::shared_ptr<FileP> DatFat::openRead(std::string filename) {
 				compressedChunkSize = SDL_Swap32(compressedChunkSize);
 				if (compressedChunkSize < 0 ||
 					compressedChunkSize > largestCompressedChunkSize) {
-					assert(false);
+					SDL_assert(false);
 				}
 
 				fread(compressedBytes.data(), 1, compressedChunkSize, ar);
@@ -191,11 +191,11 @@ std::shared_ptr<FileP> DatFat::openRead(std::string filename) {
 				XmemD Decompress = (XmemD)(lib + 0x101979A1);
 				ret = Decompress(handle, uncompressedBytes.data(), actualUncompressedChunkSize, compressedBytes.data(), actualCompressedChunkSize);
 				if (ret != 0) {
-					assert(false);
+					SDL_assert(false);
 				}
 
 				if (actualUncompressedChunkSize != uncompressedChunkSize) {
-					assert(false);
+					SDL_assert(false);
 				}
 
 				//output.Write(uncompressedBytes, 0, actualUncompressedChunkSize);
@@ -203,7 +203,7 @@ std::shared_ptr<FileP> DatFat::openRead(std::string filename) {
 				remaining -= actualUncompressedChunkSize;
 			}
 		} else {
-			assert(false);
+			SDL_assert(false);
 		}
 
 	}
@@ -217,8 +217,8 @@ FileP::~FileP() {
 }
 
 void FileP::read(void *buf, size_t size, size_t count) {
-	assert(mode == READ);
-	assert(data.size() > offset + (size * count));
+	SDL_assert(mode == READ);
+	SDL_assert(data.size() > offset + (size * count));
 
 	memcpy(buf, data.data() + offset, size * count);
 }

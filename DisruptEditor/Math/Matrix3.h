@@ -1,5 +1,5 @@
 #pragma once
-#include <assert.h>
+#include <SDL_assert.h>
 #include "Vector3.h"
 
 class mat3 {

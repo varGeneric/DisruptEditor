@@ -4,7 +4,7 @@
 #include <map>
 #include <string>
 #include "Vector.h"
-#include <assert.h>
+#include <SDL_assert.h>
 #include "tinyxml2.h"
 
 class Shader {
@@ -150,7 +150,7 @@ inline VertexBuffer createVertexBuffer(const void *data, unsigned long size, Ver
 }
 
 inline void updateVertexBuffer(const void *data, unsigned long size, VertexBuffer &buffer) {
-	assert(buffer.buffer_id != 0);
+	SDL_assert(buffer.buffer_id != 0);
 
 	glBindBuffer(GL_ARRAY_BUFFER, buffer.buffer_id);
 	if (buffer.maxsize < size) {

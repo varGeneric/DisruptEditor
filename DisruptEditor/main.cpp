@@ -15,6 +15,7 @@
 #include "Hash.h"
 #include "imgui.h"
 #include "imgui_impl_sdl_gl3.h"
+#include "LoadingScreen.h"
 #include <future>
 
 struct BuildingEntity {
@@ -64,6 +65,9 @@ void reloadBuildingEntities() {
 int main(int argc, char **argv) {
 	//freopen("debug.log", "wb", stdout);
 	SDL_Init(SDL_INIT_EVERYTHING);
+	srand(time(NULL));
+
+	LoadingScreen *loadingScreen = new LoadingScreen;
 
 	/*sbaoFile sb;
 	sb.open("D:\\Desktop\\bin\\default\\000fac53.sbao");
@@ -119,7 +123,7 @@ int main(int argc, char **argv) {
 		SDL_WINDOWPOS_CENTERED,           // initial y position
 		1600,                               // width, in pixels
 		900,                               // height, in pixels
-		SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE // flags - see below
+		SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN // flags - see below
 	);
 	if (window == NULL) {
 		printf("Could not create window: %s\n", SDL_GetError());
@@ -222,7 +226,13 @@ int main(int argc, char **argv) {
 			wlus[file.name].shortName = file.name;
 			//tasks.push_back(std::async(std::launch::async, &wluFile::open, &wlus[file.name], file.path));
 			wlus[file.name].open(file.path);
+
+			loadingScreen->mutex.lock();
+			loadingScreen->title = "Loading WLUs...";
+			loadingScreen->message = file.name;
+			loadingScreen->mutex.unlock();
 		}
+		SDL_PumpEvents();
 
 		tfDirNext(&dir);
 	}
@@ -291,6 +301,11 @@ int main(int argc, char **argv) {
 	tfDirClose(&dir);*/
 
 	{
+		loadingScreen->mutex.lock();
+		loadingScreen->title = "Loading Entity Library...";
+		loadingScreen->message.clear();
+		loadingScreen->mutex.unlock();
+
 		FILE *fp = fopen(getAbsoluteFilePath("worlds\\windy_city\\generated\\entitylibrary_rt.fcb").c_str(), "rb");
 
 		uint32_t infoOffset, infoCount;
@@ -310,7 +325,7 @@ int main(int argc, char **argv) {
 			bool bailOut = false;
 			Node entityParent;
 			entityParent.deserialize(fp, bailOut);
-			assert(!bailOut);
+			SDL_assert(!bailOut);
 			entityLibrary[UID] = *entityParent.children.begin();
 
 			fseek(fp, curOffset, SEEK_SET);
@@ -318,7 +333,13 @@ int main(int argc, char **argv) {
 		fclose(fp);
 	}
 
+	loadingScreen->mutex.lock();
+	loadingScreen->title = "Loading graphics...";
+	loadingScreen->message.clear();
+	loadingScreen->mutex.unlock();
+
 	Uint32 ticks = SDL_GetTicks();
+	uint64_t frameCount = 0;
 	std::string currentWlu = wlus.begin()->first;
 
 	bool windowOpen = true;
@@ -477,7 +498,7 @@ int main(int argc, char **argv) {
 			}
 			ImGui::SameLine();
 			if (ImGui::Button("Reload")) {
-				assert(wlu.open(wlu.origFilename.c_str()));
+				SDL_assert(wlu.open(wlu.origFilename.c_str()));
 			}
 			ImGui::SameLine();
 			if (ImGui::Button("Restore")) {
@@ -519,7 +540,7 @@ int main(int argc, char **argv) {
 				Attribute *ArchetypeGuid = entityRef.getAttribute("ArchetypeGuid");
 				if (ArchetypeGuid) {
 					uint32_t uid = Hash::instance().getFilenameHash((const char*)ArchetypeGuid->buffer.data());
-					assert(entityLibrary.count(uid) > 0);
+					SDL_assert(entityLibrary.count(uid) > 0);
 					entityPtr = &entityLibrary[uid];
 				}
 				Node &entity = *entityPtr;
@@ -532,7 +553,7 @@ int main(int argc, char **argv) {
 				Node *hidBBox = entity.findFirstChild("hidBBox");
 
 				Node *Components = entity.findFirstChild("Components");
-				assert(Components);
+				SDL_assert(Components);
 
 				Node* CGraphicComponent = Components->findFirstChild("CGraphicComponent");
 				if (CGraphicComponent) {
@@ -622,6 +643,13 @@ int main(int argc, char **argv) {
 		dd::flush(0);
 		ImGui::Render();
 		SDL_GL_SwapWindow(window);
+		frameCount++;
+
+		if (loadingScreen && frameCount > 5) {
+			SDL_ShowWindow(window);
+			delete loadingScreen;
+			loadingScreen = NULL;
+		}
 
 		SDL_Event event;
 		while (SDL_PollEvent(&event)) {

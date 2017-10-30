@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <assert.h>
+#include <SDL_assert.h>
 #include "Vector.h"
 
 #include <vorbis/vorbisfile.h>
@@ -19,7 +19,7 @@ void spkFile::open(const char * filename) {
 	FILE *fp = fopen(filename, "rb");
 	spkHeader head;
 	fread(&head, sizeof(head), 1, fp);
-	assert(head.magic == spkMagic);
+	SDL_assert(head.magic == spkMagic);
 
 	printf("%i\n", head.numPackets);
 
@@ -32,7 +32,7 @@ void spkFile::open(const char * filename) {
 	//Read Oggs
 	char oggs[4];
 	fread(oggs, 1, 4, fp);
-	assert(memcmp(oggs, "OggS", 4) == 0);*/
+	SDL_assert(memcmp(oggs, "OggS", 4) == 0);*/
 
 	fclose(fp);
 }

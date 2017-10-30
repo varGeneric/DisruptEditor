@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <assert.h>
+#include <SDL_assert.h>
 #include "Vector.h"
 
 #include "Hash.h"
@@ -58,7 +58,7 @@ struct oggPage {
 
 	size_t pos;
 
-	bool decode(FILE *fp, bool assertDare = true);
+	bool decode(FILE *fp, bool SDL_assertDare = true);
 	void encode(FILE *fp);
 	void print();
 };
@@ -71,7 +71,7 @@ void sbaoFile::open(const char * filename) {
 	FILE *out = fopen("test.ogg", "wb");
 	spkHeader head;
 	fread(&head, sizeof(head), 1, fp);
-	assert(head.magic == sbaoMagic);
+	SDL_assert(head.magic == sbaoMagic);
 
 	fseek(fp, 128, SEEK_SET); //DEBUG
 
@@ -121,7 +121,7 @@ void sbaoFile::open(const char * filename) {
 
 		vorbisCommonHeader *vch = (vorbisCommonHeader*) ptr;
 		ptr += sizeof(*vch);
-		assert(vch->type == vch->IDENT);
+		SDL_assert(vch->type == vch->IDENT);
 
 		vorbisIdentHeader *ident = (vorbisIdentHeader*)ptr;
 		ptr += sizeof(*ident);
@@ -134,7 +134,7 @@ void sbaoFile::open(const char * filename) {
 
 		vorbisCommonHeader *vch = (vorbisCommonHeader*)ptr;
 		ptr += sizeof(*vch);
-		assert(vch->type == vch->COMMENT);
+		SDL_assert(vch->type == vch->COMMENT);
 
 		uint32_t length = *(uint32_t*)ptr;
 		ptr += sizeof(length);
@@ -159,7 +159,7 @@ void sbaoFile::open(const char * filename) {
 	fclose(out);
 }
 
-bool oggPage::decode(FILE *fp, bool assertDare) {
+bool oggPage::decode(FILE *fp, bool SDL_assertDare) {
 	pos = ftell(fp);
 	size_t read = fread(&header, 1, sizeof(header), fp);
 	if (header.magic != 1399285583 || read != sizeof(header) || header.version != 0 || header.numSegments == 0) {
@@ -167,9 +167,9 @@ bool oggPage::decode(FILE *fp, bool assertDare) {
 		return false;
 	}
 
-	/*if (assertDare) {
-		assert(header.version == 0);
-		assert(header.serialNo == 0);
+	/*if (SDL_assertDare) {
+		SDL_assert(header.version == 0);
+		SDL_assert(header.serialNo == 0);
 	}*/
 
 	Vector<uint8_t> segmentSizes(header.numSegments);

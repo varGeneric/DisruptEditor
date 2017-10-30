@@ -1,6 +1,6 @@
 #include "Matrix4.h"
 
-#include <assert.h>
+#include <SDL_assert.h>
 
 mat4::mat4() {
 	identity();
@@ -222,11 +222,11 @@ mat4 mat4::swapMajor() const {
 }
 
 vec4 mat4::operator[](int index) const {
-	assert(index >= 0 && index < 4);
+	SDL_assert(index >= 0 && index < 4);
 	return m[index];
 }
 
 vec4& mat4::operator[](int index) {
-	assert(index >= 0 && index < 4);
+	SDL_assert(index >= 0 && index < 4);
 	return m[index];
 }

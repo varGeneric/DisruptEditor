@@ -1,6 +1,6 @@
 #include "Vector3.h"
 
-#include <assert.h>
+#include <SDL_assert.h>
 #include <math.h>
 
 vec3::vec3() {
@@ -96,7 +96,7 @@ bool vec3::operator!=(const vec3 & n) const {
 }
 
 float vec3::operator[](int index) const {
-	assert(index >= 0 && index < 3);
+	SDL_assert(index >= 0 && index < 3);
 	switch (index) {
 		case 0:
 			return x;
@@ -108,7 +108,7 @@ float vec3::operator[](int index) const {
 }
 
 float& vec3::operator[](int index) {
-	assert(index >= 0 && index < 3);
+	SDL_assert(index >= 0 && index < 3);
 	switch (index) {
 		case 0:
 		return x;

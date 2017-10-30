@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
+#include <SDL_assert.h>
 #include <new>
 
 template <typename T>
@@ -72,7 +72,7 @@ inline Vector<T>& Vector<T>::operator=(const Vector<T> &rhs) {
 
 template<typename T>
 inline T & Vector<T>::at(size_t i) const {
-	assert(i < size());
+	SDL_assert(i < size());
 	return mBegin[i];
 }
 
@@ -102,8 +102,8 @@ inline T * Vector<T>::erase(const T *it) {
 
 template<typename T>
 inline void Vector<T>::erase(const T *begin, const T *end) {
-	assert(within_range(begin));
-	assert(within_range(end));
+	SDL_assert(within_range(begin));
+	SDL_assert(within_range(end));
 
 	T* dst = (T*)begin;
 	for (T* it = (T*)end; it != mEnd; ++it, ++dst) {
