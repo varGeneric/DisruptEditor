@@ -17,19 +17,19 @@ bool materialFile::open(const char *filename) {
 	matHeader head;
 	fread(&head, sizeof(head), 1, fp);
 
-	SDL_assert(head.magic == 5062996);
-	SDL_assert(head.unknum == 7);
-	SDL_assert(head.unk2[0] == 0);
-	SDL_assert(head.unk2[1] == 0);
-	SDL_assert(head.unk2[2] == 0);
-	SDL_assert(head.unk3[0] == 0);
-	SDL_assert(head.unk3[1] == 0);
-	SDL_assert(head.unk4 == 0);
-	SDL_assert(head.unk5 == 0);
-	SDL_assert(head.unk6 == 0);
+	SDL_assert_release(head.magic == 5062996);
+	SDL_assert_release(head.unknum == 7);
+	SDL_assert_release(head.unk2[0] == 0);
+	SDL_assert_release(head.unk2[1] == 0);
+	SDL_assert_release(head.unk2[2] == 0);
+	SDL_assert_release(head.unk3[0] == 0);
+	SDL_assert_release(head.unk3[1] == 0);
+	SDL_assert_release(head.unk4 == 0);
+	SDL_assert_release(head.unk5 == 0);
+	SDL_assert_release(head.unk6 == 0);
 
-	SDL_assert(head.size == head.size3);
-	SDL_assert(head.size == head.size4);
+	SDL_assert_release(head.size == head.size3);
+	SDL_assert_release(head.size == head.size4);
 
 	while (!feof(fp)) {
 		matEntry me;

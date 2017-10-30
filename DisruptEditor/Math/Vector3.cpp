@@ -96,7 +96,7 @@ bool vec3::operator!=(const vec3 & n) const {
 }
 
 float vec3::operator[](int index) const {
-	SDL_assert(index >= 0 && index < 3);
+	SDL_assert_release(index >= 0 && index < 3);
 	switch (index) {
 		case 0:
 			return x;
@@ -108,7 +108,7 @@ float vec3::operator[](int index) const {
 }
 
 float& vec3::operator[](int index) {
-	SDL_assert(index >= 0 && index < 3);
+	SDL_assert_release(index >= 0 && index < 3);
 	switch (index) {
 		case 0:
 		return x;

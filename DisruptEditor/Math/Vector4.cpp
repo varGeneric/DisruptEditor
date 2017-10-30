@@ -91,7 +91,7 @@ vec4& vec4::operator/=(const float& rhs) {
 }
 
 float vec4::operator[](int index) const {
-	SDL_assert(index >= 0 && index < 4);
+	SDL_assert_release(index >= 0 && index < 4);
 	switch (index) {
 		case 0:
 			return x;
@@ -105,7 +105,7 @@ float vec4::operator[](int index) const {
 }
 
 float& vec4::operator[](int index) {
-	SDL_assert(index >= 0 && index < 4);
+	SDL_assert_release(index >= 0 && index < 4);
 	switch (index) {
 		case 0:
 			return x;

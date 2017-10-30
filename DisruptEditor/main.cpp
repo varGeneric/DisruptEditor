@@ -325,7 +325,7 @@ int main(int argc, char **argv) {
 			bool bailOut = false;
 			Node entityParent;
 			entityParent.deserialize(fp, bailOut);
-			SDL_assert(!bailOut);
+			SDL_assert_release(!bailOut);
 			entityLibrary[UID] = *entityParent.children.begin();
 
 			fseek(fp, curOffset, SEEK_SET);
@@ -498,7 +498,7 @@ int main(int argc, char **argv) {
 			}
 			ImGui::SameLine();
 			if (ImGui::Button("Reload")) {
-				SDL_assert(wlu.open(wlu.origFilename.c_str()));
+				SDL_assert_release(wlu.open(wlu.origFilename.c_str()));
 			}
 			ImGui::SameLine();
 			if (ImGui::Button("Restore")) {
@@ -540,7 +540,7 @@ int main(int argc, char **argv) {
 				Attribute *ArchetypeGuid = entityRef.getAttribute("ArchetypeGuid");
 				if (ArchetypeGuid) {
 					uint32_t uid = Hash::instance().getFilenameHash((const char*)ArchetypeGuid->buffer.data());
-					SDL_assert(entityLibrary.count(uid) > 0);
+					SDL_assert_release(entityLibrary.count(uid) > 0);
 					entityPtr = &entityLibrary[uid];
 				}
 				Node &entity = *entityPtr;
@@ -553,7 +553,7 @@ int main(int argc, char **argv) {
 				Node *hidBBox = entity.findFirstChild("hidBBox");
 
 				Node *Components = entity.findFirstChild("Components");
-				SDL_assert(Components);
+				SDL_assert_release(Components);
 
 				Node* CGraphicComponent = Components->findFirstChild("CGraphicComponent");
 				if (CGraphicComponent) {

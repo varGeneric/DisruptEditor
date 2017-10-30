@@ -21,7 +21,7 @@ std::string loadFile(const std::string & file) {
 		size_t size = ftell(fp);
 		fseek(fp, 0, SEEK_SET);
 		char data[1024 * 5];
-		SDL_assert(size < sizeof(data) - 1);
+		SDL_assert_release(size < sizeof(data) - 1);
 		fread(data, 1, size, fp);
 		data[size] = '\0';
 		fclose(fp);

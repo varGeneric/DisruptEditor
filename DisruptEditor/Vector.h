@@ -72,7 +72,7 @@ inline Vector<T>& Vector<T>::operator=(const Vector<T> &rhs) {
 
 template<typename T>
 inline T & Vector<T>::at(size_t i) const {
-	SDL_assert(i < size());
+	SDL_assert_release(i < size());
 	return mBegin[i];
 }
 
@@ -102,8 +102,8 @@ inline T * Vector<T>::erase(const T *it) {
 
 template<typename T>
 inline void Vector<T>::erase(const T *begin, const T *end) {
-	SDL_assert(within_range(begin));
-	SDL_assert(within_range(end));
+	SDL_assert_release(within_range(begin));
+	SDL_assert_release(within_range(end));
 
 	T* dst = (T*)begin;
 	for (T* it = (T*)end; it != mEnd; ++it, ++dst) {

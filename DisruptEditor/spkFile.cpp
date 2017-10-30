@@ -19,7 +19,7 @@ void spkFile::open(const char * filename) {
 	FILE *fp = fopen(filename, "rb");
 	spkHeader head;
 	fread(&head, sizeof(head), 1, fp);
-	SDL_assert(head.magic == spkMagic);
+	SDL_assert_release(head.magic == spkMagic);
 
 	printf("%i\n", head.numPackets);
 
@@ -32,7 +32,7 @@ void spkFile::open(const char * filename) {
 	//Read Oggs
 	char oggs[4];
 	fread(oggs, 1, 4, fp);
-	SDL_assert(memcmp(oggs, "OggS", 4) == 0);*/
+	SDL_assert_release(memcmp(oggs, "OggS", 4) == 0);*/
 
 	fclose(fp);
 }

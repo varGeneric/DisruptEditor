@@ -12,7 +12,7 @@
    #define STB_IMAGE_IMPLEMENTATION
    #include "stb_image.h"
 
-   You can #define STBI_SDL_assert(x) before the #include to avoid using SDL_assert.h.
+   You can #define STBI_SDL_assert_release(x) before the #include to avoid using SDL_assert.h.
    And #define STBI_MALLOC, STBI_REALLOC, and STBI_FREE to avoid using malloc,realloc,free
 
 
@@ -513,7 +513,7 @@ STBIDEF int   stbi_zlib_decode_noheader_buffer(char *obuffer, int olen, const ch
 
 #ifndef STBI_SDL_assert
 #include <SDL_assert.h>
-#define STBI_SDL_assert(x) SDL_assert(x)
+#define STBI_SDL_assert_release(x) SDL_assert_release(x)
 #endif
 
 
@@ -1063,7 +1063,7 @@ static unsigned char *stbi__load_and_postprocess_8bit(stbi__context *s, int *x, 
       return NULL;
 
    if (ri.bits_per_channel != 8) {
-      STBI_SDL_assert(ri.bits_per_channel == 16);
+      STBI_SDL_assert_release(ri.bits_per_channel == 16);
       result = stbi__convert_16_to_8((stbi__uint16 *) result, *x, *y, req_comp == 0 ? *comp : req_comp);
       ri.bits_per_channel = 8;
    }
@@ -1087,7 +1087,7 @@ static stbi__uint16 *stbi__load_and_postprocess_16bit(stbi__context *s, int *x, 
       return NULL;
 
    if (ri.bits_per_channel != 16) {
-      STBI_SDL_assert(ri.bits_per_channel == 8);
+      STBI_SDL_assert_release(ri.bits_per_channel == 8);
       result = stbi__convert_8_to_16((stbi_uc *) result, *x, *y, req_comp == 0 ? *comp : req_comp);
       ri.bits_per_channel = 16;
    }
@@ -1474,7 +1474,7 @@ static unsigned char *stbi__convert_format(unsigned char *data, int img_n, int r
    unsigned char *good;
 
    if (req_comp == img_n) return data;
-   STBI_SDL_assert(req_comp >= 1 && req_comp <= 4);
+   STBI_SDL_assert_release(req_comp >= 1 && req_comp <= 4);
 
    good = (unsigned char *) stbi__malloc_mad3(req_comp, x, y, 0);
    if (good == NULL) {
@@ -1503,7 +1503,7 @@ static unsigned char *stbi__convert_format(unsigned char *data, int img_n, int r
          STBI__CASE(4,1) { dest[0]=stbi__compute_y(src[0],src[1],src[2]);                   } break;
          STBI__CASE(4,2) { dest[0]=stbi__compute_y(src[0],src[1],src[2]), dest[1] = src[3]; } break;
          STBI__CASE(4,3) { dest[0]=src[0],dest[1]=src[1],dest[2]=src[2];                    } break;
-         default: STBI_SDL_assert(0);
+         default: STBI_SDL_assert_release(0);
       }
       #undef STBI__CASE
    }
@@ -1523,7 +1523,7 @@ static stbi__uint16 *stbi__convert_format16(stbi__uint16 *data, int img_n, int r
    stbi__uint16 *good;
 
    if (req_comp == img_n) return data;
-   STBI_SDL_assert(req_comp >= 1 && req_comp <= 4);
+   STBI_SDL_assert_release(req_comp >= 1 && req_comp <= 4);
 
    good = (stbi__uint16 *) stbi__malloc(req_comp * x * y * 2);
    if (good == NULL) {
@@ -1552,7 +1552,7 @@ static stbi__uint16 *stbi__convert_format16(stbi__uint16 *data, int img_n, int r
          STBI__CASE(4,1) { dest[0]=stbi__compute_y_16(src[0],src[1],src[2]);                   } break;
          STBI__CASE(4,2) { dest[0]=stbi__compute_y_16(src[0],src[1],src[2]), dest[1] = src[3]; } break;
          STBI__CASE(4,3) { dest[0]=src[0],dest[1]=src[1],dest[2]=src[2];                       } break;
-         default: STBI_SDL_assert(0);
+         default: STBI_SDL_assert_release(0);
       }
       #undef STBI__CASE
    }
@@ -1834,7 +1834,7 @@ stbi_inline static int stbi__jpeg_huff_decode(stbi__jpeg *j, stbi__huffman *h)
 
    // convert the huffman code to the symbol id
    c = ((j->code_buffer >> (32 - k)) & stbi__bmask[k]) + h->delta[k];
-   STBI_SDL_assert((((j->code_buffer) >> (32 - h->size[c])) & stbi__bmask[h->size[c]]) == h->code[c]);
+   STBI_SDL_assert_release((((j->code_buffer) >> (32 - h->size[c])) & stbi__bmask[h->size[c]]) == h->code[c]);
 
    // convert the id to a symbol
    j->code_bits -= k;
@@ -1855,7 +1855,7 @@ stbi_inline static int stbi__extend_receive(stbi__jpeg *j, int n)
 
    sgn = (stbi__int32)j->code_buffer >> 31; // sign bit is always in MSB
    k = stbi_lrot(j->code_buffer, n);
-   STBI_SDL_assert(n >= 0 && n < (int) (sizeof(stbi__bmask)/sizeof(*stbi__bmask)));
+   STBI_SDL_assert_release(n >= 0 && n < (int) (sizeof(stbi__bmask)/sizeof(*stbi__bmask)));
    j->code_buffer = k & ~stbi__bmask[n];
    k &= stbi__bmask[n];
    j->code_bits -= n;
@@ -3763,7 +3763,7 @@ stbi_inline static int stbi__bitreverse16(int n)
 
 stbi_inline static int stbi__bit_reverse(int v, int bits)
 {
-   STBI_SDL_assert(bits <= 16);
+   STBI_SDL_assert_release(bits <= 16);
    // to bit reverse n bits, reverse 16 and shift
    // e.g. 11 bits, bit reverse and shift away 5
    return stbi__bitreverse16(v) >> (16-bits);
@@ -3845,7 +3845,7 @@ stbi_inline static stbi_uc stbi__zget8(stbi__zbuf *z)
 static void stbi__fill_bits(stbi__zbuf *z)
 {
    do {
-      STBI_SDL_assert(z->code_buffer < (1U << z->num_bits));
+      STBI_SDL_assert_release(z->code_buffer < (1U << z->num_bits));
       z->code_buffer |= (unsigned int) stbi__zget8(z) << z->num_bits;
       z->num_bits += 8;
    } while (z->num_bits <= 24);
@@ -3873,7 +3873,7 @@ static int stbi__zhuffman_decode_slowpath(stbi__zbuf *a, stbi__zhuffman *z)
    if (s == 16) return -1; // invalid code!
    // code size is s, so:
    b = (k >> (16-s)) - z->firstcode[s] + z->firstsymbol[s];
-   STBI_SDL_assert(z->size[b] == s);
+   STBI_SDL_assert_release(z->size[b] == s);
    a->code_buffer >>= s;
    a->num_bits -= s;
    return z->value[b];
@@ -4003,7 +4003,7 @@ static int stbi__compute_huffman_codes(stbi__zbuf *a)
          } else if (c == 17)
             c = stbi__zreceive(a,3)+3;
          else {
-            STBI_SDL_assert(c == 18);
+            STBI_SDL_assert_release(c == 18);
             c = stbi__zreceive(a,7)+11;
          }
          if (ntot - n < c) return stbi__err("bad codelengths", "Corrupt PNG");
@@ -4030,7 +4030,7 @@ static int stbi__parse_uncompressed_block(stbi__zbuf *a)
       a->code_buffer >>= 8;
       a->num_bits -= 8;
    }
-   STBI_SDL_assert(a->num_bits == 0);
+   STBI_SDL_assert_release(a->num_bits == 0);
    // now fill header the normal way
    while (k < 4)
       header[k++] = stbi__zget8(a);
@@ -4291,7 +4291,7 @@ static int stbi__create_png_image_raw(stbi__png *a, stbi_uc *raw, stbi__uint32 r
    int filter_bytes = img_n*bytes;
    int width = x;
 
-   STBI_SDL_assert(out_n == s->img_n || out_n == s->img_n+1);
+   STBI_SDL_assert_release(out_n == s->img_n || out_n == s->img_n+1);
    a->out = (stbi_uc *) stbi__malloc_mad3(x, y, output_bytes, 0); // extra bytes to write off the end into
    if (!a->out) return stbi__err("outofmem", "Out of memory");
 
@@ -4311,7 +4311,7 @@ static int stbi__create_png_image_raw(stbi__png *a, stbi_uc *raw, stbi__uint32 r
          return stbi__err("invalid filter","Corrupt PNG");
 
       if (depth < 8) {
-         STBI_SDL_assert(img_width_bytes <= x);
+         STBI_SDL_assert_release(img_width_bytes <= x);
          cur += x*out_n - img_width_bytes; // store output to the rightmost img_len bytes, so we can decode in place
          filter_bytes = 1;
          width = img_width_bytes;
@@ -4373,7 +4373,7 @@ static int stbi__create_png_image_raw(stbi__png *a, stbi_uc *raw, stbi__uint32 r
          #undef STBI__CASE
          raw += nk;
       } else {
-         STBI_SDL_assert(img_n+1 == out_n);
+         STBI_SDL_assert_release(img_n+1 == out_n);
          #define STBI__CASE(f) \
              case f:     \
                 for (i=x-1; i >= 1; --i, cur[filter_bytes]=255,raw+=filter_bytes,cur+=output_bytes,prior+=output_bytes) \
@@ -4462,7 +4462,7 @@ static int stbi__create_png_image_raw(stbi__png *a, stbi_uc *raw, stbi__uint32 r
                   cur[q*2+0] = cur[q];
                }
             } else {
-               STBI_SDL_assert(img_n == 3);
+               STBI_SDL_assert_release(img_n == 3);
                for (q=x-1; q >= 0; --q) {
                   cur[q*4+3] = 255;
                   cur[q*4+2] = cur[q*3+2];
@@ -4540,7 +4540,7 @@ static int stbi__compute_transparency(stbi__png *z, stbi_uc tc[3], int out_n)
 
    // compute color-based transparency, assuming we've
    // already got 255 as the alpha value in the output
-   STBI_SDL_assert(out_n == 2 || out_n == 4);
+   STBI_SDL_assert_release(out_n == 2 || out_n == 4);
 
    if (out_n == 2) {
       for (i=0; i < pixel_count; ++i) {
@@ -4565,7 +4565,7 @@ static int stbi__compute_transparency16(stbi__png *z, stbi__uint16 tc[3], int ou
 
    // compute color-based transparency, assuming we've
    // already got 65535 as the alpha value in the output
-   STBI_SDL_assert(out_n == 2 || out_n == 4);
+   STBI_SDL_assert_release(out_n == 2 || out_n == 4);
 
    if (out_n == 2) {
       for (i = 0; i < pixel_count; ++i) {
@@ -4646,7 +4646,7 @@ static void stbi__de_iphone(stbi__png *z)
          p += 3;
       }
    } else {
-      STBI_SDL_assert(s->img_out_n == 4);
+      STBI_SDL_assert_release(s->img_out_n == 4);
       if (stbi__unpremultiply_on_load) {
          // convert bgr to rgb and unpremultiply
          for (i=0; i < pixel_count; ++i) {
@@ -5442,7 +5442,7 @@ static void *stbi__tga_load(stbi__context *s, int *x, int *y, int *comp, int req
          }
          if (tga_rgb16) {
             stbi_uc *pal_entry = tga_palette;
-            STBI_SDL_assert(tga_comp == STBI_rgb);
+            STBI_SDL_assert_release(tga_comp == STBI_rgb);
             for (i=0; i < tga_palette_len; ++i) {
                stbi__tga_read_rgb16(s, pal_entry);
                pal_entry += tga_comp;
@@ -5491,7 +5491,7 @@ static void *stbi__tga_load(stbi__context *s, int *x, int *y, int *comp, int req
                   raw_data[j] = tga_palette[pal_idx+j];
                }
             } else if(tga_rgb16) {
-               STBI_SDL_assert(tga_comp == STBI_rgb);
+               STBI_SDL_assert_release(tga_comp == STBI_rgb);
                stbi__tga_read_rgb16(s, raw_data);
             } else {
                //   read in the data raw
@@ -7017,7 +7017,7 @@ STBIDEF int stbi_info_from_callbacks(stbi_io_callbacks const *c, void *user, int
                          STBI_MALLOC,STBI_REALLOC,STBI_FREE
                          GIF bugfix -- seemingly never worked
                          STBI_NO_*, STBI_ONLY_*
-      1.48  (2014-12-14) fix incorrectly-named SDL_assert()
+      1.48  (2014-12-14) fix incorrectly-named SDL_assert_release()
       1.47  (2014-12-14) 1/2/4-bit PNG support, both direct and paletted (Omar Cornut & stb)
                          optimize PNG (ryg)
                          fix bug in interlaced PNG with user-specified channel count (stb)

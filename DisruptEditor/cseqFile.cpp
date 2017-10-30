@@ -13,7 +13,7 @@ bool cseqFile::open(const char *filename) {
 	FILE *fp = fopen(filename, "rb");
 	cseqHeader head;
 	fread(&head, sizeof(head), 1, fp);
-	SDL_assert(head.magic == 23438637261664779);
+	SDL_assert_release(head.magic == 23438637261664779);
 
 	fcbHeader fcbHead;
 	fread(&fcbHead, sizeof(fcbHead), 1, fp);
@@ -21,7 +21,7 @@ bool cseqFile::open(const char *filename) {
 	bool bailOut = false;
 	root.deserializeA(fp);
 
-	SDL_assert(!bailOut);
+	SDL_assert_release(!bailOut);
 
 	fclose(fp);
 	return !bailOut;

@@ -49,7 +49,7 @@ DominoBox::DominoBox(const char *filename) {
 	line = scanToNextLine(fp, "function export:Init(cbox)");
 
 	//I expect this line to be local l0
-	SDL_assert(line == "local l0;");
+	SDL_assert_release(line == "local l0;");
 	line = readLuaLine(fp);
 
 	//Local Variables
@@ -108,7 +108,7 @@ std::string DominoCBox::deserialize(FILE *fp) {
 	//Skip First Line it's           l0 = self[15];
 	std::string line = readLuaLine(fp);
 	line = readLuaLine(fp);//l0._graph = self;
-	SDL_assert(line == "l0._graph = self;");
+	SDL_assert_release(line == "l0._graph = self;");
 	line = readLuaLine(fp);
 
 	do {

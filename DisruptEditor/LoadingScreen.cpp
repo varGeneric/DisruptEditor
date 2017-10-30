@@ -26,7 +26,7 @@ LoadingScreen::LoadingScreen() {
 
 	int x, y;
 	stbi_uc *ptr = stbi_load("res/bootTvTex.png", &x, &y, NULL, 3);
-	SDL_assert(ptr);
+	SDL_assert_release(ptr);
 
 	window = SDL_CreateWindow(
 		"Loading Disrupt Editor",                  // window title
@@ -73,7 +73,7 @@ LoadingScreen::LoadingScreen() {
 			audioData[i] /= 10;
 
 		//Randomly reverse the audio
-		if (rand() % 3 == 0)
+		if (rand() % 10 == 0)
 			std::reverse(audioData, audioData + (channels*ret));
 
 		SDL_AudioSpec want, have;

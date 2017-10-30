@@ -253,7 +253,7 @@ void xbgFile::open(const char *file) {
 	{
 		int32_t count;
 		fread(&count, sizeof(count), 1, fp);
-		SDL_assert(count == 0);
+		SDL_assert_release(count == 0);
 		for (int32_t i = 0; i < count; ++i) {
 
 		}

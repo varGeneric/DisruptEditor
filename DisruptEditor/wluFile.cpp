@@ -36,13 +36,13 @@ bool wluFile::open(std::string filename) {
 
 	fread(&wluhead, sizeof(wluhead), 1, fp);
 
-	SDL_assert(memcmp(wluhead.base.magic, "ESAB", 4) == 0);
-	SDL_assert(wluhead.base.unknown1 == 3 || wluhead.base.unknown1 == 0 || wluhead.base.unknown1 == 1 || wluhead.base.unknown1 == 2);
-	SDL_assert(wluhead.base.unknown2 == 0);
-	SDL_assert(memcmp(wluhead.fcb.magic, "nbCF", 4) == 0);
-	SDL_assert(wluhead.fcb.version == 16389);
-	SDL_assert(wluhead.fcb.headerFlags == 0);
-	SDL_assert(wluhead.fcb.totalObjectCount == wluhead.fcb.totalValueCount + 1);
+	SDL_assert_release(memcmp(wluhead.base.magic, "ESAB", 4) == 0);
+	SDL_assert_release(wluhead.base.unknown1 == 3 || wluhead.base.unknown1 == 0 || wluhead.base.unknown1 == 1 || wluhead.base.unknown1 == 2);
+	SDL_assert_release(wluhead.base.unknown2 == 0);
+	SDL_assert_release(memcmp(wluhead.fcb.magic, "nbCF", 4) == 0);
+	SDL_assert_release(wluhead.fcb.version == 16389);
+	SDL_assert_release(wluhead.fcb.headerFlags == 0);
+	SDL_assert_release(wluhead.fcb.totalObjectCount == wluhead.fcb.totalValueCount + 1);
 
 	fseek(fp, 0, SEEK_END);
 	size_t size = ftell(fp) - sizeof(wluhead.base);
@@ -50,7 +50,7 @@ bool wluFile::open(std::string filename) {
 
 	//Pad size to 4 bytes
 	//TODO Figure out size
-	//SDL_assert(wluhead.base.size == size || wluhead.base.size == size-1 || wluhead.base.size == size - 2 || wluhead.base.size == size - 3);
+	//SDL_assert_release(wluhead.base.size == size || wluhead.base.size == size-1 || wluhead.base.size == size - 2 || wluhead.base.size == size - 3);
 
 	//2296 size
 	//2265 wlu base size + 16
@@ -66,7 +66,7 @@ bool wluFile::open(std::string filename) {
 		handleHeaders(fp, size + sizeof(wluhead.base));
 
 		offset = ftell(fp);
-		SDL_assert(offset == size + sizeof(wluhead.base));
+		SDL_assert_release(offset == size + sizeof(wluhead.base));
 	}
 
 	fclose(fp);
@@ -97,7 +97,7 @@ void wluFile::handleHeaders(FILE * fp, size_t size) {
 		printf("Qual %i\n", qual.size);
 	} else {
 		size_t offset = ftell(fp);
-		SDL_assert(false);
+		SDL_assert_release(false);
 	}
 
 	if (ftell(fp) != size) {

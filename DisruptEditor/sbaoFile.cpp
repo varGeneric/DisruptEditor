@@ -71,7 +71,7 @@ void sbaoFile::open(const char * filename) {
 	FILE *out = fopen("test.ogg", "wb");
 	spkHeader head;
 	fread(&head, sizeof(head), 1, fp);
-	SDL_assert(head.magic == sbaoMagic);
+	SDL_assert_release(head.magic == sbaoMagic);
 
 	fseek(fp, 128, SEEK_SET); //DEBUG
 
@@ -121,7 +121,7 @@ void sbaoFile::open(const char * filename) {
 
 		vorbisCommonHeader *vch = (vorbisCommonHeader*) ptr;
 		ptr += sizeof(*vch);
-		SDL_assert(vch->type == vch->IDENT);
+		SDL_assert_release(vch->type == vch->IDENT);
 
 		vorbisIdentHeader *ident = (vorbisIdentHeader*)ptr;
 		ptr += sizeof(*ident);
@@ -134,7 +134,7 @@ void sbaoFile::open(const char * filename) {
 
 		vorbisCommonHeader *vch = (vorbisCommonHeader*)ptr;
 		ptr += sizeof(*vch);
-		SDL_assert(vch->type == vch->COMMENT);
+		SDL_assert_release(vch->type == vch->COMMENT);
 
 		uint32_t length = *(uint32_t*)ptr;
 		ptr += sizeof(length);
@@ -168,8 +168,8 @@ bool oggPage::decode(FILE *fp, bool SDL_assertDare) {
 	}
 
 	/*if (SDL_assertDare) {
-		SDL_assert(header.version == 0);
-		SDL_assert(header.serialNo == 0);
+		SDL_assert_release(header.version == 0);
+		SDL_assert_release(header.serialNo == 0);
 	}*/
 
 	Vector<uint8_t> segmentSizes(header.numSegments);

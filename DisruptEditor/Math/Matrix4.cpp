@@ -222,11 +222,11 @@ mat4 mat4::swapMajor() const {
 }
 
 vec4 mat4::operator[](int index) const {
-	SDL_assert(index >= 0 && index < 4);
+	SDL_assert_release(index >= 0 && index < 4);
 	return m[index];
 }
 
 vec4& mat4::operator[](int index) {
-	SDL_assert(index >= 0 && index < 4);
+	SDL_assert_release(index >= 0 && index < 4);
 	return m[index];
 }
