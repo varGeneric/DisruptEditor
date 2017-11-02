@@ -37,6 +37,8 @@ Dialog::Dialog() {
 	}
 	tfDirClose(&dir);
 
+	main.open(getAbsoluteFilePath("languages/main_english.loc").c_str());
+
 	/*fp = fopen("test.xml", "w");
 	tinyxml2::XMLPrinter printer(fp);
 	dialogmanagerindices.serializeXML(printer);

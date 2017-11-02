@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <map>
 #include <unordered_map>
 #include "Math/Vector3.h"
 
@@ -25,7 +26,13 @@ materialFile& loadMaterial(const std::string &path);
 
 xbtFile& loadTexture(const std::string &path);
 
-extern std::unordered_map<uint32_t, Node> entityLibrary;
+
+//EntityLibrary
+void addEntity(uint32_t UID, Node node);
+Node* findEntityByUID(uint32_t UID);
+
+extern std::map<std::string, Node> entityLibrary;
+extern std::unordered_map<uint32_t, std::string> entityLibraryUID;
 
 #include "imgui.h"
 

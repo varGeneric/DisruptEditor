@@ -108,6 +108,9 @@
     <ClCompile Include="Dialog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="locFile.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stb_rect_pack.h">
@@ -246,6 +249,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="bootTvTex.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="locFile.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

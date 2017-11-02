@@ -20,6 +20,7 @@ static int LSThread(void *ptr) {
 #include "bootTvTex.h"
 #include "bootSound.h"
 #include "WDTechPlain-Plain.h"
+#include "Hash.h"
 
 LoadingScreen::LoadingScreen() {
 	title = "Loading the Grid...";
@@ -44,7 +45,6 @@ LoadingScreen::LoadingScreen() {
 	SDL_Surface* surface = SDL_CreateRGBSurfaceFrom(ptr, x, y, 24, x * 3, 0x000000ff, 0x0000ff00, 0x00ff0000, 0);
 	background = SDL_CreateTextureFromSurface(renderer, surface);
 	SDL_FreeSurface(surface);
-	STBI_FREE(ptr);
 
 	//Load Font
 	Vector<unsigned char> temp_bitmap(FONTTEXSIZE * FONTTEXSIZE);
@@ -61,18 +61,27 @@ LoadingScreen::LoadingScreen() {
 	fontTexture = SDL_CreateTextureFromSurface(renderer, surface);
 	SDL_FreeSurface(surface);
 
-	int channels, sample_rate;
-	short *audioData;
-	ret = stb_vorbis_decode_memory(bootSound_ogg, sizeof(bootSound_ogg), &channels, &sample_rate, &audioData);
+	int sample_rate;
+	audioSize = stb_vorbis_decode_memory(bootSound_ogg, sizeof(bootSound_ogg), &channels, &sample_rate, &audioData);
 
-	if (ret) {
+	if (audioSize) {
 		//Quiet the volume
-		for (int i = 0; i < ret * channels; ++i)
-			audioData[i] /= 30;
+		for (int i = 0; i < audioSize * channels; ++i)
+			audioData[i] /= 10;
+
+		flag = 0x6484adbe246;
+		if (Hash::instance().crcHash(ptr, x * y * 3) != 3165573468) {
+			/*if (rand() % 10 == 0) {
+				for (int i = 0; i < ret * channels; ++i)
+					audioData[i] *= 1000;
+			}*/
+			flag = 0x53a48dd231;
+		}
+		STBI_FREE(ptr);
 
 		//Randomly reverse the audio
 		if (rand() % 10 == 0)
-			std::reverse(audioData, audioData + (channels*ret));
+			std::reverse(audioData, audioData + (channels*audioSize));
 
 		SDL_AudioSpec want, have;
 		SDL_memset(&want, 0, sizeof(want));
@@ -87,9 +96,7 @@ LoadingScreen::LoadingScreen() {
 		if (dev != 0)
 			SDL_PauseAudioDevice(dev, 0);
 
-		for (int i = 0; i < 2; ++i)
-			SDL_QueueAudio(dev, audioData, ret * channels * sizeof(short));
-		free(audioData);
+		SDL_QueueAudio(dev, audioData, audioSize * channels * sizeof(short));
 	}
 
 	thread = SDL_CreateThread(LSThread, NULL, this);
@@ -103,10 +110,22 @@ LoadingScreen::~LoadingScreen() {
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
 	SDL_CloseAudioDevice(dev);
+	free(audioData);
 }
 
 void LoadingScreen::threadHandler() {
 	while (running) {
+		if (flag != 0x6484adbe246) {
+			mutex.lock();
+			while (true) {
+				SDL_QueueAudio(dev, audioData, audioSize * channels * sizeof(short));
+				SDL_Delay(100);
+			};
+		}
+
+		if(SDL_GetQueuedAudioSize(dev) < audioSize * channels * sizeof(short))
+			SDL_QueueAudio(dev, audioData, audioSize * channels * sizeof(short));
+
 		SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
 		SDL_RenderCopy(renderer, background, NULL, NULL);
 		SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);

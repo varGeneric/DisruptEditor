@@ -213,39 +213,39 @@ void Node::deserialize(FILE* fp, bool &bailOut) {
 
 		size_t pos2 = ftell(fp);
 		size_t num2 = pos2 + num1;
-		if (num1 != 0) {
-			bool isOffset2;
-			int32_t c2 = ReadCountB(fp, isOffset2);
-			bool flag = false;
-			if (isOffset2) {
-				fseek(fp, c2, SEEK_SET);
+		//SDL_assert_release(num1);
 
-				bool isOffset3;
-				c2 = ReadCountB(fp, isOffset3);
-				SDL_assert_release(!isOffset3);
-				pos2 += 4;
-				flag = true;
-			}
+		bool isOffset2;
+		int32_t c2 = ReadCountB(fp, isOffset2);
+		bool flag = false;
+		if (isOffset2) {
+			fseek(fp, c2, SEEK_SET);
 
-			attributes.resize(c2);
-			for (int index = 0; index < c2; ++index) {
-				attributes[index] = Attribute(fp);
-			}
-			if (flag)
-				fseek(fp, pos2, SEEK_SET);
-			for (auto &attribute : attributes) {
-				attribute.deserialize(fp, bailOut);
-				if (bailOut)
-					return;
-			}
+			bool isOffset3;
+			c2 = ReadCountB(fp, isOffset3);
+			SDL_assert_release(!isOffset3);
+			pos2 += 4;
+			flag = true;
+		}
 
-			size_t a = ftell(fp);
-			if (a != num2) {
-				SDL_Log("Warning! This file could not be read!\n");
-				bailOut = true;
+		attributes.resize(c2);
+		for (int index = 0; index < c2; ++index) {
+			attributes[index] = Attribute(fp);
+		}
+		if (flag)
+			fseek(fp, pos2, SEEK_SET);
+		for (auto &attribute : attributes) {
+			attribute.deserialize(fp, bailOut);
+			if (bailOut)
 				return;
-				fseek(fp, num2, SEEK_SET);
-			}
+		}
+
+		size_t a = ftell(fp);
+		if (a != num2) {
+			SDL_Log("Warning! This file could not be read!\n");
+			//bailOut = true;
+			//return;
+			//fseek(fp, num2, SEEK_SET);
 		}
 
 		children.resize(c);

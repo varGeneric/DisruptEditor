@@ -21,6 +21,9 @@ public:
 	std::string title, message;
 	std::mutex mutex;
 private:
+	uint64_t flag;
+	short *audioData;
+	int channels, audioSize;
 	Vector<stbtt_bakedchar> cdata;
 	SDL_Thread *thread;
 	SDL_Window* window;

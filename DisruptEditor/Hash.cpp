@@ -208,6 +208,8 @@ uint32_t crc32buf(const char *buf, size_t len) {
 
 Hash::Hash() {
 	handleFile("res/strings.txt");
+	handleFileFNV("res/arches.txt");
+	handleFileFNV("res/archeBrute.txt");
 	handleTypes("res/types.xml");
 }
 
@@ -228,6 +230,16 @@ std::string Hash::getReverseHash(uint32_t hash) {
 	}
 
 	return reverseHash[hash];
+}
+
+std::string Hash::getReverseHashFNV(uint32_t hash) {
+	if (reverseFNVHash.count(hash) == 0) {
+		char buffer[12];
+		snprintf(buffer, sizeof(buffer), "_%08x", hash);
+		return std::string(buffer);
+	}
+
+	return reverseFNVHash[hash];
 }
 
 uint32_t Hash::getHash(const char *str) {
@@ -271,6 +283,20 @@ void Hash::handleFile(const char *file) {
 
 		uint32_t hash = crc32buf((const char*)line, strlen(line));
 		reverseHash[hash] = line;
+	}
+
+	fclose(fp);
+}
+
+void Hash::handleFileFNV(const char *file) {
+	FILE *fp = fopen(file, "r");
+
+	char line[512];
+	while (fgets(line, sizeof(line), fp)) {
+		line[strlen(line) - 1] = '\0';
+
+		uint32_t hash = getFilenameHash(line);
+		reverseFNVHash[hash] = line;
 	}
 
 	fclose(fp);

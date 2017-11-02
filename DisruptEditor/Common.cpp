@@ -72,5 +72,26 @@ xbtFile & loadTexture(const std::string & path) {
 	return textures[path];
 }
 
-std::unordered_map<uint32_t, Node> entityLibrary;
+std::map<std::string, Node> entityLibrary;
+std::unordered_map<uint32_t, std::string> entityLibraryUID;
+
+void addEntity(uint32_t UID, Node node) {
+	Attribute *hidName = node.getAttribute("hidName");
+	SDL_assert_release(hidName);
+
+	std::string name = (char*)hidName->buffer.data();
+	entityLibrary[name] = node;
+	entityLibraryUID[UID] = name;
+}
+
+Node* findEntityByUID(uint32_t UID) {
+	/*FILE *fp = fopen("entity.txt", "w");
+	for (auto it = entityLibraryUID.begin(); it != entityLibraryUID.end(); ++it)
+		fprintf(fp, "%u\n", it->first);
+	fclose(fp);*/
+
+	if (entityLibraryUID.count(UID) > 0)
+		return &entityLibrary[entityLibraryUID[UID]];
+	return NULL;
+}
 

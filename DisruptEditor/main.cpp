@@ -18,6 +18,8 @@
 #include "LoadingScreen.h"
 #include "Dialog.h"
 #include <future>
+#include <unordered_set>
+#include <Ntsecapi.h>
 
 struct BuildingEntity {
 	std::string wlu;
@@ -69,7 +71,6 @@ int main(int argc, char **argv) {
 	srand(time(NULL));
 
 	LoadingScreen *loadingScreen = new LoadingScreen;
-
 	/*sbaoFile sb;
 	sb.open("D:\\Desktop\\bin\\default\\000fac53.sbao");
 	return 0;*/
@@ -204,14 +205,6 @@ int main(int argc, char **argv) {
 	RenderInterface renderInterface;
 	dd::initialize(&renderInterface);
 
-	//const std::string wd = "C:/Program Files/Ubisoft/WATCH_DOGS/data_win64/";
-	//DatFat df;
-	//df.addFat(wd + "common.fat");
-	//return 0;
-	//df.addFat(wd + "worlds/windy_city/windy_city.fat");
-
-	//df.openRead("domino/user/windycity/main_missions/act_02/mission_09c/a02_m09c.a02_m09c_activation.debug.lua");
-
 	//DominoBox db("D:\\Desktop\\bin\\dlc_solo\\domino\\user\\windycity\\tests\\ai_carfleeing_patterns\\ai_carfleeing_patterns.main.lua");
 
 	Vector< std::future<bool> > tasks;
@@ -283,28 +276,6 @@ int main(int argc, char **argv) {
 
 		tfDirNext(&dir);
 	}
-	tfDirClose(&dir);
-
-	//Scan CSeq
-	/*tfDirOpen(&dir, (wd + std::string("sequences")).c_str());
-	while (dir.has_next) {
-		tfFILE file;
-		tfReadFile(&dir, &file);
-
-		if (!file.is_dir && strcmp(file.ext, "cseq") == 0) {
-			SDL_Log("Loading %s\n", file.name);
-
-			cseqFile cseq;
-			cseq.open(file.path);
-
-			FILE *fp = fopen("cseq.xml", "w");
-			tinyxml2::XMLPrinter printer(fp);
-			cseq.root.serializeXML(printer);
-			fclose(fp);
-		}
-
-		tfDirNext(&dir);
-	}
 	tfDirClose(&dir);*/
 
 	{
@@ -333,12 +304,64 @@ int main(int argc, char **argv) {
 			Node entityParent;
 			entityParent.deserialize(fp, bailOut);
 			SDL_assert_release(!bailOut);
-			entityLibrary[UID] = *entityParent.children.begin();
+			addEntity(UID, *entityParent.children.begin());
 
 			fseek(fp, curOffset, SEEK_SET);
 		}
 		fclose(fp);
 	}
+
+	/*{
+		FILE *out = fopen("out.txt", "w");
+		for (auto it = entityLibraryUID.begin(); it != entityLibraryUID.end(); ++it) {
+			std::string arche = Hash::instance().getReverseHashFNV(it->first);
+			fprintf(out, "%s = %s\n", it->second.c_str(), arche.c_str());
+		}
+		fclose(out);
+	}*/
+
+	/*{
+		loadingScreen->mutex.lock();
+		loadingScreen->title = "Brute forcing archetypes...";
+		loadingScreen->message.clear();
+		loadingScreen->mutex.unlock();
+		std::unordered_set<uint32_t> unknown;
+		{
+			for (auto it = entityLibraryUID.begin(); it != entityLibraryUID.end(); ++it) {
+				unknown.emplace(it->first);
+			}
+
+			for (auto it = Hash::instance().reverseFNVHash.begin(); it != Hash::instance().reverseFNVHash.end(); ++it) {
+				unknown.erase(it->first);
+			}
+		}
+		struct UUID {
+			uint32_t Data1;
+			uint16_t  Data2;
+			uint16_t  Data3;
+			uint8_t  Data4[8];
+		};
+		UUID guid;
+		char buffer[250];
+		uint32_t hash;
+		FILE *fp = fopen("res/archeBrute.txt", "a");
+		while (!unknown.empty()) {
+			snprintf(buffer, sizeof(buffer), "{%08lX-%04hX-%04hX-%02hhX%02hhX-%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX}", guid.Data1, guid.Data2, guid.Data3,
+				guid.Data4[0], guid.Data4[1], guid.Data4[2], guid.Data4[3],
+				guid.Data4[4], guid.Data4[5], guid.Data4[6], guid.Data4[7]);
+
+			hash = Hash::instance().getFilenameHash(buffer);
+			if (unknown.count(hash) > 0) {
+				unknown.erase(hash);
+				fprintf(fp, "%s\n", buffer);
+				fflush(fp);
+			}
+
+			RtlGenRandom(&guid, sizeof(guid));
+		}
+		fclose(fp);
+	}
+	return 0;*/
 
 	loadingScreen->mutex.lock();
 	loadingScreen->title = "Loading graphics...";
@@ -364,8 +387,6 @@ int main(int argc, char **argv) {
 		ivec2 windowSize;
 		SDL_GetWindowSize(window, &windowSize.x, &windowSize.y);
 		glViewport(0, 0, windowSize.x, windowSize.y);
-		if(!ImGui::IsWindowFocused())
- 			camera.update(delta);
 		mat4 view = MATlookAt(camera.location, camera.lookingAt, camera.up);
 		mat4 projection = MATperspective(camera.fov, (float)windowSize.x / windowSize.y, camera.near_plane, camera.far_plane);
 		mat4 vp = projection * view;
@@ -445,6 +466,23 @@ int main(int argc, char **argv) {
 			if (ImGui::MenuItem("Domino Editor")) {
 			}
 			if (ImGui::MenuItem("CSequence Editor")) {
+				windows["CSequence"] = true;
+			}
+			if (ImGui::MenuItem("LocString Editor")) {
+				windows["LocString"] = true;
+			}
+			if (ImGui::BeginMenu("Hasher")) {
+				static char buffer[255] = { '\0' };
+				ImGui::InputText("##UID", buffer, sizeof(buffer));
+				uint32_t fnv = Hash::instance().getFilenameHash(buffer);
+				uint32_t crc = Hash::instance().getHash(buffer);
+
+				char outbuffer[255];
+				snprintf(outbuffer, sizeof(outbuffer), "%u", fnv);
+				ImGui::InputText("FNV##UIDOUT", outbuffer, sizeof(buffer), ImGuiInputTextFlags_ReadOnly);
+				snprintf(outbuffer, sizeof(outbuffer), "%u", crc);
+				ImGui::InputText("CRC##UIDOUT", outbuffer, sizeof(buffer), ImGuiInputTextFlags_ReadOnly);
+				ImGui::EndMenu();
 			}
 			ImGui::EndMenu();
 		}
@@ -466,6 +504,29 @@ int main(int argc, char **argv) {
 		}
 
 		if (windows["Domino"] && ImGui::Begin("Domino!", &windows["Domino"], 0)) {
+			ImGui::End();
+		}
+
+		ImGui::SetNextWindowSize(ImVec2(400, 200), ImGuiCond_FirstUseEver);
+		ImGui::SetNextWindowPos(ImVec2(80.f, 80.f), ImGuiCond_FirstUseEver);
+		if (windows["LocString"] && ImGui::Begin("LocString", &windows["LocString"], 0)) {
+			
+
+			ImGui::End();
+		}
+
+		ImGui::SetNextWindowSize(ImVec2(400, 200), ImGuiCond_FirstUseEver);
+		ImGui::SetNextWindowPos(ImVec2(80.f, 80.f), ImGuiCond_FirstUseEver);
+		if (windows["CSequence"] && ImGui::Begin("CSequence", &windows["CSequence"], 0)) {
+			static std::string currentFile;
+			static cseqFile file;
+			ImGui::Text("%s", currentFile.c_str());
+			ImGui::SameLine();
+			if (ImGui::Button("Open")) {
+				currentFile = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "cseq\0*.cseq\0", getAbsoluteFilePath("sequences").c_str(), NULL);
+				file.open(currentFile.c_str());
+			}
+
 			ImGui::End();
 		}
 
@@ -547,8 +608,8 @@ int main(int argc, char **argv) {
 				Attribute *ArchetypeGuid = entityRef.getAttribute("ArchetypeGuid");
 				if (ArchetypeGuid) {
 					uint32_t uid = Hash::instance().getFilenameHash((const char*)ArchetypeGuid->buffer.data());
-					SDL_assert_release(entityLibrary.count(uid) > 0);
-					entityPtr = &entityLibrary[uid];
+					entityPtr = findEntityByUID(uid);
+					SDL_assert_release(entityPtr);
 				}
 				Node &entity = *entityPtr;
 
@@ -606,6 +667,26 @@ int main(int argc, char **argv) {
 					}
 				}
 
+				Node* RaceDescription = entity.findFirstChild("RaceDescription");
+				if (RaceDescription) {
+					needsCross = false;
+					Node* RacePointList = RaceDescription->findFirstChild("RacePointList");
+
+					vec3 last;
+					for (Node &RacePoint : RacePointList->children) {
+						vec3 pos = swapYZ(*(vec3*)RacePoint.getAttribute("vecPos")->buffer.data());
+						float fShortcutRadius = *(float*)RacePoint.getAttribute("fShortcutRadius")->buffer.data();
+
+						dd::sphere((float*)&pos.x, red, fShortcutRadius);
+
+						if (last != vec3())
+							dd::line(&last[0], &pos[0], red);
+						else
+							dd::projectedText((char*)hidName->buffer.data(), &pos.x, red, &vp[0][0], 0, 0, windowSize.x, windowSize.y, 0.5f);
+						last = pos;
+					}
+				}
+
 				if (pos.distance(camera.location) < textDrawDistance)
 					dd::projectedText((char*)hidName->buffer.data(), &pos.x, white, &vp[0][0], 0, 0, windowSize.x, windowSize.y, 0.5f);
 				if (needsCross)
@@ -645,6 +726,9 @@ int main(int argc, char **argv) {
 				}
 			}
 		}
+
+		if (!ImGui::IsAnyItemActive())
+			camera.update(delta);
 
 		glBindVertexArray(VertexArrayID);
 		dd::flush(0);
