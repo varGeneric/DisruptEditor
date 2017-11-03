@@ -173,7 +173,7 @@ void wluFile::draw(bool drawImgui, bool draw3D) {
 		char imguiHash[512];
 		Attribute *hidName = entity.getAttribute("hidName");
 		Attribute *hidPos = entity.getAttribute("hidPos");
-		glm::vec3 pos = swapYZ(*(glm::vec3*)hidPos->buffer.data());
+		glm::vec3 pos = *(glm::vec3*)hidPos->buffer.data();
 
 		//Iterate through Entity Attributes
 		snprintf(imguiHash, sizeof(imguiHash), "%s##%p", hidName->buffer.data(), &entity);

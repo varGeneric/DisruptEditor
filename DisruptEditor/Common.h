@@ -23,10 +23,6 @@ extern Settings settings;
 void reloadSettings();
 void saveSettings();
 
-static inline glm::vec3 swapYZ(const glm::vec3 &ref) {
-	return glm::vec3(ref.x, ref.z, ref.y);
-}
-
 struct FileInfo {
 	std::string fullPath;
 	std::string name;

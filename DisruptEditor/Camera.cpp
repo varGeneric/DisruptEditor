@@ -29,8 +29,8 @@ void Camera::update(float delta) {
 				actualMoveSpeed *= 20.f;
 
 			float dx = sinf(phi) * cosf(theta) * actualMoveSpeed;
-			float dy = cosf(phi) * actualMoveSpeed;
-			float dz = sinf(phi) * sinf(theta) * actualMoveSpeed;
+			float dz = cosf(phi) * actualMoveSpeed;
+			float dy = sinf(phi) * sinf(theta) * actualMoveSpeed;
 
 			glm::vec3 movement;
 
@@ -45,20 +45,20 @@ void Camera::update(float delta) {
 				movement.z -= dz;
 			}
 			if (moveLeft) {
-				movement.x -= dz;
+				movement.x += dy;
 				//movement.y += dy;
-				movement.z += dx;
+				movement.y -= dx;
 			}
 			if (moveRight) {
-				movement.x += dz;
+				movement.x -= dy;
 				//movement.y += dy;
-				movement.z -= dx;
+				movement.y += dx;
 			}
 
 			location += movement;
 
-			if (moveUp) location.y += actualMoveSpeed;
-			if (moveDown) location.y -= actualMoveSpeed;
+			if (moveUp) location.z += actualMoveSpeed;
+			if (moveDown) location.z -= actualMoveSpeed;
 
 			float actualLookSpeed = delta * 10.f;
 
@@ -68,7 +68,7 @@ void Camera::update(float delta) {
 			if (!(mouseMask & SDL_BUTTON(SDL_BUTTON_MIDDLE)))
 				actualLookSpeed = 0.f;
 
-			lon -= mouseX * actualLookSpeed;
+			lon += mouseX * actualLookSpeed;
 			lat -= mouseY * actualLookSpeed;
 
 			lat = max(-85, min(85, lat));
@@ -77,8 +77,8 @@ void Camera::update(float delta) {
 			theta = (lon) * (3.141592f / 180.f);
 
 			lookingAt.x = sinf(phi) * cosf(theta);
-			lookingAt.y = cosf(phi);
-			lookingAt.z = sinf(phi) * sinf(theta);
+			lookingAt.z = cosf(phi);
+			lookingAt.y = sinf(phi) * sinf(theta);
 
 			lookingAt += location;
 			break;

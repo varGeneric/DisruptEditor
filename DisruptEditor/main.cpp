@@ -53,14 +53,12 @@ void reloadBuildingEntities() {
 
 				Attribute *hidPos = Entity.getAttribute("hidPos");
 				if (!hidPos) continue;
-				be.pos = swapYZ(*(glm::vec3*)hidPos->buffer.data());
+				be.pos = *(glm::vec3*)hidPos->buffer.data();
 
 				Node *hidBBox = Entity.findFirstChild("hidBBox");
 				be.min = *(glm::vec3*)hidBBox->getAttribute("vectorBBoxMin")->buffer.data();
-				be.min = swapYZ(be.min);
 				be.min += be.pos;
 				be.max = *(glm::vec3*)hidBBox->getAttribute("vectorBBoxMax")->buffer.data();
-				be.max = swapYZ(be.max);
 				be.max += be.pos;
 
 				buildingEntities.push_back(be);
@@ -581,7 +579,7 @@ int main(int argc, char **argv) {
 
 				Attribute *hidName = entity.getAttribute("hidName");
 				Attribute *hidPos = entity.getAttribute("hidPos");
-				glm::vec3 pos = swapYZ(*(glm::vec3*)hidPos->buffer.data());
+				glm::vec3 pos = *(glm::vec3*)hidPos->buffer.data();
 
 				//
 				Node *hidBBox = entity.findFirstChild("hidBBox");
@@ -605,13 +603,13 @@ int main(int argc, char **argv) {
 				Node *CProximityTriggerComponent = Components->findFirstChild("CProximityTriggerComponent");
 				if (CProximityTriggerComponent) {
 					needsCross = false;
-					glm::vec3 extent = swapYZ(*(glm::vec3*)CProximityTriggerComponent->getAttribute("vectorSize")->buffer.data());
+					glm::vec3 extent = *(glm::vec3*)CProximityTriggerComponent->getAttribute("vectorSize")->buffer.data();
 					dd::box(&pos.x, red, extent.x, extent.y, extent.z);
 				}
 
 				if (hidBBox && false) {
-					glm::vec3 boxMin = swapYZ(*((glm::vec3*)hidBBox->getAttribute("vectorBBoxMin")->buffer.data()));
-					glm::vec3 boxMax = swapYZ(*((glm::vec3*)hidBBox->getAttribute("vectorBBoxMax")->buffer.data()));
+					glm::vec3 boxMin = *((glm::vec3*)hidBBox->getAttribute("vectorBBoxMin")->buffer.data());
+					glm::vec3 boxMax = *((glm::vec3*)hidBBox->getAttribute("vectorBBoxMax")->buffer.data());
 					glm::vec3 boxExtent = boxMax - boxMin;
 					dd::box(&pos.x, blue, boxExtent.x, boxExtent.y, boxExtent.z);
 				}
@@ -623,7 +621,7 @@ int main(int argc, char **argv) {
 
 					glm::vec3 last;
 					for (Node &PatrolPoint : PatrolPointList->children) {
-						glm::vec3 pos = swapYZ(*(glm::vec3*)PatrolPoint.getAttribute("vecPos")->buffer.data());
+						glm::vec3 pos = *(glm::vec3*)PatrolPoint.getAttribute("vecPos")->buffer.data();
 
 						if (last != glm::vec3())
 							dd::line(&last[0], &pos[0], red);
@@ -640,7 +638,7 @@ int main(int argc, char **argv) {
 
 					glm::vec3 last;
 					for (Node &RacePoint : RacePointList->children) {
-						glm::vec3 pos = swapYZ(*(glm::vec3*)RacePoint.getAttribute("vecPos")->buffer.data());
+						glm::vec3 pos = *(glm::vec3*)RacePoint.getAttribute("vecPos")->buffer.data();
 						float fShortcutRadius = *(float*)RacePoint.getAttribute("fShortcutRadius")->buffer.data();
 
 						dd::sphere((float*)&pos.x, red, fShortcutRadius);
