@@ -21,6 +21,7 @@
 #include <future>
 #include <unordered_set>
 #include <Ntsecapi.h>
+#include "RML.h"
 
 struct BuildingEntity {
 	std::string wlu;
@@ -182,6 +183,10 @@ int main(int argc, char **argv) {
 	SDL_PumpEvents();
 	loadingScreen->setTitle("Loading Language Files");
 	Dialog::instance();
+
+	SDL_PumpEvents();
+	loadingScreen->setTitle("Loading Particle Library");
+	std::unique_ptr<tinyxml2::XMLDocument> particles = loadRml(getAbsoluteFilePath("__UNKNOWN/misc/9DBBFE8F.maybe.rml").c_str());
 
 	{
 		loadingScreen->setTitle("Loading WLUs...");

@@ -40,6 +40,7 @@ struct RmlNode {
 	Vector<RmlAttribute> attributes;
 	Vector<RmlNode> children;
 	void deserialize(FILE *fp);
+	tinyxml2::XMLElement* serializeXML(tinyxml2::XMLDocument* doc, tinyxml2::XMLElement *parent, const Vector<char> &strTable);
 };
 
 void RmlNode::deserialize(FILE * fp) {
@@ -58,6 +59,21 @@ void RmlNode::deserialize(FILE * fp) {
 	for (uint32_t i = 0; i < childCount; ++i) {
 		children[i].deserialize(fp);
 	}
+}
+
+tinyxml2::XMLElement* RmlNode::serializeXML(tinyxml2::XMLDocument *doc, tinyxml2::XMLElement *parent, const Vector<char> &strTable) {
+	tinyxml2::XMLElement *me = doc->NewElement(&strTable[nameIndex]);
+
+	if (parent)
+		parent->InsertEndChild(me);
+
+	for (RmlAttribute &attr : attributes)
+		me->SetAttribute(&strTable[attr.nameIndex], &strTable[attr.valueIndex]);
+
+	for (RmlNode &child : children)
+		child.serializeXML(doc, me, strTable);
+
+	return me;
 }
 
 std::unique_ptr<tinyxml2::XMLDocument> loadRml(const char * filename) {
@@ -80,7 +96,7 @@ std::unique_ptr<tinyxml2::XMLDocument> loadRml(const char * filename) {
 	fread(stringTableData.data(), 1, head.stringTableSize, fp);
 	fclose(fp);
 
-
+	doc->InsertFirstChild(root.serializeXML(doc.get(), NULL, stringTableData));
 
 	return doc;
 }
