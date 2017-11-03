@@ -9,11 +9,105 @@
 #include "xbgFile.h"
 #include "materialFile.h"
 #include "xbtFile.h"
+#include "tinyfiles.h"
 
-Vector<std::string> searchPaths;
+Settings settings;
 std::unordered_map<std::string, xbgFile> xbgs;
 std::unordered_map<std::string, materialFile> materials;
 std::unordered_map<std::string, xbtFile> textures;
+
+void reloadSettings() {
+	tinyxml2::XMLDocument doc;
+	doc.LoadFile("settings.xml");
+
+	//Search Path
+	settings.searchPaths.clear();
+	for (auto it = doc.RootElement()->FirstChildElement("PackFolder"); it; it = it->NextSiblingElement("PackFolder")) {
+		std::string packPath = it->Attribute("src");
+		if (packPath.back() != '/' && packPath.back() != '\\')
+			packPath.push_back('/');
+		settings.searchPaths.push_back(packPath);
+	}
+	
+	if (doc.RootElement()->FirstChildElement("patchDir"))
+		settings.patchDir = doc.RootElement()->FirstChildElement("patchDir")->Attribute("src");
+
+	if (doc.RootElement()->FirstChildElement("textDrawDistance"))
+		settings.textDrawDistance = doc.RootElement()->FirstChildElement("textDrawDistance")->FloatAttribute("src");
+
+	if (doc.RootElement()->FirstChildElement("drawBuildings"))
+		settings.drawBuildings = doc.RootElement()->FirstChildElement("drawBuildings")->BoolAttribute("src");
+}
+
+template <typename T>
+void pushXMLSetting(tinyxml2::XMLPrinter &printer, const char *name, const T &value) {
+	printer.OpenElement(name);
+	printer.PushAttribute("src", value);
+	printer.CloseElement();
+}
+
+template <>
+void pushXMLSetting<std::string>(tinyxml2::XMLPrinter &printer, const char *name, const std::string &value) {
+	printer.OpenElement(name);
+	printer.PushAttribute("src", value.c_str());
+	printer.CloseElement();
+}
+
+#define pushXMLSetting(p, x) pushXMLSetting(p, #x, settings.x)
+
+void saveSettings() {
+	FILE *fp = fopen("settings.xml", "w");
+	tinyxml2::XMLPrinter printer(fp);
+	printer.OpenElement("Settings");
+
+	for (const std::string &base : settings.searchPaths) {
+		printer.OpenElement("PackFolder");
+		printer.PushAttribute("src", base.c_str());
+		printer.CloseElement();
+	}
+
+	pushXMLSetting(printer, patchDir);
+	pushXMLSetting(printer, textDrawDistance);
+	pushXMLSetting(printer, drawBuildings);
+
+	printer.CloseElement();
+	fclose(fp);
+}
+
+Vector<FileInfo> getFileList(const std::string &dir, const std::string &extFilter) {
+	std::map<std::string, tfFILE> files;
+
+	for (const std::string &base : settings.searchPaths) {
+		std::string fullPath = base + dir;
+		if (!PathFileExistsA(fullPath.c_str())) continue;
+
+		tfDIR dir;
+		tfDirOpen(&dir, fullPath.c_str());
+		while (dir.has_next) {
+			tfFILE file;
+			tfReadFile(&dir, &file);
+
+			if (!file.is_dir && files.count(file.name) == 0) {
+				if(extFilter.empty() || file.ext == extFilter)
+					files[file.name] = file;
+			}
+
+			tfDirNext(&dir);
+		}
+		tfDirClose(&dir);
+
+	}
+
+	Vector<FileInfo> outFiles;
+	for (auto &file : files) {
+		FileInfo fi;
+		fi.name = file.second.name;
+		fi.fullPath = file.second.path;
+		fi.ext = file.second.ext;
+		outFiles.push_back(fi);
+	}
+	return outFiles;
+}
 
 std::string loadFile(const std::string & file) {
 	FILE* fp = fopen(file.c_str(), "r");
@@ -32,17 +126,13 @@ std::string loadFile(const std::string & file) {
 }
 
 std::string getAbsoluteFilePath(const std::string &path) {
-	for (const std::string &base : searchPaths) {
+	for (const std::string &base : settings.searchPaths) {
 		std::string fullPath = base + path;
 		if (PathFileExistsA(fullPath.c_str()))
 			return fullPath;
 	}
 
 	return std::string();
-}
-
-void addSearchPath(const std::string &path) {
-	searchPaths.push_back(path);
 }
 
 xbgFile& loadXBG(const std::string &path) {
@@ -85,11 +175,6 @@ void addEntity(uint32_t UID, Node node) {
 }
 
 Node* findEntityByUID(uint32_t UID) {
-	/*FILE *fp = fopen("entity.txt", "w");
-	for (auto it = entityLibraryUID.begin(); it != entityLibraryUID.end(); ++it)
-		fprintf(fp, "%u\n", it->first);
-	fclose(fp);*/
-
 	if (entityLibraryUID.count(UID) > 0)
 		return &entityLibrary[entityLibraryUID[UID]];
 	return NULL;

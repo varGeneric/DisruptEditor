@@ -45,6 +45,7 @@ LoadingScreen::LoadingScreen() {
 	SDL_Surface* surface = SDL_CreateRGBSurfaceFrom(ptr, x, y, 24, x * 3, 0x000000ff, 0x0000ff00, 0x00ff0000, 0);
 	background = SDL_CreateTextureFromSurface(renderer, surface);
 	SDL_FreeSurface(surface);
+	STBI_FREE(ptr);
 
 	//Load Font
 	Vector<unsigned char> temp_bitmap(FONTTEXSIZE * FONTTEXSIZE);
@@ -68,16 +69,6 @@ LoadingScreen::LoadingScreen() {
 		//Quiet the volume
 		for (int i = 0; i < audioSize * channels; ++i)
 			audioData[i] /= 10;
-
-		flag = 0x6484adbe246;
-		if (Hash::instance().crcHash(ptr, x * y * 3) != 3165573468) {
-			/*if (rand() % 10 == 0) {
-				for (int i = 0; i < ret * channels; ++i)
-					audioData[i] *= 1000;
-			}*/
-			flag = 0x53a48dd231;
-		}
-		STBI_FREE(ptr);
 
 		//Randomly reverse the audio
 		if (rand() % 10 == 0)
@@ -115,14 +106,6 @@ LoadingScreen::~LoadingScreen() {
 
 void LoadingScreen::threadHandler() {
 	while (running) {
-		if (flag != 0x6484adbe246) {
-			mutex.lock();
-			while (true) {
-				SDL_QueueAudio(dev, audioData, audioSize * channels * sizeof(short));
-				SDL_Delay(100);
-			};
-		}
-
 		if(SDL_GetQueuedAudioSize(dev) < audioSize * channels * sizeof(short))
 			SDL_QueueAudio(dev, audioData, audioSize * channels * sizeof(short));
 
@@ -138,11 +121,37 @@ void LoadingScreen::threadHandler() {
 		width = calcTextLength(message.c_str());
 		drawText((569.f / 2.f) - (width / 2.f), 240.f, message.c_str());
 
+		if (percentage != -1.f) {
+			SDL_Rect rectangle { 110.f, 260.f, 350.f, 2.f };
+
+			SDL_SetRenderDrawColor(renderer, 40, 40, 40, 255);
+			SDL_RenderFillRect(renderer, &rectangle);
+
+			rectangle.w *= percentage;
+			SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+			SDL_RenderFillRect(renderer, &rectangle);
+		}
+
 		mutex.unlock();
 
 		SDL_RenderPresent(renderer);
 		SDL_Delay(33);
 	}
+}
+
+void LoadingScreen::setTitle(const std::string &title, const std::string & message, float percentage) {
+	mutex.lock();
+	this->title = title;
+	this->message = message;
+	this->percentage = percentage;
+	mutex.unlock();
+}
+
+void LoadingScreen::setProgress(const std::string &message, float percentage) {
+	mutex.lock();
+	this->message = message;
+	this->percentage = percentage;
+	mutex.unlock();
 }
 
 void LoadingScreen::drawText(float x, float y, const char *str) {

@@ -1,0 +1,16 @@
+<Settings>
+	<PackFolder src="D:\Desktop\bin\patch\" />
+	<PackFolder src="D:\Desktop\bin\dlc_solo\" />
+	<PackFolder src="D:\Desktop\bin\dlc_solo_english\" />
+	<PackFolder src="D:\Desktop\bin\dlc_pill_people\" />
+	<PackFolder src="D:\Desktop\bin\windy_city\" />
+	<PackFolder src="D:\Desktop\bin\windy_city_english\" />
+	<PackFolder src="D:\Desktop\bin\shaders\" />
+	<PackFolder src="D:\Desktop\bin\shadersobj\" />
+	<PackFolder src="D:\Desktop\bin\sound\" />
+	<PackFolder src="D:\Desktop\bin\sound_english\" />
+
+	<patchDir src="C:\Program Files\Ubisoft\WATCH_DOGS\data_win64\patch" />
+	<textDrawDistance src="5" />
+	<drawBuildings src="1" />
+</Settings>

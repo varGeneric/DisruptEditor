@@ -16,6 +16,4 @@ const ddVec3 green = { 0.0f, 0.6f, 0.0f };
 
 #include "noc_file_dialog.h"
 
-#include "ini.h"
-
 #include "dr_wav.h"

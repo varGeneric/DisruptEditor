@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Vector.h"
 #include <string>
 #include <map>
 #include <unordered_map>
@@ -10,15 +11,32 @@ class materialFile;
 class xbtFile;
 class Node;
 
+struct Settings {
+	Vector<std::string> searchPaths;
+	std::string patchDir;
+	float textDrawDistance = 5.f;
+	bool drawBuildings = true;
+};
+
+extern Settings settings;
+
+void reloadSettings();
+void saveSettings();
+
 static inline vec3 swapYZ(const vec3 &ref) {
 	return vec3(ref.x, ref.z, ref.y);
 }
 
+struct FileInfo {
+	std::string fullPath;
+	std::string name;
+	std::string ext;
+};
+Vector<FileInfo> getFileList(const std::string &dir, const std::string &extFilter = std::string());
+
 std::string loadFile(const std::string &file);
 
 std::string getAbsoluteFilePath(const std::string &path);
-
-void addSearchPath(const std::string &path);
 
 xbgFile& loadXBG(const std::string &path);
 

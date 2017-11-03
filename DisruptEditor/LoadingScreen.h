@@ -20,8 +20,11 @@ public:
 	void threadHandler();
 	std::string title, message;
 	std::mutex mutex;
+	void setTitle(const std::string &title, const std::string &message = std::string(), float percentage = -1.f);
+	void setProgress(const std::string &message, float percentage = -1.f);
+	SDL_Window* getWindow() { return window; }
 private:
-	uint64_t flag;
+	float percentage;
 	short *audioData;
 	int channels, audioSize;
 	Vector<stbtt_bakedchar> cdata;

@@ -17,6 +17,7 @@
 #include "imgui_impl_sdl_gl3.h"
 #include "LoadingScreen.h"
 #include "Dialog.h"
+#include "Entity.h"
 #include <future>
 #include <unordered_set>
 #include <Ntsecapi.h>
@@ -66,47 +67,16 @@ void reloadBuildingEntities() {
 }
 
 int main(int argc, char **argv) {
-	//freopen("debug.log", "wb", stdout);
 	SDL_Init(SDL_INIT_EVERYTHING);
 	srand(time(NULL));
 
-	LoadingScreen *loadingScreen = new LoadingScreen;
 	/*sbaoFile sb;
 	sb.open("D:\\Desktop\\bin\\default\\000fac53.sbao");
 	return 0;*/
 
-	//Setup INI
-	std::string wludir;
-	float textDrawDistance = 5.f;
-	bool drawBuildings = true;
+	reloadSettings();
+
 	std::unordered_map<std::string, bool> windows;
-	{
-		ini_t* ini = ini_load(loadFile("settings.ini").c_str(), NULL);
-
-		int settings_section = ini_find_section(ini, "settings", 0);
-		wludir = ini_property_value(ini, settings_section, ini_find_property(ini, settings_section, "wludir", 0));
-		textDrawDistance = atof(ini_property_value(ini, settings_section, ini_find_property(ini, settings_section, "textDrawDistance", 0)));
-		drawBuildings = atoi(ini_property_value(ini, settings_section, ini_find_property(ini, settings_section, "displayBuildings", 0)));
-
-		//Pack Files
-		int pack_section = ini_find_section(ini, "pack", 0);
-		for (int i = 0; i < ini->property_capacity; ++i) {
-			if (ini->properties[i].section == pack_section) {
-				std::string packPath;
-				if (ini->properties[i].value_large)
-					packPath = ini->properties[i].value_large;
-				else
-					packPath = ini->properties[i].value;
-				
-				if (packPath.back() != '/' && packPath.back() != '\\')
-					packPath.push_back('/');
-
-				addSearchPath(packPath);
-			}
-		}
-
-		ini_destroy(ini);
-	}
 
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
@@ -200,49 +170,37 @@ int main(int argc, char **argv) {
 
 	Camera camera;
 	camera.type = Camera::FLYCAM;
-	camera.far_plane = 4500.f;
+	camera.near_plane = 0.25f;
+	camera.far_plane = 6500.f;
 
 	RenderInterface renderInterface;
 	dd::initialize(&renderInterface);
 
 	//DominoBox db("D:\\Desktop\\bin\\dlc_solo\\domino\\user\\windycity\\tests\\ai_carfleeing_patterns\\ai_carfleeing_patterns.main.lua");
 
-	Vector< std::future<bool> > tasks;
-
-	loadingScreen->mutex.lock();
-	loadingScreen->title = "Loading Language Files...";
-	loadingScreen->message.clear();
-	loadingScreen->mutex.unlock();
+	LoadingScreen *loadingScreen = new LoadingScreen;
+	SDL_PumpEvents();
+	loadingScreen->setTitle("Loading Language Files");
 	Dialog::instance();
 
-	tfDIR dir;
-	tfDirOpen(&dir, (wludir + std::string("/worlds/windy_city/generated/wlu")).c_str());
-	while (dir.has_next) {
-		tfFILE file;
-		tfReadFile(&dir, &file);
-
-		if (!file.is_dir && strcmp(file.ext, "xml.data.fcb") == 0) {
-			SDL_Log("Loading %s\n", file.name);
+	{
+		loadingScreen->setTitle("Loading WLUs...");
+		Vector<FileInfo> files = getFileList("worlds/windy_city/generated/wlu", "xml.data.fcb");
+		int count = 0;
+		for (FileInfo &file : files) {
+			SDL_Log("Loading %s\n", file.name.c_str());
 			wlus[file.name].shortName = file.name;
-			//tasks.push_back(std::async(std::launch::async, &wluFile::open, &wlus[file.name], file.path));
-			wlus[file.name].open(file.path);
-
-			loadingScreen->mutex.lock();
-			loadingScreen->title = "Loading WLUs...";
-			loadingScreen->message = file.name;
-			loadingScreen->mutex.unlock();
+			wlus[file.name].open(file.fullPath);
+			loadingScreen->setProgress(file.name, count / (float)files.size());
+			++count;
+			SDL_PumpEvents();
 		}
-		SDL_PumpEvents();
-
-		tfDirNext(&dir);
 	}
-	tfDirClose(&dir);
 
-	//Wait for tasks
-	/*for (auto &it : tasks) {
-		it.wait();
+	if (wlus.empty()) {
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Disrupt Editor is not configured", "You have not properly setup paths in settings.xml, please see the readme", loadingScreen->getWindow());
+		return 0;
 	}
-	tasks.clear();*/
 
 	//Scan Materials
 	/*tfDirOpen(&dir, "D:/Desktop/bin/windy_city/graphics/_materials");
@@ -279,36 +237,12 @@ int main(int argc, char **argv) {
 	tfDirClose(&dir);*/
 
 	{
-		loadingScreen->mutex.lock();
-		loadingScreen->title = "Loading Entity Library...";
-		loadingScreen->message.clear();
-		loadingScreen->mutex.unlock();
-
-		FILE *fp = fopen(getAbsoluteFilePath("worlds\\windy_city\\generated\\entitylibrary_rt.fcb").c_str(), "rb");
-
-		uint32_t infoOffset, infoCount;
-		fread(&infoOffset, sizeof(infoOffset), 1, fp);
-		fread(&infoCount, sizeof(infoCount), 1, fp);
-		fseek(fp, infoOffset, SEEK_SET);
-
-		for (uint32_t i = 0; i < infoCount; ++i) {
-			uint32_t UID, offset;
-			fread(&UID, sizeof(UID), 1, fp);
-			fread(&offset, sizeof(offset), 1, fp);
-			offset += 8;
-
-			size_t curOffset = ftell(fp) + 4;
-
-			fseek(fp, offset, SEEK_SET);
-			bool bailOut = false;
-			Node entityParent;
-			entityParent.deserialize(fp, bailOut);
-			SDL_assert_release(!bailOut);
-			addEntity(UID, *entityParent.children.begin());
-
-			fseek(fp, curOffset, SEEK_SET);
+		loadingScreen->setTitle("Loading Entity Library...", std::string(), 0.f);
+		auto elLoad = std::async(std::launch::async, loadEntityLibrary);
+		while (elLoad.wait_for(std::chrono::milliseconds(30)) != std::future_status::ready) {
+			SDL_PumpEvents();
+			loadingScreen->setProgress(std::string(), entityLibrary.size() / 7981.f);
 		}
-		fclose(fp);
 	}
 
 	/*{
@@ -363,14 +297,22 @@ int main(int argc, char **argv) {
 	}
 	return 0;*/
 
-	loadingScreen->mutex.lock();
-	loadingScreen->title = "Loading graphics...";
-	loadingScreen->message.clear();
-	loadingScreen->mutex.unlock();
+	{
+		loadingScreen->setTitle("Loading graphics...", std::string(), 0.f);
+		auto elLoad = std::async(std::launch::async, reloadBuildingEntities);
+		while (elLoad.wait_for(std::chrono::milliseconds(30)) != std::future_status::ready) {
+			SDL_PumpEvents();
+			loadingScreen->setProgress(std::string(), buildingEntities.size() / 3409.f);
+		}
+	}
 
 	Uint32 ticks = SDL_GetTicks();
 	uint64_t frameCount = 0;
 	std::string currentWlu = wlus.begin()->first;
+
+	SDL_ShowWindow(window);
+	delete loadingScreen;
+	loadingScreen = NULL;
 
 	bool windowOpen = true;
 	while (windowOpen) {
@@ -489,8 +431,8 @@ int main(int argc, char **argv) {
 
 		if (ImGui::BeginMenu("Settings")) {
 			ImGui::DragFloat("Camera Fly Multiplier", &camera.flyMultiplier, 0.02f, 1.f, 10.f);
-			ImGui::DragFloat("Label Draw Distance", &textDrawDistance, 0.05f, 0.f, 4096.f);
-			ImGui::Checkbox("Draw Buildings", &drawBuildings);
+			ImGui::DragFloat("Label Draw Distance", &settings.textDrawDistance, 0.05f, 0.f, 4096.f);
+			ImGui::Checkbox("Draw Buildings", &settings.drawBuildings);
 			ImGui::EndMenu();
 		}
 		ImGui::End();
@@ -687,7 +629,7 @@ int main(int argc, char **argv) {
 					}
 				}
 
-				if (pos.distance(camera.location) < textDrawDistance)
+				if (pos.distance(camera.location) < settings.textDrawDistance)
 					dd::projectedText((char*)hidName->buffer.data(), &pos.x, white, &vp[0][0], 0, 0, windowSize.x, windowSize.y, 0.5f);
 				if (needsCross)
 					dd::cross(&pos.x, 0.25f);
@@ -697,10 +639,7 @@ int main(int argc, char **argv) {
 		}
 
 		//Render Buildings
-		if (drawBuildings) {
-			if (buildingEntities.empty())
-				reloadBuildingEntities();
-
+		if (settings.drawBuildings) {
 			renderInterface.model.use();
 			for (const BuildingEntity &Entity : buildingEntities) {
 				dd::aabb(&Entity.min.x, &Entity.max.x, blue);
@@ -735,12 +674,6 @@ int main(int argc, char **argv) {
 		ImGui::Render();
 		SDL_GL_SwapWindow(window);
 		frameCount++;
-
-		if (loadingScreen && frameCount > 5) {
-			SDL_ShowWindow(window);
-			delete loadingScreen;
-			loadingScreen = NULL;
-		}
 
 		SDL_Event event;
 		while (SDL_PollEvent(&event)) {
