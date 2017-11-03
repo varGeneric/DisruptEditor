@@ -22,15 +22,18 @@ void reloadSettings() {
 
 	//Search Path
 	settings.searchPaths.clear();
+
+	if (doc.RootElement()->FirstChildElement("patchDir")) {
+		settings.patchDir = doc.RootElement()->FirstChildElement("patchDir")->Attribute("src");
+		settings.searchPaths.push_back(settings.patchDir);
+	}
+
 	for (auto it = doc.RootElement()->FirstChildElement("PackFolder"); it; it = it->NextSiblingElement("PackFolder")) {
 		std::string packPath = it->Attribute("src");
 		if (packPath.back() != '/' && packPath.back() != '\\')
 			packPath.push_back('/');
 		settings.searchPaths.push_back(packPath);
 	}
-	
-	if (doc.RootElement()->FirstChildElement("patchDir"))
-		settings.patchDir = doc.RootElement()->FirstChildElement("patchDir")->Attribute("src");
 
 	if (doc.RootElement()->FirstChildElement("textDrawDistance"))
 		settings.textDrawDistance = doc.RootElement()->FirstChildElement("textDrawDistance")->FloatAttribute("src");
@@ -61,6 +64,8 @@ void saveSettings() {
 	printer.OpenElement("Settings");
 
 	for (const std::string &base : settings.searchPaths) {
+		if (base == settings.patchDir) continue;
+
 		printer.OpenElement("PackFolder");
 		printer.PushAttribute("src", base.c_str());
 		printer.CloseElement();
@@ -106,6 +111,33 @@ Vector<FileInfo> getFileList(const std::string &dir, const std::string &extFilte
 		fi.ext = file.second.ext;
 		outFiles.push_back(fi);
 	}
+	return outFiles;
+}
+
+Vector<FileInfo> getFileListFromAbsDir(const std::string & fullDir, const std::string & extFilter) {
+	Vector<FileInfo> outFiles;
+	if (!PathFileExistsA(fullDir.c_str())) return outFiles;
+
+	tfDIR dir;
+	tfDirOpen(&dir, fullDir.c_str());
+	while (dir.has_next) {
+		tfFILE file;
+		tfReadFile(&dir, &file);
+
+		if (!file.is_dir) {
+			if (extFilter.empty() || file.ext == extFilter) {
+				FileInfo fi;
+				fi.name = file.name;
+				fi.fullPath = file.path;
+				fi.ext = file.ext;
+				outFiles.push_back(fi);
+			}
+		}
+
+		tfDirNext(&dir);
+	}
+	tfDirClose(&dir);
+
 	return outFiles;
 }
 

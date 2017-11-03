@@ -55,3 +55,5 @@ public:
 	Vector<Node> children;
 	Vector<Attribute> attributes;
 };
+
+Node readFCB(const char* filename);

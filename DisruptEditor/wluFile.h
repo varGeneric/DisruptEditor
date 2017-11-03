@@ -35,19 +35,20 @@ public:
 	wluFile() {};
 	bool open(std::string filename);
 
-	void handleHeaders(FILE *fp, size_t size);
+	void serialize(const char* filename);
 
-	void serialize(FILE *fp);
+	void draw(bool drawImgui = false, bool draw3D = false);
 
-	void draw();
-	void drawImGui();
-
-	bool bailOut;
-	wluHeader wluhead;
+	bool bailOut;//If the file could possibly be corrupt
+	
 	Node root;
-	std::string origFilename;
-	std::string shortName;
+
+	std::string shortName; //ex. wlu_data_01_loop_vigilante_01.xml.data.fcb
+	std::string origFilename; //ex. original filename opened with
 private:
+	wluHeader wluhead;
+	Vector<uint8_t> extraData;
+	void handleHeaders(FILE *fp, size_t size);
 	Node* selectedEntity = NULL;
 };
 

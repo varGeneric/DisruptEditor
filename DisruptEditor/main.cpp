@@ -185,7 +185,7 @@ int main(int argc, char **argv) {
 
 	{
 		loadingScreen->setTitle("Loading WLUs...");
-		Vector<FileInfo> files = getFileList("worlds/windy_city/generated/wlu", "xml.data.fcb");
+		Vector<FileInfo> files = getFileListFromAbsDir(settings.patchDir + "/worlds/windy_city/generated/wlu", "xml.data.fcb");
 		int count = 0;
 		for (FileInfo &file : files) {
 			SDL_Log("Loading %s\n", file.name.c_str());
@@ -391,9 +391,7 @@ int main(int argc, char **argv) {
 							++a;
 					}*/
 
-					FILE *fp = fopen(it->second.origFilename.c_str(), "wb");
-					it->second.serialize(fp);
-					fclose(fp);
+					it->second.serialize(it->second.origFilename.c_str());
 				}
 			}
 			ImGui::EndMenu();
@@ -425,6 +423,17 @@ int main(int argc, char **argv) {
 				snprintf(outbuffer, sizeof(outbuffer), "%u", crc);
 				ImGui::InputText("CRC##UIDOUT", outbuffer, sizeof(buffer), ImGuiInputTextFlags_ReadOnly);
 				ImGui::EndMenu();
+			}
+			if (ImGui::MenuItem("FCB Decoder")) {
+				const char *src = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, NULL, NULL, NULL);
+				if (src) {
+					Node node = readFCB(src);
+					std::string out = src + std::string(".xml");
+					FILE *fp = fopen(out.c_str(), "w");
+					tinyxml2::XMLPrinter printer(fp);
+					node.serializeXML(printer);
+					fclose(fp);
+				}
 			}
 			ImGui::EndMenu();
 		}
@@ -501,10 +510,7 @@ int main(int argc, char **argv) {
 				std::string backup = wlu.origFilename;
 				backup += ".bak";
 				CopyFileA(wlu.origFilename.c_str(), backup.c_str(), TRUE);
-
-				FILE *fp = fopen(wlu.origFilename.c_str(), "wb");
-				wlu.serialize(fp);
-				fclose(fp);
+				wlu.serialize(wlu.origFilename.c_str());
 			}
 			ImGui::SameLine();
 			if (ImGui::Button("Reload")) {
@@ -538,7 +544,7 @@ int main(int argc, char **argv) {
 			ImGui::SetNextWindowSize(ImVec2(600, 400), ImGuiCond_FirstUseEver);
 			ImGui::Begin("Properties");
 
-			wlu.drawImGui();
+			wlu.draw();
 
 			Node *Entities = wlu.root.findFirstChild("Entities");
 			if (!Entities) continue;
@@ -551,7 +557,11 @@ int main(int argc, char **argv) {
 				if (ArchetypeGuid) {
 					uint32_t uid = Hash::instance().getFilenameHash((const char*)ArchetypeGuid->buffer.data());
 					entityPtr = findEntityByUID(uid);
-					SDL_assert_release(entityPtr);
+					if (!entityPtr) {
+						SDL_Log("Could not find %s\n", ArchetypeGuid->buffer.data());
+						SDL_assert_release(false && "Could not lookup entity by archtype, check that dlc_solo is loaded first before other packfiles");
+						entityPtr = &entityRef;
+					}
 				}
 				Node &entity = *entityPtr;
 

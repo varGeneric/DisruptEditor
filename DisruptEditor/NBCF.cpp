@@ -404,3 +404,29 @@ int Node::countNodes() {
 std::string Node::getHashName() {
 	return Hash::instance().getReverseHash(hash);
 }
+
+Node readFCB(const char * filename) {
+	Node node;
+
+	FILE *fp = fopen(filename, "rb");
+	if (!fp)
+		return node;
+
+	fcbHeader head;
+	fread(&head, sizeof(head), 1, fp);
+
+	if (memcmp(head.magic, "nbCF", 4) != 0) {
+		fclose(fp);
+		return node;
+	}
+
+	if (head.version == 16389) {
+		bool bailOut = false;
+		node.deserialize(fp, bailOut);
+	} else if (head.version == 3) {
+		Vector<Node*> list;
+		node.deserializeA(fp, list);
+	}
+
+	return node;
+}

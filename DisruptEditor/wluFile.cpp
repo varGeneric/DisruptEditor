@@ -11,6 +11,7 @@
 #include "Common.h"
 #include "imgui.h"
 #include "Implementation.h"
+#include "Entity.h"
 
 static inline void seekpad(FILE *fp, long pad) {
 	//16-byte chunk alignment
@@ -63,11 +64,19 @@ bool wluFile::open(std::string filename) {
 	seekpad(fp, 4);
 
 	size_t offset = ftell(fp);
+	size_t extraBegin = offset;
 	if (offset != size + sizeof(wluhead.base)) {
 		handleHeaders(fp, size + sizeof(wluhead.base));
 
 		offset = ftell(fp);
 		SDL_assert_release(offset == size + sizeof(wluhead.base));
+	}
+
+	//Read in Extra Data
+	extraData.resize(size + sizeof(wluhead.base) - extraBegin);
+	if (!extraData.empty()) {
+		fseek(fp, extraBegin, SEEK_SET);
+		fread(extraData.data(), 1, extraData.size(), fp);
 	}
 
 	fclose(fp);
@@ -106,7 +115,9 @@ void wluFile::handleHeaders(FILE * fp, size_t size) {
 	}
 }
 
-void wluFile::serialize(FILE *fp) {
+void wluFile::serialize(const char* filename) {
+	FILE *fp = fopen(filename, "wb");
+
 	memcpy(wluhead.base.magic, "ESAB", 4);
 	//wluhead.base.unknown1 = wluhead.base.unknown2 = 0;
 
@@ -122,11 +133,16 @@ void wluFile::serialize(FILE *fp) {
 	fseek(fp, 0, SEEK_END);
 	writepad(fp, 4);
 	wluhead.base.size = ftell(fp) - sizeof(wluhead.base);
+
+	//Write Extra Data
+	fwrite(extraData.data(), 1, extraData.size(), fp);
+
 	fseek(fp, 0, SEEK_SET);
 	fwrite(&wluhead, sizeof(wluhead), 1, fp);
+	fclose(fp);
 }
 
-void wluFile::drawImGui() {
+void wluFile::draw(bool drawImgui, bool draw3D) {
 	Node *Entities = root.findFirstChild("Entities");
 	if (!Entities) return;
 
@@ -215,14 +231,10 @@ void wluFile::drawImGui() {
 
 		//Handle Components
 		Node* Components = entity.findFirstChild("Components");
-
-		Node *CGraphicComponent = Components->findFirstChild("CGraphicComponent");
-		if (CGraphicComponent && ImGui::TreeNode("CGraphicComponent")) {
-
-			Attribute *_3182766c = CGraphicComponent->getAttribute(0x3182766c);
-			ImGui::Text("_3182766c: %s", _3182766c->buffer.data());
-
-			ImGui::TreePop();
+		if (Components) {
+			for (Node &it : Components->children) {
+				drawComponent(&entity, &it, true, true);
+			}
 		}
 
 		Node* PatrolDescription = entity.findFirstChild("PatrolDescription");

@@ -176,6 +176,7 @@
     <ClCompile Include="Math\Vector4.cpp" />
     <ClCompile Include="NBCF.cpp" />
     <ClCompile Include="nv_dds.cpp" />
+    <ClCompile Include="RML.cpp" />
     <ClCompile Include="RoadNetwork.cpp" />
     <ClCompile Include="sbaoFile.cpp" />
     <ClCompile Include="spkFile.cpp" />
@@ -219,6 +220,7 @@
     <ClInclude Include="NBCF.h" />
     <ClInclude Include="noc_file_dialog.h" />
     <ClInclude Include="nv_dds.h" />
+    <ClInclude Include="RML.h" />
     <ClInclude Include="RoadNetwork.h" />
     <ClInclude Include="sbaoFile.h" />
     <ClInclude Include="spkFile.h" />

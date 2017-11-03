@@ -33,6 +33,7 @@ struct FileInfo {
 	std::string ext;
 };
 Vector<FileInfo> getFileList(const std::string &dir, const std::string &extFilter = std::string());
+Vector<FileInfo> getFileListFromAbsDir(const std::string &dir, const std::string &extFilter = std::string());
 
 std::string loadFile(const std::string &file);
 

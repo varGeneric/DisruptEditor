@@ -2,7 +2,7 @@
 
 #include <SDL.h>
 #include "Common.h"
-#include "NBCF.h"
+#include "Hash.h"
 
 void loadEntityLibrary() {
 	FILE *fp = fopen(getAbsoluteFilePath("worlds\\windy_city\\generated\\entitylibrary_rt.fcb").c_str(), "rb");
@@ -31,4 +31,23 @@ void loadEntityLibrary() {
 		fseek(fp, curOffset, SEEK_SET);
 	}
 	fclose(fp);
+}
+
+void drawCGraphicComponent(Node *entity, Node *node, bool drawImGui, bool draw3D) {
+	
+}
+
+#define handleComponent(componentName) else if(name == #componentName) draw##componentName(entity, node, drawImGui, draw3D);
+
+void drawComponent(Node *entity, Node *node, bool drawImGui, bool draw3D) {
+	std::string name = Hash::instance().getReverseHash(node->hash);
+
+	if (false) {
+
+	}
+	handleComponent(CGraphicComponent)
+	else {
+		if (drawImGui)
+			ImGui::Text("Unimplemented Component: %s", name.c_str());
+	}
 }
