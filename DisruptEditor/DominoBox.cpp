@@ -30,7 +30,12 @@ std::string scanToNextLine(FILE *fp, const char* str) {
 	return readLuaLine(fp);
 }
 
-DominoBox::DominoBox(const char *filename) {
+void DominoBox::open(const char *filename) {
+	CBoxDeps.clear();
+	boxes.clear();
+	functions.clear();
+	localVariables.clear();
+
 	FILE *fp = fopen(filename, "r");
 
 	//Read Dependencies, TODO: Resources

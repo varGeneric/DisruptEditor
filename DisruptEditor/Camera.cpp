@@ -32,7 +32,7 @@ void Camera::update(float delta) {
 			float dy = cosf(phi) * actualMoveSpeed;
 			float dz = sinf(phi) * sinf(theta) * actualMoveSpeed;
 
-			vec3 movement;
+			glm::vec3 movement;
 
 			if (moveForward) {
 				movement.x += dx;
@@ -45,14 +45,14 @@ void Camera::update(float delta) {
 				movement.z -= dz;
 			}
 			if (moveLeft) {
-				movement.x += dz;
-				//movement.y += dy;
-				movement.z -= dx;
-			}
-			if (moveRight) {
 				movement.x -= dz;
 				//movement.y += dy;
 				movement.z += dx;
+			}
+			if (moveRight) {
+				movement.x += dz;
+				//movement.y += dy;
+				movement.z -= dx;
 			}
 
 			location += movement;
@@ -68,7 +68,7 @@ void Camera::update(float delta) {
 			if (!(mouseMask & SDL_BUTTON(SDL_BUTTON_MIDDLE)))
 				actualLookSpeed = 0.f;
 
-			lon += mouseX * actualLookSpeed;
+			lon -= mouseX * actualLookSpeed;
 			lat -= mouseY * actualLookSpeed;
 
 			lat = max(-85, min(85, lat));

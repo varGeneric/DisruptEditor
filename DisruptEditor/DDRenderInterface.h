@@ -2,7 +2,7 @@
 
 #include "Implementation.h"
 #include "GLHelper.h"
-#include "Math/LinMath.h"
+#include "glm/glm.hpp"
 
 class RenderInterface : public dd::RenderInterface {
 public:
@@ -40,6 +40,6 @@ public:
 	Shader lines, tex, model;
 	VertexBuffer linesBuffer, texBuffer;
 
-	mat4 VP;
-	ivec2 windowSize;
+	glm::mat4 VP;
+	glm::ivec2 windowSize;
 };

@@ -24,7 +24,7 @@ public:
 
 class DominoBox {
 public:
-	DominoBox(const char* filename);
+	void open(const char* filename);
 
 	Vector<std::string> CBoxDeps;
 	std::map<int, DominoCBox> boxes;

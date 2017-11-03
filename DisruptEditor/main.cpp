@@ -18,16 +18,18 @@
 #include "LoadingScreen.h"
 #include "Dialog.h"
 #include "Entity.h"
+#include "DominoBox.h"
 #include <future>
 #include <unordered_set>
 #include <Ntsecapi.h>
 #include "RML.h"
+#include "glm/gtc/matrix_transform.hpp"
 
 struct BuildingEntity {
 	std::string wlu;
 	std::string CBatchPath;
-	vec3 pos;
-	vec3 min, max;
+	glm::vec3 pos;
+	glm::vec3 min, max;
 };
 Vector<BuildingEntity> buildingEntities;
 std::map<std::string, wluFile> wlus;
@@ -51,13 +53,13 @@ void reloadBuildingEntities() {
 
 				Attribute *hidPos = Entity.getAttribute("hidPos");
 				if (!hidPos) continue;
-				be.pos = swapYZ(*(vec3*)hidPos->buffer.data());
+				be.pos = swapYZ(*(glm::vec3*)hidPos->buffer.data());
 
 				Node *hidBBox = Entity.findFirstChild("hidBBox");
-				be.min = *(vec3*)hidBBox->getAttribute("vectorBBoxMin")->buffer.data();
+				be.min = *(glm::vec3*)hidBBox->getAttribute("vectorBBoxMin")->buffer.data();
 				be.min = swapYZ(be.min);
 				be.min += be.pos;
-				be.max = *(vec3*)hidBBox->getAttribute("vectorBBoxMax")->buffer.data();
+				be.max = *(glm::vec3*)hidBBox->getAttribute("vectorBBoxMax")->buffer.data();
 				be.max = swapYZ(be.max);
 				be.max += be.pos;
 
@@ -176,8 +178,6 @@ int main(int argc, char **argv) {
 
 	RenderInterface renderInterface;
 	dd::initialize(&renderInterface);
-
-	//DominoBox db("D:\\Desktop\\bin\\dlc_solo\\domino\\user\\windycity\\tests\\ai_carfleeing_patterns\\ai_carfleeing_patterns.main.lua");
 
 	LoadingScreen *loadingScreen = new LoadingScreen;
 	SDL_PumpEvents();
@@ -331,12 +331,12 @@ int main(int argc, char **argv) {
 		if (delta > 0.5f)
 			delta = 0.5f;
 
-		ivec2 windowSize;
+		glm::ivec2 windowSize;
 		SDL_GetWindowSize(window, &windowSize.x, &windowSize.y);
 		glViewport(0, 0, windowSize.x, windowSize.y);
-		mat4 view = MATlookAt(camera.location, camera.lookingAt, camera.up);
-		mat4 projection = MATperspective(camera.fov, (float)windowSize.x / windowSize.y, camera.near_plane, camera.far_plane);
-		mat4 vp = projection * view;
+		glm::mat4 view = glm::lookAtLH(camera.location, camera.lookingAt, camera.up);
+		glm::mat4 projection = glm::perspective(camera.fov, (float)windowSize.x / windowSize.y, camera.near_plane, camera.far_plane);
+		glm::mat4 vp = projection * view;
 		renderInterface.VP = vp;
 		renderInterface.windowSize = windowSize;
 
@@ -409,6 +409,7 @@ int main(int argc, char **argv) {
 			if (ImGui::MenuItem("DARE Converter")) {
 			}
 			if (ImGui::MenuItem("Domino Editor")) {
+				windows["Domino"] = true;
 			}
 			if (ImGui::MenuItem("CSequence Editor")) {
 				windows["CSequence"] = true;
@@ -460,6 +461,14 @@ int main(int argc, char **argv) {
 		}
 
 		if (windows["Domino"] && ImGui::Begin("Domino!", &windows["Domino"], 0)) {
+			static std::string currentFile;
+			static DominoBox db;
+			if (ImGui::Button("Open")) {
+				currentFile = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, NULL, NULL, NULL);
+				db.open(currentFile.c_str());
+			}
+
+
 			ImGui::End();
 		}
 
@@ -572,7 +581,7 @@ int main(int argc, char **argv) {
 
 				Attribute *hidName = entity.getAttribute("hidName");
 				Attribute *hidPos = entity.getAttribute("hidPos");
-				vec3 pos = swapYZ(*(vec3*)hidPos->buffer.data());
+				glm::vec3 pos = swapYZ(*(glm::vec3*)hidPos->buffer.data());
 
 				//
 				Node *hidBBox = entity.findFirstChild("hidBBox");
@@ -587,7 +596,7 @@ int main(int argc, char **argv) {
 					if (XBG && XBG->buffer.size() > 5) {
 						auto &model = loadXBG((char*)XBG->buffer.data());
 						renderInterface.model.use();
-						mat4 MVP = vp * MATtranslate(mat4(), pos);
+						glm::mat4 MVP = vp * glm::translate(glm::mat4(), pos);
 						glUniformMatrix4fv(renderInterface.model.uniforms["MVP"], 1, GL_FALSE, &MVP[0][0]);
 						model.draw();
 					}
@@ -596,14 +605,14 @@ int main(int argc, char **argv) {
 				Node *CProximityTriggerComponent = Components->findFirstChild("CProximityTriggerComponent");
 				if (CProximityTriggerComponent) {
 					needsCross = false;
-					vec3 extent = swapYZ(*(vec3*)CProximityTriggerComponent->getAttribute("vectorSize")->buffer.data());
+					glm::vec3 extent = swapYZ(*(glm::vec3*)CProximityTriggerComponent->getAttribute("vectorSize")->buffer.data());
 					dd::box(&pos.x, red, extent.x, extent.y, extent.z);
 				}
 
 				if (hidBBox && false) {
-					vec3 boxMin = swapYZ(*((vec3*)hidBBox->getAttribute("vectorBBoxMin")->buffer.data()));
-					vec3 boxMax = swapYZ(*((vec3*)hidBBox->getAttribute("vectorBBoxMax")->buffer.data()));
-					vec3 boxExtent = boxMax - boxMin;
+					glm::vec3 boxMin = swapYZ(*((glm::vec3*)hidBBox->getAttribute("vectorBBoxMin")->buffer.data()));
+					glm::vec3 boxMax = swapYZ(*((glm::vec3*)hidBBox->getAttribute("vectorBBoxMax")->buffer.data()));
+					glm::vec3 boxExtent = boxMax - boxMin;
 					dd::box(&pos.x, blue, boxExtent.x, boxExtent.y, boxExtent.z);
 				}
 
@@ -612,11 +621,11 @@ int main(int argc, char **argv) {
 					needsCross = false;
 					Node* PatrolPointList = PatrolDescription->findFirstChild("PatrolPointList");
 
-					vec3 last;
+					glm::vec3 last;
 					for (Node &PatrolPoint : PatrolPointList->children) {
-						vec3 pos = swapYZ(*(vec3*)PatrolPoint.getAttribute("vecPos")->buffer.data());
+						glm::vec3 pos = swapYZ(*(glm::vec3*)PatrolPoint.getAttribute("vecPos")->buffer.data());
 
-						if (last != vec3())
+						if (last != glm::vec3())
 							dd::line(&last[0], &pos[0], red);
 						else
 							dd::projectedText((char*)hidName->buffer.data(), &pos.x, red, &vp[0][0], 0, 0, windowSize.x, windowSize.y, 0.5f);
@@ -629,14 +638,14 @@ int main(int argc, char **argv) {
 					needsCross = false;
 					Node* RacePointList = RaceDescription->findFirstChild("RacePointList");
 
-					vec3 last;
+					glm::vec3 last;
 					for (Node &RacePoint : RacePointList->children) {
-						vec3 pos = swapYZ(*(vec3*)RacePoint.getAttribute("vecPos")->buffer.data());
+						glm::vec3 pos = swapYZ(*(glm::vec3*)RacePoint.getAttribute("vecPos")->buffer.data());
 						float fShortcutRadius = *(float*)RacePoint.getAttribute("fShortcutRadius")->buffer.data();
 
 						dd::sphere((float*)&pos.x, red, fShortcutRadius);
 
-						if (last != vec3())
+						if (last != glm::vec3())
 							dd::line(&last[0], &pos[0], red);
 						else
 							dd::projectedText((char*)hidName->buffer.data(), &pos.x, red, &vp[0][0], 0, 0, windowSize.x, windowSize.y, 0.5f);
@@ -644,7 +653,7 @@ int main(int argc, char **argv) {
 					}
 				}
 
-				if (pos.distance(camera.location) < settings.textDrawDistance)
+				if (glm::distance(pos, camera.location) < settings.textDrawDistance)
 					dd::projectedText((char*)hidName->buffer.data(), &pos.x, white, &vp[0][0], 0, 0, windowSize.x, windowSize.y, 0.5f);
 				if (needsCross)
 					dd::cross(&pos.x, 0.25f);
@@ -658,11 +667,11 @@ int main(int argc, char **argv) {
 			renderInterface.model.use();
 			for (const BuildingEntity &Entity : buildingEntities) {
 				dd::aabb(&Entity.min.x, &Entity.max.x, blue);
-				if (Entity.pos.distance(camera.location) < 256)
+				if (glm::distance(Entity.pos, camera.location) < 256)
 					dd::projectedText(Entity.wlu.c_str(), &Entity.pos.x, white, &vp[0][0], 0, 0, windowSize.x, windowSize.y, 0.5f);
 
-				mat4 translate = MATtranslate(mat4(), Entity.pos + vec3(0.f, 64.f, 0.f));
-				mat4 MVP = vp * MATscale(translate, vec3(128.f));
+				glm::mat4 translate = glm::translate(glm::mat4(), Entity.pos + glm::vec3(0.f, 64.f, 0.f));
+				glm::mat4 MVP = vp * glm::scale(translate, glm::vec3(128.f));
 				glUniformMatrix4fv(renderInterface.model.uniforms["MVP"], 1, GL_FALSE, &MVP[0][0]);
 
 				{

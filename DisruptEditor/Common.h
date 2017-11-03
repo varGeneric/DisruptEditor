@@ -4,7 +4,7 @@
 #include <string>
 #include <map>
 #include <unordered_map>
-#include "Math/Vector3.h"
+#include "glm/glm.hpp"
 
 class xbgFile;
 class materialFile;
@@ -23,8 +23,8 @@ extern Settings settings;
 void reloadSettings();
 void saveSettings();
 
-static inline vec3 swapYZ(const vec3 &ref) {
-	return vec3(ref.x, ref.z, ref.y);
+static inline glm::vec3 swapYZ(const glm::vec3 &ref) {
+	return glm::vec3(ref.x, ref.z, ref.y);
 }
 
 struct FileInfo {
