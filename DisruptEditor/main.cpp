@@ -186,6 +186,9 @@ int main(int argc, char **argv) {
 	loadingScreen->setTitle("Loading Particle Library");
 	std::unique_ptr<tinyxml2::XMLDocument> particles = loadRml(getAbsoluteFilePath("__UNKNOWN/misc/9DBBFE8F.maybe.rml").c_str());
 
+	tinyxml2::XMLDocument spawnPointList;
+	spawnPointList.LoadFile(getAbsoluteFilePath("worlds/windy_city/generated/spawnpointlist.xml").c_str());
+
 	{
 		loadingScreen->setTitle("Loading WLUs...");
 		Vector<FileInfo> files = getFileListFromAbsDir(settings.patchDir + "/worlds/windy_city/generated/wlu", "xml.data.fcb");
@@ -386,13 +389,13 @@ int main(int argc, char **argv) {
 					backup += ".bak";
 					CopyFileA(it->second.origFilename.c_str(), backup.c_str(), TRUE);
 
-					/*it->second.root.findFirstChild("Entities")->children.clear();//DEBUG
+					it->second.root.findFirstChild("Entities")->children.clear();//DEBUG
 					for (auto a = it->second.root.children.begin(); a != it->second.root.children.end();) {
 						if (a->getHashName() != "Entities")
 							a = it->second.root.children.erase(a);
 						else
 							++a;
-					}*/
+					}
 
 					it->second.serialize(it->second.origFilename.c_str());
 				}
@@ -414,6 +417,9 @@ int main(int argc, char **argv) {
 			}
 			if (ImGui::MenuItem("LocString Editor")) {
 				windows["LocString"] = true;
+			}
+			if (ImGui::MenuItem("SpawnPoint Editor")) {
+				windows["SpawnPoint"] = true;
 			}
 			if (ImGui::BeginMenu("Hasher")) {
 				static char buffer[255] = { '\0' };
@@ -474,6 +480,16 @@ int main(int argc, char **argv) {
 		ImGui::SetNextWindowPos(ImVec2(80.f, 80.f), ImGuiCond_FirstUseEver);
 		if (windows["LocString"] && ImGui::Begin("LocString", &windows["LocString"], 0)) {
 			
+
+			ImGui::End();
+		}
+
+		ImGui::SetNextWindowSize(ImVec2(400, 200), ImGuiCond_FirstUseEver);
+		ImGui::SetNextWindowPos(ImVec2(80.f, 80.f), ImGuiCond_FirstUseEver);
+		if (windows["SpawnPoint"] && ImGui::Begin("SpawnPoint List", &windows["SpawnPoint"], 0)) {
+			for (tinyxml2::XMLElement *SpawnPoint = spawnPointList.RootElement()->FirstChildElement(); SpawnPoint; SpawnPoint = SpawnPoint->NextSiblingElement()) {
+				//vec3 Position = SpawnPoint->Attribute("Position");
+			}
 
 			ImGui::End();
 		}
@@ -706,6 +722,14 @@ int main(int argc, char **argv) {
 						windowOpen = false;
 						exit(0);
 					}
+					break;
+				case SDL_DROPFILE:
+					Node node = readFCB(event.drop.file);
+					std::string out = event.drop.file + std::string(".xml");
+					FILE *fp = fopen(out.c_str(), "w");
+					tinyxml2::XMLPrinter printer(fp);
+					node.serializeXML(printer);
+					fclose(fp);
 					break;
 			}
 		}

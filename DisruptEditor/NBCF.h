@@ -4,6 +4,7 @@
 #include <string>
 #include "tinyxml2.h"
 
+#pragma pack(push, 1)
 struct fcbHeader {
 	char magic[4];
 	uint16_t version;
@@ -11,6 +12,7 @@ struct fcbHeader {
 	uint32_t totalObjectCount;
 	uint32_t totalValueCount;
 };
+#pragma pack(pop)
 
 class Attribute {
 public:

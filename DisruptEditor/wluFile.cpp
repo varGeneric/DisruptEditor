@@ -135,7 +135,7 @@ void wluFile::serialize(const char* filename) {
 	wluhead.base.size = ftell(fp) - sizeof(wluhead.base);
 
 	//Write Extra Data
-	fwrite(extraData.data(), 1, extraData.size(), fp);
+	//fwrite(extraData.data(), 1, extraData.size(), fp);
 
 	fseek(fp, 0, SEEK_SET);
 	fwrite(&wluhead, sizeof(wluhead), 1, fp);
@@ -165,6 +165,8 @@ void wluFile::draw(bool drawImgui, bool draw3D) {
 	}
 	ImGui::ListBoxFooter();
 	ImGui::PopItemWidth();
+
+	char imGuiBuffer[1024];
 
 	if(selectedEntity) {
 		ImGui::Separator();
@@ -241,7 +243,8 @@ void wluFile::draw(bool drawImgui, bool draw3D) {
 		if (PatrolDescription && ImGui::TreeNode("PatrolDescription")) {
 			Node* PatrolPointList = PatrolDescription->findFirstChild("PatrolPointList");
 			for (Node &PatrolPoint : PatrolPointList->children) {
-				ImGui::InputFloat3("##a", (float*)PatrolPoint.getAttribute("vecPos")->buffer.data());
+				snprintf(imGuiBuffer, sizeof(imGuiBuffer), "##%p", PatrolPoint);
+				ImGui::DragFloat3(imGuiBuffer, (float*)PatrolPoint.getAttribute("vecPos")->buffer.data());
 			}
 			ImGui::TreePop();
 		}

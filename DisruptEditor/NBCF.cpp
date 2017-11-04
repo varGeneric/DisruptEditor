@@ -63,9 +63,8 @@ void Attribute::deserializeA(FILE * fp) {
 	fread(&hash, sizeof(hash), 1, fp);
 
 	bool isOffset;
-	uint32_t size = ReadCountA(fp, isOffset);
-
 	size_t position = ftell(fp);
+	uint32_t size = ReadCountA(fp, isOffset);
 
 	if (isOffset) {
 		fseek(fp, position - size, SEEK_SET);
@@ -77,6 +76,7 @@ void Attribute::deserializeA(FILE * fp) {
 		fread(buffer.data(), 1, size, fp);
 
 		fseek(fp, position, SEEK_SET);
+		ReadCountA(fp, isOffset);
 	} else {
 		buffer.resize(size);
 		fread(buffer.data(), 1, size, fp);
