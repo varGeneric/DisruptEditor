@@ -427,6 +427,7 @@ Node readFCB(const char * filename) {
 		Vector<Node*> list;
 		node.deserializeA(fp, list);
 	}
+	fclose(fp);
 
 	return node;
 }

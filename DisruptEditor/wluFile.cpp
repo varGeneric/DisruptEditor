@@ -81,6 +81,21 @@ bool wluFile::open(std::string filename) {
 
 	fclose(fp);
 
+
+	//Handle .embed
+	/*fp = fopen((filename + ".embed").c_str(), "rb");
+	if (fp) {
+		uint32_t magic, size;
+		fread(&magic, sizeof(magic), 1, fp);
+		fread(&size, sizeof(size), 1, fp);
+
+		fseek(fp, 1, SEEK_CUR);
+		fseek(fp, size * 37, SEEK_CUR);
+		SDL_assert_release(feof(fp));
+
+		fclose(fp);
+	}*/
+
 	return !bailOut;
 }
 
