@@ -3,7 +3,14 @@
 #define TINYFILES_IMPL
 #define NOC_FILE_DIALOG_IMPLEMENTATION
 #define NOC_FILE_DIALOG_WIN32
-#define INI_IMPLEMENTATION
 #define DR_WAV_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#define STB_TRUETYPE_IMPLEMENTATION
 
 #include "Implementation.h"
+
+#include "dr_wav.h"
+#include "stb_image.h"
+#include "stb_image_write.h"
+#include "stb_truetype.h"

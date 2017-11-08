@@ -24,6 +24,7 @@
 #include <Ntsecapi.h>
 #include "RML.h"
 #include "glm/gtc/matrix_transform.hpp"
+#include "CSector.h"
 
 struct BuildingEntity {
 	std::string wlu;
@@ -131,6 +132,23 @@ int main(int argc, char **argv) {
 	RenderInterface renderInterface;
 	dd::initialize(&renderInterface);
 
+	tfDIR dir;
+	tfDirOpen(&dir, "D:/Desktop/bin/windy_city/__UNKNOWN/srhr");
+	while (dir.has_next) {
+		tfFILE file;
+		tfReadFile(&dir, &file);
+
+		if (!file.is_dir) {
+			SDL_Log("Loading %s\n", file.name);
+
+			CSectorHighRes spk;
+			spk.open(file.path);
+		}
+
+		tfDirNext(&dir);
+	}
+	tfDirClose(&dir);
+
 	LoadingScreen *loadingScreen = new LoadingScreen;
 
 	{
@@ -151,40 +169,6 @@ int main(int argc, char **argv) {
 		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Disrupt Editor is not configured", "You have not properly setup paths in settings.xml, please see the readme", loadingScreen->getWindow());
 		return 0;
 	}
-
-	//Scan Materials
-	/*tfDirOpen(&dir, "D:/Desktop/bin/windy_city/graphics/_materials");
-	while (dir.has_next) {
-		tfFILE file;
-		tfReadFile(&dir, &file);
-
-		if (!file.is_dir) {
-			SDL_Log("Loading %s\n", file.name);
-
-			materialFile spk;
-			spk.open(file.path);
-		}
-
-		tfDirNext(&dir);
-	}
-	tfDirClose(&dir);*/
-
-	//Scan Audio
-	/*tfDirOpen(&dir, "D:/Desktop/bin/sound_unpack/soundbinary/manual");
-	while (dir.has_next) {
-		tfFILE file;
-		tfReadFile(&dir, &file);
-
-		if (!file.is_dir && strcmp(file.ext, "sbao") == 0) {
-			SDL_Log("Loading %s\n", file.name);
-
-			sbaoFile spk;
-			spk.open(file.path);
-		}
-
-		tfDirNext(&dir);
-	}
-	tfDirClose(&dir);*/
 
 	{
 		loadingScreen->setTitle("Loading Entity Library...", std::string(), 0.f);
@@ -296,29 +280,9 @@ int main(int argc, char **argv) {
 		renderInterface.VP = vp;
 		renderInterface.windowSize = windowSize;
 
-		ImGui::SetNextWindowPos(ImVec2(5.f, 5.f));
-		ImGui::Begin("##Top", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-		ImGui::DragFloat3("##Camera", (float*)&camera.location);
-		if (ImGui::BeginMenu("Assets")) {
-			ImGui::PushItemWidth(600.f);
-			static char searchBuffer[255] = { '\0' };
-			ImGui::InputText("##Search", searchBuffer, sizeof(searchBuffer));
-
-			ImGui::ListBoxHeader("##Entity List");
-			for (auto it = entityLibrary.begin(); it != entityLibrary.end(); ++it) {
-				Node &entity = it->second;
-
-				int i = entity.children.size();
-
-				std::string name = (const char*)entity.getAttribute("hidName")->buffer.data();
-				if (name.find(searchBuffer) != std::string::npos && ImGui::Selectable(name.c_str())) {
-					
-				}
-			}
-			ImGui::ListBoxFooter();
-
-			ImGui::PopItemWidth();
-			ImGui::EndMenu();
+		ImGui::BeginMainMenuBar();
+		if (ImGui::MenuItem("Entity Library")) {
+			windows["EntityLibrary"] = true;
 		}
 		if (ImGui::BeginMenu("Batch")) {
 			if (ImGui::MenuItem("Import Wlu XML")) {
@@ -398,8 +362,45 @@ int main(int argc, char **argv) {
 			ImGui::Checkbox("Draw Buildings", &settings.drawBuildings);
 			ImGui::EndMenu();
 		}
-		ImGui::End();
+		ImGui::EndMainMenuBar();
 		
+		ImGui::SetNextWindowSize(ImVec2(600, 400), ImGuiCond_FirstUseEver);
+		ImGui::SetNextWindowPos(ImVec2(80.f, 80.f), ImGuiCond_FirstUseEver);
+		if (windows["EntityLibrary"] && ImGui::Begin("Entity Library", &windows["EntityLibrary"], 0)) {
+			//ImGui::PushItemWidth(-1.f);
+			static char searchBuffer[255] = { '\0' };
+			ImGui::InputText("##Search", searchBuffer, sizeof(searchBuffer));
+
+			ImVec2 resSize = ImGui::GetContentRegionAvail();
+			float left = resSize.x;
+
+			//ImGui::ListBoxHeader("##Entity List", resSize);
+			for (auto it = entityLibrary.begin(); it != entityLibrary.end(); ++it) {
+				Node &entity = it->second;
+
+				int i = entity.children.size();
+
+				std::string name = (const char*)entity.getAttribute("hidName")->buffer.data();
+				if (name.find(searchBuffer) != std::string::npos) {
+					ImGui::PushID(name.c_str());
+					ImGui::Image((ImTextureID)loadResTexture("loading.png"), ImVec2(128.f, 128.f));
+					ImGui::PopID();
+
+					if(ImGui::IsItemHovered())
+						ImGui::SetTooltip("%s", name.c_str());
+
+					left -= ImGui::GetItemRectSize().x;
+					if (left > ImGui::GetItemRectSize().x + 60.f)
+						ImGui::SameLine();
+					else
+						left = resSize.x;
+				}
+			}
+			//ImGui::ListBoxFooter();
+			//ImGui::PopItemWidth();
+			ImGui::End();
+		}
+
 		if (windows["DARE"] && ImGui::Begin("DARE Converter", &windows["DARE"], 0)) {
 			if (ImGui::Button("Convert OGG to SBAO")) {
 				const char *src = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "ogg\0*.ogg\0", NULL, NULL);

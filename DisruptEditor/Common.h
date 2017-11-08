@@ -5,6 +5,7 @@
 #include <map>
 #include <unordered_map>
 #include "glm/glm.hpp"
+#include "glad.h"
 
 class xbgFile;
 class materialFile;
@@ -40,6 +41,8 @@ xbgFile& loadXBG(const std::string &path);
 materialFile& loadMaterial(const std::string &path);
 
 xbtFile& loadTexture(const std::string &path);
+
+GLuint loadResTexture(const std::string &path);
 
 
 //EntityLibrary

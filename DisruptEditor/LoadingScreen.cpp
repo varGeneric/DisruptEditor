@@ -1,13 +1,9 @@
 #include "LoadingScreen.h"
 
 #include <SDL.h>
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
 #define STB_VORBIS_HEADER_ONLY
 #include "stb_vorbis.c"
-#include "stb_truetype.h"
-
-#define STB_TRUETYPE_IMPLEMENTATION
+#include "stb_image.h"
 #include "stb_truetype.h"
 
 #define FONTTEXSIZE 128
@@ -45,7 +41,7 @@ LoadingScreen::LoadingScreen() {
 	SDL_Surface* surface = SDL_CreateRGBSurfaceFrom(ptr, x, y, 24, x * 3, 0x000000ff, 0x0000ff00, 0x00ff0000, 0);
 	background = SDL_CreateTextureFromSurface(renderer, surface);
 	SDL_FreeSurface(surface);
-	STBI_FREE(ptr);
+	free(ptr);
 
 	//Load Font
 	Vector<unsigned char> temp_bitmap(FONTTEXSIZE * FONTTEXSIZE);
@@ -68,7 +64,7 @@ LoadingScreen::LoadingScreen() {
 	if (audioSize) {
 		//Quiet the volume
 		for (int i = 0; i < audioSize * channels; ++i)
-			audioData[i] /= 10;
+			audioData[i] /= 20;
 
 		//Randomly reverse the audio
 		if (rand() % 10 == 0)
@@ -83,11 +79,11 @@ LoadingScreen::LoadingScreen() {
 		want.userdata = NULL;
 		want.callback = NULL;
 
-		dev = SDL_OpenAudioDevice(NULL, 0, &want, &have, 0);
+		/*dev = SDL_OpenAudioDevice(NULL, 0, &want, &have, 0);
 		if (dev != 0)
 			SDL_PauseAudioDevice(dev, 0);
 
-		SDL_QueueAudio(dev, audioData, audioSize * channels * sizeof(short));
+		SDL_QueueAudio(dev, audioData, audioSize * channels * sizeof(short));*/
 	}
 
 	thread = SDL_CreateThread(LSThread, NULL, this);
@@ -106,8 +102,8 @@ LoadingScreen::~LoadingScreen() {
 
 void LoadingScreen::threadHandler() {
 	while (running) {
-		if(SDL_GetQueuedAudioSize(dev) < audioSize * channels * sizeof(short))
-			SDL_QueueAudio(dev, audioData, audioSize * channels * sizeof(short));
+		//if(SDL_GetQueuedAudioSize(dev) < audioSize * channels * sizeof(short))
+			//SDL_QueueAudio(dev, audioData, audioSize * channels * sizeof(short));
 
 		SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
 		SDL_RenderCopy(renderer, background, NULL, NULL);

@@ -102,6 +102,9 @@
     <ClCompile Include="RML.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="CSector.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stb_rect_pack.h">
@@ -219,6 +222,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="RML.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CSector.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stb_image_write.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

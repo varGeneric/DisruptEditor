@@ -153,6 +153,7 @@
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Common.cpp" />
+    <ClCompile Include="CSector.cpp" />
     <ClCompile Include="cseqFile.cpp" />
     <ClCompile Include="DatFat.cpp" />
     <ClCompile Include="DDRenderInterface.cpp" />
@@ -186,6 +187,7 @@
     <ClInclude Include="bootTvTex.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Common.h" />
+    <ClInclude Include="CSector.h" />
     <ClInclude Include="cseqFile.h" />
     <ClInclude Include="DatFat.h" />
     <ClInclude Include="DDRenderInterface.h" />
@@ -211,6 +213,7 @@
     <ClInclude Include="sbaoFile.h" />
     <ClInclude Include="spkFile.h" />
     <ClInclude Include="stb_image.h" />
+    <ClInclude Include="stb_image_write.h" />
     <ClInclude Include="stb_rect_pack.h" />
     <ClInclude Include="stb_textedit.h" />
     <ClInclude Include="stb_truetype.h" />
