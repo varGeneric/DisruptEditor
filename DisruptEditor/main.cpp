@@ -114,10 +114,6 @@ int main(int argc, char **argv) {
 	}
 	SDL_GL_SetSwapInterval(1);
 	gladLoadGL();
-	glClearColor(0.2f, 0.2f, 0.2f, 1.f);
-	GLuint VertexArrayID;
-	glGenVertexArrays(1, &VertexArrayID);
-	glBindVertexArray(VertexArrayID);
 	
 	ImGui_ImplSdlGL3_Init(window);
 
@@ -129,8 +125,7 @@ int main(int argc, char **argv) {
 	camera.near_plane = 0.25f;
 	camera.far_plane = 6500.f;
 
-	RenderInterface renderInterface;
-	dd::initialize(&renderInterface);
+	dd::initialize(&RenderInterface::instance());
 
 	tfDIR dir;
 	tfDirOpen(&dir, "D:/Desktop/bin/windy_city/__UNKNOWN/srhr");
@@ -262,8 +257,9 @@ int main(int argc, char **argv) {
 	bool windowOpen = true;
 	while (windowOpen) {
 		ImGui_ImplSdlGL3_NewFrame(window);
+		glClearColor(0.2f, 0.2f, 0.2f, 1.f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-		glBindVertexArray(VertexArrayID);
+		glBindVertexArray(RenderInterface::instance().VertexArrayID);
 		glEnable(GL_DEPTH_TEST);
 
 		float delta = (SDL_GetTicks() - ticks) / 1000.f;
@@ -271,18 +267,20 @@ int main(int argc, char **argv) {
 		if (delta > 0.5f)
 			delta = 0.5f;
 
-		glm::ivec2 windowSize;
-		SDL_GetWindowSize(window, &windowSize.x, &windowSize.y);
-		glViewport(0, 0, windowSize.x, windowSize.y);
-		glm::mat4 view = glm::lookAtLH(camera.location, camera.lookingAt, camera.up);
-		glm::mat4 projection = glm::perspective(camera.fov, (float)windowSize.x / windowSize.y, camera.near_plane, camera.far_plane);
-		glm::mat4 vp = projection * view;
-		renderInterface.VP = vp;
-		renderInterface.windowSize = windowSize;
+		RenderInterface &renderInterface = RenderInterface::instance();
+
+		SDL_GetWindowSize(window, &renderInterface.windowSize.x, &renderInterface.windowSize.y);
+		glViewport(0, 0, renderInterface.windowSize.x, renderInterface.windowSize.y);
+		renderInterface.View = glm::lookAtLH(camera.location, camera.lookingAt, camera.up);
+		renderInterface.Projection = glm::perspective(camera.fov, (float)renderInterface.windowSize.x / renderInterface.windowSize.y, camera.near_plane, camera.far_plane);
+		renderInterface.VP = renderInterface.Projection * renderInterface.View;
 
 		ImGui::BeginMainMenuBar();
 		if (ImGui::MenuItem("Entity Library")) {
-			windows["EntityLibrary"] = true;
+			windows["EntityLibrary"] ^= true;
+		}
+		if (ImGui::MenuItem("Terrain")) {
+			windows["Terrain"] ^= true;
 		}
 		if (ImGui::BeginMenu("Batch")) {
 			if (ImGui::MenuItem("Import Wlu XML")) {
@@ -323,22 +321,19 @@ int main(int argc, char **argv) {
 		}
 
 		if (ImGui::BeginMenu("Tools")) {
-			if (ImGui::MenuItem("WLU Editor")) {
-				windows["Layers"] = true;
-			}
 			if (ImGui::MenuItem("DARE Converter")) {
 			}
 			if (ImGui::MenuItem("Domino Editor")) {
-				windows["Domino"] = true;
+				windows["Domino"] ^= true;
 			}
 			if (ImGui::MenuItem("CSequence Editor")) {
-				windows["CSequence"] = true;
+				windows["CSequence"] ^= true;
 			}
 			if (ImGui::MenuItem("LocString Editor")) {
-				windows["LocString"] = true;
+				windows["LocString"] ^= true;
 			}
 			if (ImGui::MenuItem("SpawnPoint Editor")) {
-				windows["SpawnPoint"] = true;
+				windows["SpawnPoint"] ^= true;
 			}
 			if (ImGui::BeginMenu("Hasher")) {
 				static char buffer[255] = { '\0' };
@@ -364,8 +359,8 @@ int main(int argc, char **argv) {
 		}
 		ImGui::EndMainMenuBar();
 		
-		ImGui::SetNextWindowSize(ImVec2(600, 400), ImGuiCond_FirstUseEver);
-		ImGui::SetNextWindowPos(ImVec2(80.f, 80.f), ImGuiCond_FirstUseEver);
+		ImGui::SetNextWindowSize(ImVec2(1000, 360), ImGuiCond_FirstUseEver);
+		ImGui::SetNextWindowPos(ImVec2(7.f, 537.f), ImGuiCond_FirstUseEver);
 		if (windows["EntityLibrary"] && ImGui::Begin("Entity Library", &windows["EntityLibrary"], 0)) {
 			//ImGui::PushItemWidth(-1.f);
 			static char searchBuffer[255] = { '\0' };
@@ -383,7 +378,7 @@ int main(int argc, char **argv) {
 				std::string name = (const char*)entity.getAttribute("hidName")->buffer.data();
 				if (name.find(searchBuffer) != std::string::npos) {
 					ImGui::PushID(name.c_str());
-					ImGui::Image((ImTextureID)loadResTexture("loading.png"), ImVec2(128.f, 128.f));
+					ImGui::Image((ImTextureID)generateEntityIcon(&entity), ImVec2(128.f, 128.f));
 					ImGui::PopID();
 
 					if(ImGui::IsItemHovered())
@@ -555,7 +550,7 @@ int main(int argc, char **argv) {
 					if (XBG && XBG->buffer.size() > 5) {
 						auto &model = loadXBG((char*)XBG->buffer.data());
 						renderInterface.model.use();
-						glm::mat4 MVP = vp * glm::translate(glm::mat4(), pos);
+						glm::mat4 MVP = renderInterface.VP * glm::translate(glm::mat4(), pos);
 						glUniformMatrix4fv(renderInterface.model.uniforms["MVP"], 1, GL_FALSE, &MVP[0][0]);
 						model.draw();
 					}
@@ -587,7 +582,7 @@ int main(int argc, char **argv) {
 						if (last != glm::vec3())
 							dd::line(&last[0], &pos[0], red);
 						else
-							dd::projectedText((char*)hidName->buffer.data(), &pos.x, red, &vp[0][0], 0, 0, windowSize.x, windowSize.y, 0.5f);
+							dd::projectedText((char*)hidName->buffer.data(), &pos.x, red, &renderInterface.VP[0][0], 0, 0, renderInterface.windowSize.x, renderInterface.windowSize.y, 0.5f);
 						last = pos;
 					}
 				}
@@ -607,13 +602,13 @@ int main(int argc, char **argv) {
 						if (last != glm::vec3())
 							dd::line(&last[0], &pos[0], red);
 						else
-							dd::projectedText((char*)hidName->buffer.data(), &pos.x, red, &vp[0][0], 0, 0, windowSize.x, windowSize.y, 0.5f);
+							dd::projectedText((char*)hidName->buffer.data(), &pos.x, red, &renderInterface.VP[0][0], 0, 0, renderInterface.windowSize.x, renderInterface.windowSize.y, 0.5f);
 						last = pos;
 					}
 				}
 
 				if (glm::distance(pos, camera.location) < settings.textDrawDistance)
-					dd::projectedText((char*)hidName->buffer.data(), &pos.x, white, &vp[0][0], 0, 0, windowSize.x, windowSize.y, 0.5f);
+					dd::projectedText((char*)hidName->buffer.data(), &pos.x, white, &renderInterface.VP[0][0], 0, 0, renderInterface.windowSize.x, renderInterface.windowSize.y, 0.5f);
 				if (needsCross)
 					dd::cross(&pos.x, 0.25f);
 
@@ -627,10 +622,10 @@ int main(int argc, char **argv) {
 			for (const BuildingEntity &Entity : buildingEntities) {
 				dd::aabb(&Entity.min.x, &Entity.max.x, blue);
 				if (glm::distance(Entity.pos, camera.location) < 256)
-					dd::projectedText(Entity.wlu.c_str(), &Entity.pos.x, white, &vp[0][0], 0, 0, windowSize.x, windowSize.y, 0.5f);
+					dd::projectedText(Entity.wlu.c_str(), &Entity.pos.x, white, &renderInterface.VP[0][0], 0, 0, renderInterface.windowSize.x, renderInterface.windowSize.y, 0.5f);
 
 				glm::mat4 translate = glm::translate(glm::mat4(), Entity.pos + glm::vec3(0.f, 64.f, 0.f));
-				glm::mat4 MVP = vp * glm::scale(translate, glm::vec3(128.f));
+				glm::mat4 MVP = renderInterface.VP * glm::scale(translate, glm::vec3(128.f));
 				glUniformMatrix4fv(renderInterface.model.uniforms["MVP"], 1, GL_FALSE, &MVP[0][0]);
 
 				{
@@ -652,7 +647,7 @@ int main(int argc, char **argv) {
 		if (!ImGui::IsAnyItemActive())
 			camera.update(delta);
 
-		glBindVertexArray(VertexArrayID);
+		glBindVertexArray(RenderInterface::instance().VertexArrayID);
 		dd::flush(0);
 		ImGui::Render();
 		SDL_GL_SwapWindow(window);

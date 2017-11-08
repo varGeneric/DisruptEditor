@@ -37,20 +37,13 @@ std::string loadFile(const std::string &file);
 std::string getAbsoluteFilePath(const std::string &path);
 
 xbgFile& loadXBG(const std::string &path);
+xbgFile& loadXBG(uint32_t path);
 
 materialFile& loadMaterial(const std::string &path);
 
 xbtFile& loadTexture(const std::string &path);
 
 GLuint loadResTexture(const std::string &path);
-
-
-//EntityLibrary
-void addEntity(uint32_t UID, Node node);
-Node* findEntityByUID(uint32_t UID);
-
-extern std::map<std::string, Node> entityLibrary;
-extern std::unordered_map<uint32_t, std::string> entityLibraryUID;
 
 #include "imgui.h"
 

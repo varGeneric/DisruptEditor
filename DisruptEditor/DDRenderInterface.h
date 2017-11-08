@@ -37,9 +37,16 @@ public:
 	void drawLineList(const dd::DrawVertex * lines, int count, bool depthEnabled);
 	void drawGlyphList(const dd::DrawVertex * glyphs, int count, dd::GlyphTextureHandle glyphTex);
 
+	GLuint VertexArrayID;
 	Shader lines, tex, model;
 	VertexBuffer linesBuffer, texBuffer;
 
-	glm::mat4 VP;
+	glm::mat4 View, Projection, VP;
 	glm::ivec2 windowSize;
+
+	//Frame Buffer
+	GLuint fbo, fbo_texture, fbo_depth;
+	void saveFBO(const char* filename);
+
+	static RenderInterface& instance();
 };

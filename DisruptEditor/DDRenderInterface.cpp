@@ -1,5 +1,8 @@
 #include "DDRenderInterface.h"
 
+#include <SDL_assert.h>
+#include "stb_image_write.h"
+
 RenderInterface::RenderInterface() {
 	lines = loadShaders("res/gldd.xml");
 	linesBuffer = createVertexBuffer(NULL, 0, BUFFER_STREAM);
@@ -9,6 +12,32 @@ RenderInterface::RenderInterface() {
 	texBuffer = createVertexBuffer(NULL, 0, BUFFER_STREAM);
 
 	model = loadShaders("res/model.xml");
+
+	glGenVertexArrays(1, &VertexArrayID);
+
+	//Icon Framebuffer
+	glGenTextures(1, &fbo_texture);
+	glBindTexture(GL_TEXTURE_2D, fbo_texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 512, 512, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+	glGenTextures(1, &fbo_depth);
+	glBindTexture(GL_TEXTURE_2D, fbo_depth);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 512, 512, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+
+	glGenFramebuffers(1, &fbo);
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fbo_texture, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, fbo_depth, 0);
+	SDL_assert_release(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void RenderInterface::drawPointList(const dd::DrawVertex *points, int count, bool depthEnabled) {
@@ -154,4 +183,22 @@ dd::GlyphTextureHandle RenderInterface::createGlyphTexture(int width, int height
 
 void RenderInterface::destroyGlyphTexture(dd::GlyphTextureHandle glyphTex) {
 	glDeleteTextures(1, (GLuint*)&glyphTex);
+}
+
+
+void RenderInterface::saveFBO(const char *filename) {
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+	glFinish();
+
+	Vector<uint8_t> pixels(512 * 512 * 4);
+	glReadPixels(0, 0, 512, 512, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
+
+	stbi_write_png(filename, 512, 512, 4, pixels.data(), 4 * 512);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+RenderInterface& RenderInterface::instance() {
+	static RenderInterface ri;
+	return ri;
 }

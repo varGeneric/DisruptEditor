@@ -1,6 +1,7 @@
 #include "Common.h"
 
 #include "Vector.h"
+#include "Hash.h"
 #include <unordered_map>
 #include <SDL_assert.h>
 #include <Shlwapi.h>
@@ -13,9 +14,31 @@
 #include "stb_image.h"
 
 Settings settings;
-std::unordered_map<std::string, xbgFile> xbgs;
 std::unordered_map<std::string, materialFile> materials;
 std::unordered_map<std::string, xbtFile> textures;
+std::unordered_map<uint32_t, std::string> unknownFiles;
+
+void handleUnknownPath(const char* base) {
+	tfDIR dir;
+	tfDirOpen(&dir, base);
+	while (dir.has_next) {
+		tfFILE file;
+		tfReadFile(&dir, &file);
+
+		if (!file.is_dir && strlen(file.name) > 8) {
+			file.name[8] = '\0';
+
+			uint32_t hash = std::stoul(file.name, NULL, 16);
+			if (unknownFiles.count(hash) == 0) {
+				unknownFiles[hash] = file.path;
+			}
+
+		}
+
+		tfDirNext(&dir);
+	}
+	tfDirClose(&dir);
+}
 
 void reloadSettings() {
 	tinyxml2::XMLDocument doc;
@@ -26,6 +49,8 @@ void reloadSettings() {
 
 	if (doc.RootElement()->FirstChildElement("patchDir")) {
 		settings.patchDir = doc.RootElement()->FirstChildElement("patchDir")->Attribute("src");
+		if (settings.patchDir.back() != '/' && settings.patchDir.back() != '\\')
+			settings.patchDir.push_back('/');
 		settings.searchPaths.push_back(settings.patchDir);
 	}
 
@@ -41,6 +66,27 @@ void reloadSettings() {
 
 	if (doc.RootElement()->FirstChildElement("drawBuildings"))
 		settings.drawBuildings = doc.RootElement()->FirstChildElement("drawBuildings")->BoolAttribute("src");
+
+
+	//Reload Unknowns
+	unknownFiles.clear();
+	for (const std::string &base : settings.searchPaths) {
+		std::string unknownPath = base + "__UNKNOWN";
+		if (!PathFileExistsA(unknownPath.c_str())) continue;
+		tfDIR dir;
+		tfDirOpen(&dir, unknownPath.c_str());
+		while (dir.has_next) {
+			tfFILE file;
+			tfReadFile(&dir, &file);
+
+			if (file.is_dir && strcmp(file.name, ".") != 0 && strcmp(file.name, ".."))
+				handleUnknownPath(file.path);
+
+			tfDirNext(&dir);
+		}
+		tfDirClose(&dir);
+
+	}
 }
 
 template <typename T>
@@ -168,10 +214,22 @@ std::string getAbsoluteFilePath(const std::string &path) {
 	return std::string();
 }
 
+std::string getAbsoluteFilePath(uint32_t path) {
+	if (unknownFiles.count(path))
+		return unknownFiles[path];
+	return "";
+}
+
+std::unordered_map<uint32_t, xbgFile> xbgs;
+
 xbgFile& loadXBG(const std::string &path) {
+	return loadXBG(Hash::instance().getFilenameHash(path));
+}
+
+xbgFile &loadXBG(uint32_t path) {
 	if (xbgs.count(path) == 0) {
 		auto &model = xbgs[path];
-		SDL_Log("Loading %s...\n", path.c_str());
+		SDL_Log("Loading %u.xbg\n", path);
 		model.open(getAbsoluteFilePath(path).c_str());
 	}
 	return xbgs[path];
@@ -200,6 +258,7 @@ GLuint loadResTexture(const std::string & path) {
 	if (texturesRes.count(path) == 0) {
 		int width, height, bpc;
 		uint8_t *pixels = stbi_load(("res/" + path).c_str(), &width, &height, &bpc, 0);
+		if (!pixels) return 0;
 		GLuint id;
 		glGenTextures(1, &id);
 		glBindTexture(GL_TEXTURE_2D, id);
@@ -223,23 +282,5 @@ GLuint loadResTexture(const std::string & path) {
 		return id;
 	}
 	return texturesRes[path];
-}
-
-std::map<std::string, Node> entityLibrary;
-std::unordered_map<uint32_t, std::string> entityLibraryUID;
-
-void addEntity(uint32_t UID, Node node) {
-	Attribute *hidName = node.getAttribute("hidName");
-	SDL_assert_release(hidName);
-
-	std::string name = (char*)hidName->buffer.data();
-	entityLibrary[name] = node;
-	entityLibraryUID[UID] = name;
-}
-
-Node* findEntityByUID(uint32_t UID) {
-	if (entityLibraryUID.count(UID) > 0)
-		return &entityLibrary[entityLibraryUID[UID]];
-	return NULL;
 }
 

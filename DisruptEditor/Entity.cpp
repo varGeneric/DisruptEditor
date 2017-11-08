@@ -1,8 +1,30 @@
 #include "Entity.h"
 
 #include <SDL.h>
+#include <unordered_set>
 #include "Common.h"
 #include "Hash.h"
+#include "DDRenderInterface.h"
+#include "glm/gtc/matrix_transform.hpp"
+#include "xbgFile.h"
+
+std::map<std::string, Node> entityLibrary;
+std::unordered_map<uint32_t, std::string> entityLibraryUID;
+
+void addEntity(uint32_t UID, Node &node) {
+	Attribute *hidName = node.getAttribute("hidName");
+	SDL_assert_release(hidName);
+
+	std::string name = (char*)hidName->buffer.data();
+	entityLibrary[name] = node;
+	entityLibraryUID[UID] = name;
+}
+
+Node* findEntityByUID(uint32_t UID) {
+	if (entityLibraryUID.count(UID) > 0)
+		return &entityLibrary[entityLibraryUID[UID]];
+	return NULL;
+}
 
 void loadEntityLibrary() {
 	FILE *fp = fopen(getAbsoluteFilePath("worlds\\windy_city\\generated\\entitylibrary_rt.fcb").c_str(), "rb");
@@ -50,4 +72,44 @@ void drawComponent(Node *entity, Node *node, bool drawImGui, bool draw3D) {
 		if (drawImGui)
 			ImGui::Text("Unimplemented Component: %s", name.c_str());
 	}
+}
+
+std::unordered_set<std::string> eiBroken;
+
+GLuint generateEntityIcon(Node *entity) {
+	char path[500];
+	snprintf(path, sizeof(path), "elcache/%s.png", entity->getAttribute("hidName")->buffer.data());
+	if (eiBroken.count(path)) return loadResTexture("loading.png");
+	GLuint image = loadResTexture(path);
+	if (image != 0) return image;
+
+	Node *Components = entity->findFirstChild("Components");
+	SDL_assert_release(Components);
+
+	Node* CGraphicComponent = Components->findFirstChild("CGraphicComponent");
+	if (CGraphicComponent) {
+		Attribute* fileModel = CGraphicComponent->getAttribute("fileModel");
+
+		if (fileModel) {
+			auto &model = loadXBG(*(uint32_t*)fileModel->buffer.data());
+			if (!model.meshes.empty()) {
+				glBindFramebuffer(GL_FRAMEBUFFER, RenderInterface::instance().fbo);
+				glClearColor(0.f, 0.f, 0.f, 0.f);
+				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+				RenderInterface::instance().model.use();
+				glm::mat4 MVP = RenderInterface::instance().VP * glm::scale(glm::mat4(), glm::vec3(.5f));
+				glUniformMatrix4fv(RenderInterface::instance().model.uniforms["MVP"], 1, GL_FALSE, &MVP[0][0]);
+				model.draw();
+
+				char savePath[500];
+				snprintf(savePath, sizeof(savePath), "res/elcache/%s.png", entity->getAttribute("hidName")->buffer.data());
+
+				RenderInterface::instance().saveFBO(savePath);
+				return loadResTexture(path);
+			}
+		}
+	}
+
+	eiBroken.emplace(path);
+	return loadResTexture("loading.png");
 }
