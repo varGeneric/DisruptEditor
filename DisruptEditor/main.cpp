@@ -166,12 +166,9 @@ int main(int argc, char **argv) {
 	}
 
 	{
-		loadingScreen->setTitle("Loading Entity Library...", std::string(), 0.f);
-		auto elLoad = std::async(std::launch::async, loadEntityLibrary);
-		while (elLoad.wait_for(std::chrono::milliseconds(30)) != std::future_status::ready) {
-			SDL_PumpEvents();
-			loadingScreen->setProgress(std::string(), entityLibrary.size() / 7981.f);
-		}
+		SDL_PumpEvents();
+		loadingScreen->setTitle("Loading Entity Library...");
+		loadEntityLibrary();
 	}
 
 	/*{

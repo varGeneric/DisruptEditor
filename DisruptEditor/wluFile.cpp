@@ -36,6 +36,13 @@ bool wluFile::open(std::string filename) {
 		return false;
 	}
 
+	Vector<uint8_t> data(SDL_RWsize(fp));
+	SDL_RWread(fp, data.data(), data.size(), 1);
+	SDL_RWclose(fp);
+	fp = SDL_RWFromConstMem(data.data(), data.size());
+
+	fp = SDL_RWFromFile(filename.c_str(), "rb");
+
 	SDL_RWread(fp, &wluhead, sizeof(wluhead), 1);
 
 	SDL_assert_release(memcmp(wluhead.base.magic, "ESAB", 4) == 0);
