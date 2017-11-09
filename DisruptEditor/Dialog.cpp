@@ -5,18 +5,8 @@
 #include "tinyfiles.h"
 
 Dialog::Dialog() {
-	Vector<Node*> list;
-
-	FILE *fp = fopen(getAbsoluteFilePath("dialog/conversationtable.dat").c_str(), "rb");
-	fseek(fp, sizeof(fcbHeader), SEEK_SET);
-	conversationtable.deserializeA(fp, list);
-	fclose(fp);
-
-	list.clear();
-	fp = fopen(getAbsoluteFilePath("dialog/dialogmanagerindices.dat").c_str(), "rb");
-	fseek(fp, sizeof(fcbHeader), SEEK_SET);
-	dialogmanagerindices.deserializeA(fp, list);
-	fclose(fp);
+	conversationtable = readFCB(getAbsoluteFilePath("dialog/conversationtable.dat").c_str());
+	dialogmanagerindices = readFCB(getAbsoluteFilePath("dialog/dialogmanagerindices.dat").c_str());
 
 	tfDIR dir;
 	tfDirOpen(&dir, getAbsoluteFilePath("dialog/behaviortrees").c_str());
@@ -26,11 +16,11 @@ Dialog::Dialog() {
 
 		if (!file.is_dir && tfGetExt(&file) == std::string("ai.rml")) {
 			SDL_Log("Loading %s...", file.name);
-			fp = fopen(file.path, "rb");
-			fseek(fp, sizeof(fcbHeader) + 12, SEEK_SET);
-			list.clear();
+			SDL_RWops *fp = SDL_RWFromFile(file.path, "rb");
+			SDL_RWseek(fp, sizeof(fcbHeader) + 12, RW_SEEK_SET);
+			Vector<Node*> list;
 			behaviortrees[file.name].deserializeA(fp, list);
-			fclose(fp);
+			SDL_RWclose(fp);
 		}
 
 		tfDirNext(&dir);

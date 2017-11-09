@@ -4,9 +4,8 @@
 #include <SDL_log.h>
 #include "Hash.h"
 
-uint32_t ReadCountA(FILE *fp, bool &isOffset) {
-	uint8_t value;
-	fread(&value, sizeof(value), 1, fp);
+uint32_t ReadCountA(SDL_RWops *fp, bool &isOffset) {
+	uint8_t value = SDL_ReadU8(fp);
 	isOffset = false;
 
 	if (value < 0xFE) {
@@ -14,17 +13,13 @@ uint32_t ReadCountA(FILE *fp, bool &isOffset) {
 	}
 
 	isOffset = value != 0xFF;
-
-	uint32_t v;
-	fread(&v, sizeof(v), 1, fp);
-	return v;
+	return SDL_ReadLE32(fp);
 }
 
-uint32_t ReadCountB(FILE *fp, bool &isOffset) {
-	size_t pos = ftell(fp);
+uint32_t ReadCountB(SDL_RWops *fp, bool &isOffset) {
+	size_t pos = SDL_RWtell(fp);
 
-	uint8_t value;
-	fread(&value, sizeof(value), 1, fp);
+	uint8_t value = SDL_ReadU8(fp);
 
 	isOffset = false;
 
@@ -33,9 +28,8 @@ uint32_t ReadCountB(FILE *fp, bool &isOffset) {
 	else {
 		isOffset = value == 0xFE;
 
-		fseek(fp, -1, SEEK_CUR);
-		uint32_t v;
-		fread(&v, sizeof(v), 1, fp);
+		SDL_RWseek(fp, -1, RW_SEEK_CUR);
+		uint32_t v = SDL_ReadLE32(fp);
 		v = v >> 8;
 
 		if (isOffset) {
@@ -46,65 +40,64 @@ uint32_t ReadCountB(FILE *fp, bool &isOffset) {
 	}
 }
 
-void writeSize(FILE *fp, size_t osize) {
+void writeSize(SDL_RWops *fp, size_t osize) {
 	SDL_assert_release(osize != 254);
 	if (osize > 254) {
 		uint32_t size = osize;
 		size = size << 8;
 		size |= 0xFF;
-		fwrite(&size, sizeof(size), 1, fp);
+		SDL_WriteLE32(fp, size);
 	} else {
-		uint8_t size = osize;
-		fwrite(&size, sizeof(size), 1, fp);
+		SDL_WriteU8(fp, (uint8_t)osize);
 	}
 }
 
-void Attribute::deserializeA(FILE * fp) {
-	fread(&hash, sizeof(hash), 1, fp);
+void Attribute::deserializeA(SDL_RWops * fp) {
+	hash = SDL_ReadLE32(fp);
 
 	bool isOffset;
-	size_t position = ftell(fp);
+	size_t position = SDL_RWtell(fp);
 	uint32_t size = ReadCountA(fp, isOffset);
 
 	if (isOffset) {
-		fseek(fp, position - size, SEEK_SET);
+		SDL_RWseek(fp, position - size, RW_SEEK_SET);
 
 		size = ReadCountA(fp, isOffset);
 		SDL_assert_release(!isOffset);
 
 		buffer.resize(size);
-		fread(buffer.data(), 1, size, fp);
+		SDL_RWread(fp, buffer.data(), 1, size);
 
-		fseek(fp, position, SEEK_SET);
+		SDL_RWseek(fp, position, RW_SEEK_SET);
 		ReadCountA(fp, isOffset);
 	} else {
 		buffer.resize(size);
-		fread(buffer.data(), 1, size, fp);
+		SDL_RWread(fp, buffer.data(), 1, size);
 	}
 }
 
-void Attribute::deserialize(FILE * fp, bool &bailOut) {
-	size_t offset = ftell(fp);
+void Attribute::deserialize(SDL_RWops * fp, bool &bailOut) {
+	size_t offset = SDL_RWtell(fp);
 
 	bool isOffset;
 	int32_t c = ReadCountB(fp, isOffset);
 	if (isOffset) {
-		fseek(fp, c, SEEK_SET);
+		SDL_RWseek(fp, c, RW_SEEK_SET);
 		deserialize(fp, bailOut);
-		fseek(fp, offset + 4, SEEK_SET);
+		SDL_RWseek(fp, offset + 4, RW_SEEK_SET);
 	} else {
-		if (c > 1024 * 100) {//Hard limit of 100 kb
+		if (c > 1024 * 400) {//Hard limit of 400 kb
 			bailOut = true;
 			return;
 		}
 		buffer.resize(c);
-		fread(buffer.data(), 1, c, fp);
+		SDL_RWread(fp, buffer.data(), 1, c);
 	}
 }
 
-void Attribute::serialize(FILE * fp) {
+void Attribute::serialize(SDL_RWops * fp) {
 	writeSize(fp, buffer.size());
-	fwrite(buffer.data(), 1, buffer.size(), fp);
+	SDL_RWwrite(fp, buffer.data(), 1, buffer.size());
 }
 
 void Attribute::deserializeXML(const tinyxml2::XMLAttribute *attr) {
@@ -193,25 +186,24 @@ std::string Attribute::getByteString() {
 	return str;
 }
 
-void Node::deserialize(FILE* fp, bool &bailOut) {
+void Node::deserialize(SDL_RWops* fp, bool &bailOut) {
 	if (bailOut) return;
-	size_t pos = ftell(fp);
+	size_t pos = SDL_RWtell(fp);
 
 	bool isOffset;
 	int32_t c = ReadCountB(fp, isOffset);
 
 	if (isOffset) {
-		fseek(fp, c, SEEK_SET);
+		SDL_RWseek(fp, c, RW_SEEK_SET);
 		deserialize(fp, bailOut);
-		fseek(fp, pos + 4, SEEK_SET);
+		SDL_RWseek(fp, pos + 4, RW_SEEK_SET);
 	} else {
 		offset = pos;
-		fread(&hash, sizeof(hash), 1, fp);
+		hash = SDL_ReadLE32(fp);
 
-		uint16_t num1;
-		fread(&num1, sizeof(num1), 1, fp);
+		uint16_t num1 = SDL_ReadLE16(fp);
 
-		size_t pos2 = ftell(fp);
+		size_t pos2 = SDL_RWtell(fp);
 		size_t num2 = pos2 + num1;
 		//SDL_assert_release(num1);
 
@@ -219,7 +211,7 @@ void Node::deserialize(FILE* fp, bool &bailOut) {
 		int32_t c2 = ReadCountB(fp, isOffset2);
 		bool flag = false;
 		if (isOffset2) {
-			fseek(fp, c2, SEEK_SET);
+			SDL_RWseek(fp, c2, RW_SEEK_SET);
 
 			bool isOffset3;
 			c2 = ReadCountB(fp, isOffset3);
@@ -233,14 +225,14 @@ void Node::deserialize(FILE* fp, bool &bailOut) {
 			attributes[index] = Attribute(fp);
 		}
 		if (flag)
-			fseek(fp, pos2, SEEK_SET);
+			SDL_RWseek(fp, pos2, RW_SEEK_SET);
 		for (auto &attribute : attributes) {
 			attribute.deserialize(fp, bailOut);
 			if (bailOut)
 				return;
 		}
 
-		size_t a = ftell(fp);
+		size_t a = SDL_RWtell(fp);
 		if (a != num2) {
 			SDL_Log("Warning! This file could not be read!\n");
 			//bailOut = true;
@@ -254,7 +246,7 @@ void Node::deserialize(FILE* fp, bool &bailOut) {
 	}
 }
 
-void Node::deserializeA(FILE * fp, Vector<Node*> &list) {
+void Node::deserializeA(SDL_RWops * fp, Vector<Node*> &list) {
 	bool isOffset;
 	uint32_t childCount = ReadCountA(fp, isOffset);
 
@@ -263,7 +255,7 @@ void Node::deserializeA(FILE * fp, Vector<Node*> &list) {
 		*this = *list[childCount];
 		return;
 	} else {
-		fread(&hash, sizeof(hash), 1, fp);
+		hash = SDL_ReadLE32(fp);
 
 		uint32_t attributeCount = ReadCountA(fp, isOffset);
 		SDL_assert_release(!isOffset);
@@ -281,9 +273,9 @@ void Node::deserializeA(FILE * fp, Vector<Node*> &list) {
 		children[index].deserializeA(fp, list);
 }
 
-void Node::serialize(FILE * fp) {
+void Node::serialize(SDL_RWops * fp) {
 	writeSize(fp, children.size());
-	fwrite(&hash, sizeof(hash), 1, fp);
+	SDL_WriteLE32(fp, hash);
 
 	//Calc Attribute Size
 	uint16_t num1 = 0;
@@ -299,12 +291,12 @@ void Node::serialize(FILE * fp) {
 		else
 			num1 += 1;
 	}
-	fwrite(&num1, sizeof(num1), 1, fp);
+	SDL_WriteLE16(fp, num1);
 
 	//Write Attribute Hashes
 	writeSize(fp, attributes.size());
 	for (auto &attribute : attributes) {
-		fwrite(&attribute.hash, sizeof(attribute.hash), 1, fp);
+		SDL_WriteLE32(fp, attribute.hash);
 	}
 	for (auto &attribute : attributes) {
 		attribute.serialize(fp);
@@ -408,15 +400,15 @@ std::string Node::getHashName() {
 Node readFCB(const char * filename) {
 	Node node;
 
-	FILE *fp = fopen(filename, "rb");
+	SDL_RWops *fp = SDL_RWFromFile(filename, "rb");
 	if (!fp)
 		return node;
 
 	fcbHeader head;
-	fread(&head, sizeof(head), 1, fp);
+	SDL_RWread(fp, &head, sizeof(head), 1);
 
 	if (memcmp(head.magic, "nbCF", 4) != 0) {
-		fclose(fp);
+		SDL_RWclose(fp);
 		return node;
 	}
 
@@ -427,7 +419,7 @@ Node readFCB(const char * filename) {
 		Vector<Node*> list;
 		node.deserializeA(fp, list);
 	}
-	fclose(fp);
+	SDL_RWclose(fp);
 
 	return node;
 }

@@ -10,17 +10,17 @@ struct cseqHeader {
 #pragma pack(pop)
 
 bool cseqFile::open(const char *filename) {
-	FILE *fp = fopen(filename, "rb");
+	SDL_RWops *fp = SDL_RWFromFile(filename, "rb");
 	cseqHeader head;
-	fread(&head, sizeof(head), 1, fp);
+	SDL_RWread(fp, &head, sizeof(head), 1);
 	SDL_assert_release(head.magic == 23438637261664779);
 
 	fcbHeader fcbHead;
-	fread(&fcbHead, sizeof(fcbHead), 1, fp);
+	SDL_RWread(fp, &fcbHead, sizeof(fcbHead), 1);
 
 	Vector<Node*> list;
 	root.deserializeA(fp, list);
 
-	fclose(fp);
+	SDL_RWclose(fp);
 	return true;
 }

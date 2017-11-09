@@ -3,6 +3,7 @@
 #include "Vector.h"
 #include <string>
 #include "tinyxml2.h"
+#include <SDL_rwops.h>
 
 #pragma pack(push, 1)
 struct fcbHeader {
@@ -17,12 +18,12 @@ struct fcbHeader {
 class Attribute {
 public:
 	Attribute() {}
-	Attribute(FILE* fp) {
-		fread(&hash, sizeof(hash), 1, fp);
+	Attribute(SDL_RWops* fp) {
+		hash = SDL_ReadLE32(fp);
 	};
-	void deserializeA(FILE *fp);
-	void deserialize(FILE *fp, bool &bailOut);
-	void serialize(FILE *fp);
+	void deserializeA(SDL_RWops *fp);
+	void deserialize(SDL_RWops *fp, bool &bailOut);
+	void serialize(SDL_RWops *fp);
 	void deserializeXML(const tinyxml2::XMLAttribute *attr);
 	void serializeXML(tinyxml2::XMLPrinter &printer);
 
@@ -36,9 +37,9 @@ public:
 class Node {
 public:
 	Node() {};
-	void deserialize(FILE *fp, bool &bailOut);
-	void deserializeA(FILE *fp, Vector<Node*> &list);
-	void serialize(FILE *fp);
+	void deserialize(SDL_RWops *fp, bool &bailOut);
+	void deserializeA(SDL_RWops *fp, Vector<Node*> &list);
+	void serialize(SDL_RWops *fp);
 	void deserializeXML(const tinyxml2::XMLElement *node);
 	void serializeXML(tinyxml2::XMLPrinter &printer);
 

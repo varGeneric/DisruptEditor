@@ -13,30 +13,30 @@
 #include "Implementation.h"
 #include "Entity.h"
 
-static inline void seekpad(FILE *fp, long pad) {
+static inline void seekpad(SDL_RWops *fp, long pad) {
 	//16-byte chunk alignment
-	long size = ftell(fp);
+	long size = SDL_RWtell(fp);
 	long seek = (pad - (size % pad)) % pad;
-	fseek(fp, seek, SEEK_CUR);
+	SDL_RWseek(fp, seek, RW_SEEK_CUR);
 }
 
-static inline void writepad(FILE *fp, long pad) {
+static inline void writepad(SDL_RWops *fp, long pad) {
 	//16-byte chunk alignment
-	long size = ftell(fp);
+	long size = SDL_RWtell(fp);
 	long seek = (pad - (size % pad)) % pad;
 
 	uint8_t zero[32] = { 0 };
-	fwrite(zero, 1, seek, fp);
+	SDL_RWwrite(fp, zero, 1, seek);
 }
 
 bool wluFile::open(std::string filename) {
 	origFilename = filename;
-	FILE *fp = fopen(filename.c_str(), "rb");
+	SDL_RWops *fp = SDL_RWFromFile(filename.c_str(), "rb");
 	if (!fp) {
 		return false;
 	}
 
-	fread(&wluhead, sizeof(wluhead), 1, fp);
+	SDL_RWread(fp, &wluhead, sizeof(wluhead), 1);
 
 	SDL_assert_release(memcmp(wluhead.base.magic, "ESAB", 4) == 0);
 	SDL_assert_release(wluhead.base.unknown1 == 3 || wluhead.base.unknown1 == 0 || wluhead.base.unknown1 == 1 || wluhead.base.unknown1 == 2);
@@ -46,9 +46,9 @@ bool wluFile::open(std::string filename) {
 	SDL_assert_release(wluhead.fcb.headerFlags == 0);
 	SDL_assert_release(wluhead.fcb.totalObjectCount == wluhead.fcb.totalValueCount + 1);
 
-	fseek(fp, 0, SEEK_END);
-	size_t size = ftell(fp) - sizeof(wluhead.base);
-	fseek(fp, sizeof(wluhead), SEEK_SET);
+	SDL_RWseek(fp, 0, RW_SEEK_END);
+	size_t size = SDL_RWtell(fp) - sizeof(wluhead.base);
+	SDL_RWseek(fp, sizeof(wluhead), RW_SEEK_SET);
 
 	//Pad size to 4 bytes
 	//TODO Figure out size
@@ -60,26 +60,26 @@ bool wluFile::open(std::string filename) {
 	bailOut = false;
 	root.deserialize(fp, bailOut);
 
-	fseek(fp, wluhead.base.size + sizeof(wluhead.base), SEEK_SET);
+	SDL_RWseek(fp, wluhead.base.size + sizeof(wluhead.base), RW_SEEK_SET);
 	seekpad(fp, 4);
 
-	size_t offset = ftell(fp);
+	size_t offset = SDL_RWtell(fp);
 	size_t extraBegin = offset;
 	if (offset != size + sizeof(wluhead.base)) {
 		handleHeaders(fp, size + sizeof(wluhead.base));
 
-		offset = ftell(fp);
+		offset = SDL_RWtell(fp);
 		SDL_assert_release(offset == size + sizeof(wluhead.base));
 	}
 
 	//Read in Extra Data
 	extraData.resize(size + sizeof(wluhead.base) - extraBegin);
 	if (!extraData.empty()) {
-		fseek(fp, extraBegin, SEEK_SET);
-		fread(extraData.data(), 1, extraData.size(), fp);
+		SDL_RWseek(fp, extraBegin, RW_SEEK_SET);
+		SDL_RWread(fp, extraData.data(), 1, extraData.size());
 	}
 
-	fclose(fp);
+	SDL_RWclose(fp);
 
 
 	//Handle .embed
@@ -99,39 +99,39 @@ bool wluFile::open(std::string filename) {
 	return !bailOut;
 }
 
-void wluFile::handleHeaders(FILE * fp, size_t size) {
+void wluFile::handleHeaders(SDL_RWops * fp, size_t size) {
 	//Read Magic
 	char magic[5];
-	fread(magic, 4, 1, fp);
+	SDL_RWread(fp, magic, 4, 1);
 	magic[4] = '\0';
-	fseek(fp, -4, SEEK_CUR);
+	SDL_RWseek(fp, -4, RW_SEEK_CUR);
 
 	//LAUQ - LoadQuality
 	//ROAD - 
 
 	if (magic == std::string("DAOR")) {
 		roadHeader road;
-		fread(&road, sizeof(road), 1, fp);
-		fseek(fp, road.size, SEEK_CUR);
+		SDL_RWread(fp, &road, sizeof(road), 1);
+		SDL_RWseek(fp, road.size, RW_SEEK_CUR);
 		SDL_Log("Road %i\n", road.size);
 		seekpad(fp, 16);
 	} else if (magic == std::string("LAUQ")) {
 		qualityHeader qual;
-		fread(&qual, sizeof(qual), 1, fp);
-		fseek(fp, qual.size, SEEK_CUR);
+		SDL_RWread(fp, &qual, sizeof(qual), 1);
+		SDL_RWseek(fp, qual.size, RW_SEEK_CUR);
 		SDL_Log("Qual %i\n", qual.size);
 	} else {
-		size_t offset = ftell(fp);
+		size_t offset = SDL_RWtell(fp);
 		SDL_assert_release(false);
 	}
 
-	if (ftell(fp) != size) {
+	if (SDL_RWtell(fp) != size) {
 		handleHeaders(fp, size);
 	}
 }
 
 void wluFile::serialize(const char* filename) {
-	FILE *fp = fopen(filename, "wb");
+	SDL_RWops *fp = SDL_RWFromFile(filename, "wb");
 
 	memcpy(wluhead.base.magic, "ESAB", 4);
 	//wluhead.base.unknown1 = wluhead.base.unknown2 = 0;
@@ -141,20 +141,20 @@ void wluFile::serialize(const char* filename) {
 	wluhead.fcb.totalObjectCount = 1 + root.countNodes();
 	wluhead.fcb.totalValueCount = wluhead.fcb.totalObjectCount - 1;
 
-	fwrite(&wluhead, sizeof(wluhead), 1, fp);
+	SDL_RWwrite(fp, &wluhead, sizeof(wluhead), 1);
 
 	root.serialize(fp);
 
-	fseek(fp, 0, SEEK_END);
+	SDL_RWseek(fp, 0, RW_SEEK_END);
 	writepad(fp, 4);
-	wluhead.base.size = ftell(fp) - sizeof(wluhead.base);
+	wluhead.base.size = SDL_RWtell(fp) - sizeof(wluhead.base);
 
 	//Write Extra Data
 	//fwrite(extraData.data(), 1, extraData.size(), fp);
 
-	fseek(fp, 0, SEEK_SET);
-	fwrite(&wluhead, sizeof(wluhead), 1, fp);
-	fclose(fp);
+	SDL_RWseek(fp, 0, RW_SEEK_SET);
+	SDL_RWwrite(fp, &wluhead, sizeof(wluhead), 1);
+	SDL_RWclose(fp);
 }
 
 void wluFile::draw(bool drawImgui, bool draw3D) {

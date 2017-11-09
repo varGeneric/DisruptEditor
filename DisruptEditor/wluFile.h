@@ -48,7 +48,7 @@ public:
 private:
 	wluHeader wluhead;
 	Vector<uint8_t> extraData;
-	void handleHeaders(FILE *fp, size_t size);
+	void handleHeaders(SDL_RWops *fp, size_t size);
 	Node* selectedEntity = NULL;
 };
 
