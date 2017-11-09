@@ -127,48 +127,65 @@ int main(int argc, char **argv) {
 
 	dd::initialize(&RenderInterface::instance());
 
-	tfDIR dir;
-	tfDirOpen(&dir, "D:/Desktop/bin/windy_city/__UNKNOWN/srhr");
-	while (dir.has_next) {
-		tfFILE file;
-		tfReadFile(&dir, &file);
+	//Debug
+	{
+		tfDIR dir;
+		tfDirOpen(&dir, "D:/Desktop/bin/windy_city/__UNKNOWN/srhr");
+		while (dir.has_next) {
+			tfFILE file;
+			tfReadFile(&dir, &file);
 
-		if (!file.is_dir) {
-			SDL_Log("Loading %s\n", file.name);
+			if (!file.is_dir) {
+				SDL_Log("Loading %s\n", file.name);
 
-			CSectorHighRes spk;
-			spk.open(file.path);
+				CSectorHighRes spk;
+				spk.open(file.path);
+			}
+
+			tfDirNext(&dir);
 		}
-
-		tfDirNext(&dir);
+		tfDirClose(&dir);
 	}
-	tfDirClose(&dir);
+
+	tinyxml2::XMLDocument spawnPointList;
 
 	LoadingScreen *loadingScreen = new LoadingScreen;
 
 	{
-		loadingScreen->setTitle("Loading WLUs...");
+		loadingScreen->setTitle("Loading WLUs");
 		Vector<FileInfo> files = getFileListFromAbsDir(settings.patchDir + "/worlds/windy_city/generated/wlu", "xml.data.fcb");
 		int count = 0;
 		for (FileInfo &file : files) {
 			SDL_Log("Loading %s\n", file.name.c_str());
 			wlus[file.name].shortName = file.name;
 			wlus[file.name].open(file.fullPath);
-			loadingScreen->setProgress(file.name, count / (float)files.size());
-			++count;
+			//loadingScreen->setProgress(file.name, count / (float)files.size());
+			//++count;
 			SDL_PumpEvents();
 		}
-	}
 
-	if (wlus.empty()) {
-		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Disrupt Editor is not configured", "You have not properly setup paths in settings.xml, please see the readme", loadingScreen->getWindow());
-		return 0;
-	}
+		if (wlus.empty()) {
+			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Disrupt Editor is not configured", "You have not properly setup paths in settings.xml, please see the readme", loadingScreen->getWindow());
+			return 0;
+		}
 
-	{
 		SDL_PumpEvents();
-		loadingScreen->setTitle("Loading Entity Library...");
+		loadingScreen->setTitle("Loading Entity Library");
 		loadEntityLibrary();
+
+		SDL_PumpEvents();
+		loadingScreen->setTitle("Loading Language Files");
+		Dialog::instance();
+
+		SDL_PumpEvents();
+		loadingScreen->setTitle("Loading Particle Library");
+		std::unique_ptr<tinyxml2::XMLDocument> particles = loadRml(getAbsoluteFilePath("__UNKNOWN/misc/9DBBFE8F.maybe.rml").c_str());
+
+		spawnPointList.LoadFile(getAbsoluteFilePath("worlds/windy_city/generated/spawnpointlist.xml").c_str());
+
+		SDL_PumpEvents();
+		loadingScreen->setTitle("Loading graphics", std::string(), 0.f);
+		reloadBuildingEntities();
 	}
 
 	/*{
@@ -222,26 +239,6 @@ int main(int argc, char **argv) {
 		fclose(fp);
 	}
 	return 0;*/
-
-	SDL_PumpEvents();
-	loadingScreen->setTitle("Loading Language Files");
-	Dialog::instance();
-
-	SDL_PumpEvents();
-	loadingScreen->setTitle("Loading Particle Library");
-	std::unique_ptr<tinyxml2::XMLDocument> particles = loadRml(getAbsoluteFilePath("__UNKNOWN/misc/9DBBFE8F.maybe.rml").c_str());
-
-	tinyxml2::XMLDocument spawnPointList;
-	spawnPointList.LoadFile(getAbsoluteFilePath("worlds/windy_city/generated/spawnpointlist.xml").c_str());
-
-	{
-		loadingScreen->setTitle("Loading graphics...", std::string(), 0.f);
-		auto elLoad = std::async(std::launch::async, reloadBuildingEntities);
-		while (elLoad.wait_for(std::chrono::milliseconds(30)) != std::future_status::ready) {
-			SDL_PumpEvents();
-			loadingScreen->setProgress(std::string(), buildingEntities.size() / 3409.f);
-		}
-	}
 
 	Uint32 ticks = SDL_GetTicks();
 	uint64_t frameCount = 0;
