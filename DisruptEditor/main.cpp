@@ -25,6 +25,7 @@
 #include "RML.h"
 #include "glm/gtc/matrix_transform.hpp"
 #include "CSector.h"
+#include "batchFile.h"
 
 struct BuildingEntity {
 	std::string wlu;
@@ -124,6 +125,23 @@ int main(int argc, char **argv) {
 	//Debug
 	{
 		tfDIR dir;
+		tfDirOpen(&dir, "D:\\Desktop\\bin\\windy_city\\worlds\\windy_city\\generated\\batchmeshentity");
+		while (dir.has_next) {
+			tfFILE file;
+			tfReadFile(&dir, &file);
+
+			if (!file.is_dir && strstr(file.name, "_compound.cbatch") != NULL) {
+				SDL_Log("Loading %s\n", file.name);
+
+				batchFile bf;
+				bf.open(file.path);
+			}
+
+			tfDirNext(&dir);
+		}
+		tfDirClose(&dir);
+		
+
 		tfDirOpen(&dir, "D:/Desktop/bin/windy_city/__UNKNOWN/srhr");
 		while (dir.has_next) {
 			tfFILE file;

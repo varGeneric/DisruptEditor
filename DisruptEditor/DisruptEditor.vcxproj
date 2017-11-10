@@ -151,6 +151,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="batchFile.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Common.cpp" />
     <ClCompile Include="CSector.cpp" />
@@ -183,6 +184,7 @@
     <ClCompile Include="xbtFile.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="batchFile.h" />
     <ClInclude Include="bootSound.h" />
     <ClInclude Include="bootTvTex.h" />
     <ClInclude Include="Camera.h" />
