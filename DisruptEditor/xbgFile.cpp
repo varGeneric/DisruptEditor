@@ -6,128 +6,123 @@
 #include "Common.h"
 #include "materialFile.h"
 #include "xbtFile.h"
+#include "glm/glm.hpp"
 #include <SDL_log.h>
+#include <SDL_rwops.h>
 
-xbgFile::xbgFile() {}
-
-
-xbgFile::~xbgFile() {}
-
+#pragma pack(push, 1)
 struct XBGHead {
-	char magic[4];
+	uint32_t magic;
 	unsigned short unknown[14];
 	float unknown2[20];
-	int32_t lodCount;
+	uint32_t lodCount;
 };
+struct Bone {
+	int32_t unknown;
+	float pos[3];
+	float rot[4];
+	int16_t parent;
+	int16_t id;
+	uint32_t hash;
+};
+struct Unknown {
+	int32_t u1[2];
+	float u2[7];
+	int32_t u3[5];
+	int32_t type;
+};
+struct MeshData {
+	float u1[10];
+	uint16_t u2[20];
+	uint32_t matCount;
+	uint32_t u3[2];
+};
+#pragma pack(pop)
 
-static inline void seekpad(FILE *fp, long pad) {
+static inline void seekpad(SDL_RWops *fp, long pad) {
 	//16-byte chunk alignment
-	long size = ftell(fp);
+	long size = SDL_RWtell(fp);
 	long seek = (pad - (size % pad)) % pad;
-	fseek(fp, seek, SEEK_CUR);
+	SDL_RWseek(fp, seek, RW_SEEK_CUR);
+}
+
+static inline std::string readString(SDL_RWops *fp) {
+	uint32_t size = SDL_ReadLE32(fp);
+	std::string str(size, '\0');
+	SDL_RWread(fp, &str[0], 1, size);
+	return str;
 }
 
 void xbgFile::open(const char *file) {
-	FILE* fp = fopen(file, "rb");
+	SDL_RWops *fp = SDL_RWFromFile(file, "rb");
 	if (!fp) {
 		SDL_Log("Failed\n");
 		return;
 	}
+	Vector<uint8_t> data(SDL_RWsize(fp));
+	SDL_RWread(fp, data.data(), data.size(), 1);
+	SDL_RWclose(fp);
+	fp = SDL_RWFromConstMem(data.data(), data.size());
 
 	XBGHead head;
-	fread(&head, sizeof(head), 1, fp);
+	SDL_RWread(fp, &head, sizeof(head), 1);
+	SDL_assert_release(head.magic == 1195724621);
 
-	fseek(fp, head.lodCount * sizeof(float), SEEK_CUR);
-	fseek(fp, 8, SEEK_CUR);
-	int32_t a;
-	fread(&a, sizeof(a), 1, fp);
-	fseek(fp, (head.lodCount - a) * sizeof(float), SEEK_CUR);
+	SDL_RWseek(fp, head.lodCount * sizeof(float), RW_SEEK_CUR);
+	SDL_RWseek(fp, 8, RW_SEEK_CUR);
+	uint32_t a = SDL_ReadLE32(fp);
+	SDL_RWseek(fp, (head.lodCount - a) * sizeof(float), RW_SEEK_CUR);
 
 	//Section A - Materials
 	{
-		int32_t count;
-		fread(&count, sizeof(count), 1, fp);
-		for (int32_t i = 0; i < count; ++i) {
+		uint32_t count = SDL_ReadLE32(fp);
+		for (uint32_t i = 0; i < count; ++i) {
 			Material mat;
-
-			fread(&mat.hash, sizeof(mat.hash), 1, fp);
-			int32_t matFileSize;
-			fread(&matFileSize, sizeof(matFileSize), 1, fp);
-
-			mat.file.resize(matFileSize+1, '\0');
-			fread(&mat.file[0], 1, matFileSize, fp);
+			mat.hash = SDL_ReadLE32(fp);
+			mat.file = readString(fp);
 			seekpad(fp, 4);
-
 			materials.push_back(mat);
 		}
 	}
 
 	//Section B -
 	{
-		int32_t matCount;
-		fread(&matCount, sizeof(matCount), 1, fp);
-		for (int32_t i = 0; i < matCount; ++i) {
-			int32_t hash;
-			fread(&hash, sizeof(hash), 1, fp);
-			int32_t matFileSize;
-			fread(&matFileSize, sizeof(matFileSize), 1, fp);
-			std::string matFile(matFileSize, '\0');
-			fread(&matFile[0], 1, matFileSize, fp);
+		uint32_t matCount = SDL_ReadLE32(fp);
+		for (uint32_t i = 0; i < matCount; ++i) {
+			uint32_t hash = SDL_ReadLE32(fp);
+			std::string matFile = readString(fp);
 			seekpad(fp, 4);
-			fread(&a, sizeof(a), 1, fp);
+			SDL_ReadLE32(fp);
 		}
 
 		//Bl
-		int32_t count;
-		fread(&count, sizeof(count), 1, fp);
-		for (int32_t i = 0; i < count; ++i) {
-			int32_t hash;
-			fread(&hash, sizeof(hash), 1, fp);
-			int32_t matFileSize;
-			fread(&matFileSize, sizeof(matFileSize), 1, fp);
-			std::string matFile(matFileSize, '\0');
-			fread(&matFile[0], 1, matFileSize, fp);
+		uint32_t count = SDL_ReadLE32(fp);
+		for (uint32_t i = 0; i < count; ++i) {
+			uint32_t hash = SDL_ReadLE32(fp);
+			std::string matFile = readString(fp);
 			seekpad(fp, 4);
 		}
 	}
 
 	//Section C -
 	{
-		int32_t boneMapCount;
-		fread(&boneMapCount, sizeof(boneMapCount), 1, fp);
-		for (int32_t i = 0; i < boneMapCount; ++i) {
-			int32_t boneIDCount;
-			fread(&boneIDCount, sizeof(boneIDCount), 1, fp);
-			int16_t boneMap;
-			fread(&boneMap, sizeof(boneMap), 1, fp);
+		uint32_t boneMapCount = SDL_ReadLE32(fp);
+		for (uint32_t i = 0; i < boneMapCount; ++i) {
+			uint32_t boneIDCount = SDL_ReadLE32(fp);
+			uint16_t boneMap = SDL_ReadLE16(fp);
 			seekpad(fp, 4);
 		}
 	}
 
 	//Section D -
 	{
-		struct Bone {
-			int32_t unknown;
-			float pos[3];
-			float rot[4];
-			int16_t parent;
-			int16_t id;
-			uint32_t hash;
-		};
-
-		int32_t boneChunk;
-		fread(&boneChunk, sizeof(boneChunk), 1, fp);
+		uint32_t boneChunk = SDL_ReadLE32(fp);
 		if (boneChunk == 1) {
-			int32_t boneCount;
-			fread(&boneCount, sizeof(boneCount), 1, fp);
-			for (int32_t i = 0; i < boneCount; ++i) {
+			uint32_t boneCount = SDL_ReadLE32(fp);
+			for (uint32_t i = 0; i < boneCount; ++i) {
 				Bone bone;
-				fread(&bone, sizeof(bone), 1, fp);
-
-				int32_t nameSize;
-				fread(&nameSize, sizeof(nameSize), 1, fp);
-				std::string name(nameSize, '\0');
-				fread(&name[0], 1, nameSize, fp);
+				SDL_RWread(fp, &bone, sizeof(bone), 1);
+				std::string name = readString(fp);
 				seekpad(fp, 4);
 			}
 		}
@@ -135,44 +130,31 @@ void xbgFile::open(const char *file) {
 
 	//Section E -
 	{
-		int32_t f1, matrixCount;
-		fread(&f1, sizeof(f1), 1, fp);
-		fread(&matrixCount, sizeof(matrixCount), 1, fp);
+		uint32_t f1 = SDL_ReadLE32(fp);
+		uint32_t matrixCount = SDL_ReadLE32(fp);
 		seekpad(fp, 16);
 
-		for (int32_t i = 0; i < matrixCount; ++i) {
-			float mat[16];
-			fread(mat, sizeof(float), 16, fp);
-		}
+		Vector<glm::mat4> data(matrixCount);
+		SDL_RWread(fp, data.data(), sizeof(glm::mat4), data.size());
 	}
 
 	//Section K -
 	{
-		int32_t f1;
-		fread(&f1, sizeof(f1), 1, fp);
+		uint32_t f1 = SDL_ReadLE32(fp);
 		if (f1 > 0) {
-			int32_t size;
-			fread(&size, sizeof(size), 1, fp);
-			fseek(fp, size, SEEK_CUR);
+			uint32_t size = SDL_ReadLE32(fp);
+			SDL_RWseek(fp, size, RW_SEEK_CUR);
 		}
 	}
 
 	//Section G - TODO
 	{
-		struct Unknown {
-			int32_t u1[2];
-			float u2[7];
-			int32_t u3[5];
-			int32_t type;
-		};
-
-		int32_t count;
-		fread(&count, sizeof(count), 1, fp);
+		uint32_t count = SDL_ReadLE32(fp);
 		if (count != 0)
 			return;
 		for (int32_t i = 0; i < count; ++i) {
 			Unknown u;
-			fread(&u, sizeof(u), 1, fp);
+			SDL_RWread(fp, &u, sizeof(u), 1);
 
 			/*if (u.type == 2) {
 				count=g.i(1)[0]
@@ -252,8 +234,7 @@ void xbgFile::open(const char *file) {
 
 	//Section F - TODO
 	{
-		int32_t count;
-		fread(&count, sizeof(count), 1, fp);
+		uint32_t count = SDL_ReadLE32(fp);
 		SDL_assert_release(count == 0);
 		for (int32_t i = 0; i < count; ++i) {
 
@@ -262,20 +243,13 @@ void xbgFile::open(const char *file) {
 
 	//Parse Mesh
 	for (int32_t i = 0; i < head.lodCount; ++i) {
-		int32_t meshCount;
-		fread(&meshCount, sizeof(meshCount), 1, fp);
+		uint32_t meshCount = SDL_ReadLE32(fp);
 		meshes.resize(meshCount);
 		for (int32_t j = 0; j < meshCount; ++j) {
 			Mesh &mesh = meshes[j];
 
-			struct MeshData {
-				float u1[10];
-				uint16_t u2[20];
-				uint32_t matCount;
-				uint32_t u3[2];
-			};
 			MeshData data;
-			fread(&data, sizeof(data), 1, fp);
+			SDL_RWread(fp, &data, sizeof(data), 1);
 
 			mesh.vertexStride = data.u2[4];
 			mesh.matID = data.u2[2];
@@ -287,48 +261,42 @@ void xbgFile::open(const char *file) {
 			mesh.boneMapID = data.u2[6];
 
 			for (int32_t k = 0; k < data.matCount; ++k) {
-				fseek(fp, 68, SEEK_CUR);
-
-				uint32_t matlen;
-				fread(&matlen, sizeof(matlen), 1, fp);
-				mesh.mat = std::string(matlen, '\0');
-				fread(&mesh.mat[0], 1, matlen, fp);
+				SDL_RWseek(fp, 68, RW_SEEK_CUR);
+				mesh.mat = readString(fp);
 				seekpad(fp, 4);
 
 				uint16_t u[2];
-				fread(u, sizeof(uint16_t), 2, fp);
+				SDL_RWread(fp, u, sizeof(uint16_t), 2);
 			}
 		}
 	}
 
-	int32_t min, max;
-	fread(&min, sizeof(min), 1, fp);
-	fread(&max, sizeof(max), 1, fp);
+	uint32_t min = SDL_ReadLE32(fp);
+	uint32_t max = SDL_ReadLE32(fp);
 
 	struct Model {
 
 	};
 	Vector<Model> models(head.lodCount);
 
-	for (int32_t i = 0; i < max; ++i) {
-		int32_t meshCount;
-		fread(&meshCount, sizeof(meshCount), 1, fp);
+	for (uint32_t i = 0; i < max; ++i) {
+		uint32_t meshCount = SDL_ReadLE32(fp);
 
 		for (int32_t j = 0; j < meshes.size(); ++j) {
 			Mesh &mesh = meshes[j];
 
 			mesh.buffer.resize(mesh.vertexCount * mesh.vertexStride / sizeof(uint16_t));
-			fread(mesh.buffer.data(), sizeof(uint16_t), mesh.buffer.size(), fp);
+			SDL_RWread(fp, mesh.buffer.data(), sizeof(uint16_t), mesh.buffer.size());
 			mesh.vbo = createVertexBuffer(mesh.buffer.data(), sizeof(uint16_t) * mesh.buffer.size(), BUFFER_STATIC);
 		}
 
 		//Faces
-		fread(&a, sizeof(a), 1, fp);
+		SDL_ReadLE32(fp);
 		for (int32_t j = 0; j < meshes.size(); ++j) {
 			Mesh &mesh = meshes[j];
 
 			mesh.index.resize(mesh.faceCount * 3);
-			fread(mesh.index.data(), sizeof(uint16_t), mesh.index.size(), fp);
+			SDL_RWread(fp, mesh.index.data(), sizeof(uint16_t), mesh.index.size());
 			mesh.ibo = createVertexBuffer(mesh.index.data(), sizeof(uint16_t) * mesh.index.size(), BUFFER_STATIC);
 		}
 
@@ -337,7 +305,7 @@ void xbgFile::open(const char *file) {
 		break;
 	}
 
-	fclose(fp);
+	SDL_RWclose(fp);
 }
 
 void xbgFile::draw() {

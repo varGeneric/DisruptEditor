@@ -12,5 +12,5 @@
 
 	<patchDir src="C:\Program Files\Ubisoft\WATCH_DOGS\data_win64\patch" />
 	<textDrawDistance src="5" />
-	<drawBuildings src="0" />
+	<drawBuildings src="1" />
 </Settings>

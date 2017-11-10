@@ -7,8 +7,6 @@
 
 class xbgFile {
 public:
-	xbgFile();
-	~xbgFile();
 	void open(const char* file);
 
 	struct Mesh {
