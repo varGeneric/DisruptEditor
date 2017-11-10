@@ -1,6 +1,7 @@
 #include "RML.h"
 
 #include <SDL_assert.h>
+#include <SDL_rwops.h>
 #include "Vector.h"
 
 struct RmlHeader {
@@ -9,26 +10,23 @@ struct RmlHeader {
 	uint32_t stringTableSize, totalNodeCount, totalAttributeCount;
 };
 
-uint32_t readPackedU32(FILE* fp) {
-	uint8_t value;
-	fread(&value, sizeof(value), 1, fp);
+uint32_t readPackedU32(SDL_RWops* fp) {
+	uint8_t value = SDL_ReadU8(fp);
 	if (value < 0xFE) {
 		return value;
 	}
 
 	SDL_assert_release(value != 0xFE);
 
-	uint32_t fullValue;
-	fread(&fullValue, sizeof(fullValue), 1, fp);
-	return fullValue;
+	return SDL_ReadLE32(fp);
 }
 
 struct RmlAttribute {
 	uint32_t nameIndex, valueIndex;
-	void deserialize(FILE *fp);
+	void deserialize(SDL_RWops *fp);
 };
 
-void RmlAttribute::deserialize(FILE * fp) {
+void RmlAttribute::deserialize(SDL_RWops * fp) {
 	uint32_t unknown = readPackedU32(fp);
 	SDL_assert_release(unknown == 0);
 	nameIndex = readPackedU32(fp);
@@ -39,11 +37,11 @@ struct RmlNode {
 	uint32_t nameIndex, valueIndex;
 	Vector<RmlAttribute> attributes;
 	Vector<RmlNode> children;
-	void deserialize(FILE *fp);
+	void deserialize(SDL_RWops *fp);
 	tinyxml2::XMLElement* serializeXML(tinyxml2::XMLDocument* doc, tinyxml2::XMLElement *parent, const Vector<char> &strTable);
 };
 
-void RmlNode::deserialize(FILE * fp) {
+void RmlNode::deserialize(SDL_RWops * fp) {
 	nameIndex = readPackedU32(fp);
 	valueIndex = readPackedU32(fp);
 
@@ -79,12 +77,16 @@ tinyxml2::XMLElement* RmlNode::serializeXML(tinyxml2::XMLDocument *doc, tinyxml2
 std::unique_ptr<tinyxml2::XMLDocument> loadRml(const char * filename) {
 	std::unique_ptr<tinyxml2::XMLDocument> doc = std::make_unique<tinyxml2::XMLDocument>();
 
-	FILE *fp = fopen(filename, "rb");
-	if (!fp) return nullptr;
+	SDL_RWops *fp = SDL_RWFromFile(filename, "rb");
+	if (!fp) return NULL;
+	Vector<uint8_t> data(SDL_RWsize(fp));
+	SDL_RWread(fp, data.data(), data.size(), 1);
+	SDL_RWclose(fp);
+	fp = SDL_RWFromConstMem(data.data(), data.size());
 
 	RmlHeader head;
-	fread(&head.magic, sizeof(head.magic), 1, fp);
-	fread(&head.unknown, sizeof(head.unknown), 1, fp);
+	head.magic = SDL_ReadU8(fp);
+	head.unknown = SDL_ReadU8(fp);
 	head.stringTableSize = readPackedU32(fp);
 	head.totalNodeCount = readPackedU32(fp);
 	head.totalAttributeCount = readPackedU32(fp);
@@ -93,8 +95,8 @@ std::unique_ptr<tinyxml2::XMLDocument> loadRml(const char * filename) {
 	root.deserialize(fp);
 
 	Vector<char> stringTableData(head.stringTableSize);
-	fread(stringTableData.data(), 1, head.stringTableSize, fp);
-	fclose(fp);
+	SDL_RWread(fp, stringTableData.data(), 1, head.stringTableSize);
+	SDL_RWclose(fp);
 
 	doc->InsertFirstChild(root.serializeXML(doc.get(), NULL, stringTableData));
 

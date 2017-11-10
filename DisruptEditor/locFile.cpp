@@ -1,10 +1,10 @@
 #include "locFile.h"
 
 #include <SDL_assert.h>
+#include <SDL_rwops.h>
 #include <stdio.h>
 #include <stdint.h>
 #include "Vector.h"
-#include <vector>
 
 #pragma pack(push, 1)
 struct locHeader {
@@ -20,16 +20,16 @@ struct locEntry {
 #pragma pack(pop)
 
 bool locFile::open(const char *filename) {
-	FILE *fp = fopen(filename, "rb");
+	SDL_RWops *fp = SDL_RWFromFile(filename, "rb");
 
 	locHeader head;
-	fread(&head, sizeof(head), 1, fp);
+	SDL_RWread(fp, &head, sizeof(head), 1);
 	SDL_assert_release(head.magic == 85075);
+	SDL_assert_release(head.size <= SDL_RWsize(fp));
 
-	size_t count = (head.size - sizeof(head)) / sizeof(locEntry);
-	std::vector<locEntry> entries(count);
-	fread(entries.data(), sizeof(locEntry), count, fp);
+	Vector<uint8_t> data(head.size - sizeof(head));
+	SDL_RWread(fp, data.data(), data.size(), 1);
 
-	fclose(fp);
-	return false;
+	SDL_RWclose(fp);
+	return true;
 }

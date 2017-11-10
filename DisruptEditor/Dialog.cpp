@@ -7,6 +7,7 @@
 Dialog::Dialog() {
 	conversationtable = readFCB(getAbsoluteFilePath("dialog/conversationtable.dat").c_str());
 	dialogmanagerindices = readFCB(getAbsoluteFilePath("dialog/dialogmanagerindices.dat").c_str());
+	speechLength = readFCB(getAbsoluteFilePath("generated/sound/speechlength.bin").c_str());
 
 	tfDIR dir;
 	tfDirOpen(&dir, getAbsoluteFilePath("dialog/behaviortrees").c_str());
@@ -28,11 +29,6 @@ Dialog::Dialog() {
 	tfDirClose(&dir);
 
 	main.open(getAbsoluteFilePath("languages/main_english.loc").c_str());
-
-	/*fp = fopen("test.xml", "w");
-	tinyxml2::XMLPrinter printer(fp);
-	dialogmanagerindices.serializeXML(printer);
-	fclose(fp);*/
 }
 
 Dialog & Dialog::instance() {

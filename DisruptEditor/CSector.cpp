@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <SDL_assert.h>
+#include <SDL_rwops.h>
+#include "Vector.h"
 
 struct CSectorHighResHeader {
 	uint32_t magic;
@@ -16,10 +18,17 @@ struct CSectorHighResHeader {
 };
 
 bool CSectorHighRes::open(const char *filename) {
-	FILE *fp = fopen(filename, "rb");
+	SDL_RWops *fp = SDL_RWFromFile(filename, "rb");
+	if (!fp) {
+		return false;
+	}
+	Vector<uint8_t> data(SDL_RWsize(fp));
+	SDL_RWread(fp, data.data(), data.size(), 1);
+	SDL_RWclose(fp);
+	fp = SDL_RWFromConstMem(data.data(), data.size());
 
 	CSectorHighResHeader head;
-	fread(&head, sizeof(head), 1, fp);
+	SDL_RWread(fp, &head, sizeof(head), 1);
 	SDL_assert_release(head.magic == 1397901394);
 	SDL_assert_release(head.unk1 == 4);
 	SDL_assert_release(head.unk2 == 1 || head.unk2 == 16);
@@ -29,6 +38,6 @@ bool CSectorHighRes::open(const char *filename) {
 	//SDL_assert_release(head.unk6 == 0);
 	//SDL_assert_release(head.unk7 == 0);
 
-	fclose(fp);
+	SDL_RWclose(fp);
 	return true;
 }

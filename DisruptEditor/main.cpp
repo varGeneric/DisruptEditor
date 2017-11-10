@@ -72,12 +72,6 @@ int main(int argc, char **argv) {
 	SDL_Init(SDL_INIT_EVERYTHING);
 	srand(time(NULL));
 
-	/*sbaoFile sb;
-	sb.open("D:\\Desktop\\bin\\default\\000fac53.sbao");
-	return 0;*/
-
-	reloadSettings();
-
 	std::unordered_map<std::string, bool> windows;
 
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
@@ -152,6 +146,9 @@ int main(int argc, char **argv) {
 	LoadingScreen *loadingScreen = new LoadingScreen;
 
 	{
+		loadingScreen->setTitle("Scanning Files");
+		reloadSettings();
+
 		loadingScreen->setTitle("Loading WLUs");
 		Vector<FileInfo> files = getFileListFromAbsDir(settings.patchDir + "/worlds/windy_city/generated/wlu", "xml.data.fcb");
 		int count = 0;
@@ -159,8 +156,6 @@ int main(int argc, char **argv) {
 			SDL_Log("Loading %s\n", file.name.c_str());
 			wlus[file.name].shortName = file.name;
 			wlus[file.name].open(file.fullPath);
-			//loadingScreen->setProgress(file.name, count / (float)files.size());
-			//++count;
 			SDL_PumpEvents();
 		}
 
@@ -179,12 +174,12 @@ int main(int argc, char **argv) {
 
 		SDL_PumpEvents();
 		loadingScreen->setTitle("Loading Particle Library");
-		std::unique_ptr<tinyxml2::XMLDocument> particles = loadRml(getAbsoluteFilePath("__UNKNOWN/misc/9DBBFE8F.maybe.rml").c_str());
+		std::unique_ptr<tinyxml2::XMLDocument> particles = loadRml(getAbsoluteFilePath(2646343311).c_str());
 
 		spawnPointList.LoadFile(getAbsoluteFilePath("worlds/windy_city/generated/spawnpointlist.xml").c_str());
 
 		SDL_PumpEvents();
-		loadingScreen->setTitle("Loading graphics", std::string(), 0.f);
+		loadingScreen->setTitle("Loading graphics");
 		reloadBuildingEntities();
 	}
 
@@ -422,7 +417,7 @@ int main(int argc, char **argv) {
 		ImGui::SetNextWindowPos(ImVec2(80.f, 80.f), ImGuiCond_FirstUseEver);
 		if (windows["SpawnPoint"] && ImGui::Begin("SpawnPoint List", &windows["SpawnPoint"], 0)) {
 			for (tinyxml2::XMLElement *SpawnPoint = spawnPointList.RootElement()->FirstChildElement(); SpawnPoint; SpawnPoint = SpawnPoint->NextSiblingElement()) {
-				//vec3 Position = SpawnPoint->Attribute("Position");
+				//glm::vec3 Position = SpawnPoint->Attribute("Position");
 			}
 
 			ImGui::End();

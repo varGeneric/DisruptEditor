@@ -35,6 +35,7 @@ Vector<FileInfo> getFileListFromAbsDir(const std::string &dir, const std::string
 std::string loadFile(const std::string &file);
 
 std::string getAbsoluteFilePath(const std::string &path);
+std::string getAbsoluteFilePath(uint32_t path);
 
 xbgFile& loadXBG(const std::string &path);
 xbgFile& loadXBG(uint32_t path);

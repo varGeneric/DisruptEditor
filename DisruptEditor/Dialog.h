@@ -12,6 +12,7 @@ public:
 
 	Node conversationtable;
 	Node dialogmanagerindices;
+	Node speechLength;
 	std::map<std::string, Node> behaviortrees;
 	std::unordered_map<uint32_t, std::string> locStrings;
 

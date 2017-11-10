@@ -17,6 +17,7 @@ Settings settings;
 std::unordered_map<std::string, materialFile> materials;
 std::unordered_map<std::string, xbtFile> textures;
 std::unordered_map<uint32_t, std::string> unknownFiles;
+std::unordered_map<uint32_t, std::string> knownFiles;
 
 void handleUnknownPath(const char* base) {
 	tfDIR dir;
@@ -87,6 +88,16 @@ void reloadSettings() {
 		tfDirClose(&dir);
 
 	}
+
+	//Reload Filelist
+	knownFiles.clear();
+	FILE* fp = fopen("res/Watch Dogs.filelist", "r");
+	char buffer[500];
+	while(fgets(buffer, sizeof(buffer), fp)) {
+		buffer[strlen(buffer)-1] = '\0';
+		knownFiles[Hash::instance().getFilenameHash(buffer)] = buffer;
+	}
+	fclose(fp);
 }
 
 template <typename T>
@@ -217,6 +228,8 @@ std::string getAbsoluteFilePath(const std::string &path) {
 std::string getAbsoluteFilePath(uint32_t path) {
 	if (unknownFiles.count(path))
 		return unknownFiles[path];
+	if (knownFiles.count(path))
+		return getAbsoluteFilePath(knownFiles[path]);
 	return "";
 }
 
