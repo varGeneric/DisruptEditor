@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include "Vector.h"
+#include <SDL_stdinc.h>
 
 #pragma pack(push, 1)
 struct locHeader {
@@ -23,9 +24,18 @@ struct locEntry {
 struct locTableEntry {
 	uint16_t rightIndex = 0;
 	uint16_t leftIndex = 0;
-	std::string resolve(const Vector<locTableEntry> &list) const;
+	std::wstring resolve(const Vector<locTableEntry> &list) const;
 };
 #pragma pack(pop)
+
+std::string ConvertUTF16ToUTF8(const std::wstring pszTextUTF16) {
+	if (pszTextUTF16.empty()) return std::string();
+
+	char* dst = SDL_iconv_string("UTF-8", "UTF-16", (const char*)pszTextUTF16.c_str(), pszTextUTF16.size() * 2 + 2);
+	std::string str(dst);
+	SDL_free(dst);
+	return str;
+}
 
 bool locFile::open(const char *filename) {
 	SDL_RWops *fp = SDL_RWFromFile(filename, "rb");
@@ -37,10 +47,11 @@ bool locFile::open(const char *filename) {
 
 	SDL_RWseek(fp, head.fragmentOffset, RW_SEEK_SET);
 
-	Vector<std::string> strings;
+	Vector<std::wstring> strings;
+	uint32_t numStringFrags;
 	uint32_t maxStringFragmentIndex;
 	{
-		uint32_t numStringFrags = SDL_ReadLE32(fp);
+		numStringFrags = SDL_ReadLE32(fp);
 		maxStringFragmentIndex = std::min(254u, numStringFrags);
 		int stringFragmentIndexMask = (int)numStringFrags * 255;
 		Vector<locTableEntry> stringFragments(numStringFrags);
@@ -50,51 +61,48 @@ bool locFile::open(const char *filename) {
 		// resolve list
 		strings.reserve(numStringFrags);
 		for (int i = 0; i < numStringFrags; i++) {
-			std::string str = stringFragments[i].resolve(stringFragments);
-			strings.push_back(str);
-			//SDL_Log("%s\n", str.c_str());
+			strings.push_back(stringFragments[i].resolve(stringFragments));
 		}
 	}
 
 	SDL_RWseek(fp, 12 + 8 * head.count, RW_SEEK_SET);
 	int consumed = 0;
 	int tryConsumingThatManyBytes = 600;
-	std::string str;
-	while (consumed < tryConsumingThatManyBytes) {
+	std::wstring str;
+	Vector<std::wstring> compiledStrings;
+	while (SDL_RWtell(fp) < head.fragmentOffset) {
 		uint8_t b = SDL_ReadU8(fp);
 		++consumed;
 
 		if (b == 0) {
-			str += "\n";
+			compiledStrings.push_back(str);
+			SDL_Log("%s\n", ConvertUTF16ToUTF8(str).c_str());
+			str.clear();
 		} else if (b < maxStringFragmentIndex) {
 			str += strings[b + 1];
 		} else {
-			str += "\nUnknown\n";
+			str += L"*Unknown*";
 		}
 	}
-	SDL_Log("%s\n", str.c_str());
+
+	size_t a = compiledStrings.size();
 
 	SDL_RWclose(fp);
 	return true;
 }
 
-std::string locTableEntry::resolve(const Vector<locTableEntry> &list) const {
+std::wstring locTableEntry::resolve(const Vector<locTableEntry> &list) const {
 	// linked list index == 0
 	if (leftIndex == 0 && rightIndex == 0)
-		return "";
+		return std::wstring();
 
 	// is character
 	if (leftIndex == 0)
-		return std::string(1, *(char*)&rightIndex);
+		return std::wstring(1, rightIndex);
 
 	// is linked list element
-	std::string ret;
-	if (leftIndex >= 0 && leftIndex < list.size()) {
-		ret += list[leftIndex].resolve(list);
-	}
-	if (rightIndex >= 0 && rightIndex < list.size()) {
-		ret += list[rightIndex].resolve(list);
-	}
+	SDL_assert_release(leftIndex < list.size());
+	SDL_assert_release(rightIndex < list.size());
 
-	return ret;
+	return list[leftIndex].resolve(list) + list[rightIndex].resolve(list);
 }

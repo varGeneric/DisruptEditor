@@ -28,8 +28,13 @@ Dialog::Dialog() {
 	}
 	tfDirClose(&dir);
 
+	main.open(getAbsoluteFilePath("languages/dlc_solo_english.loc").c_str());
 	main.open(getAbsoluteFilePath("languages/main_english.loc").c_str());
 	main.open(getAbsoluteFilePath("languages/patch1_english.loc").c_str());
+
+	main.open(getAbsoluteFilePath("languages/dlc_solo_german.loc").c_str());
+	main.open(getAbsoluteFilePath("languages/main_german.loc").c_str());
+	main.open(getAbsoluteFilePath("languages/patch1_german.loc").c_str());
 }
 
 Dialog & Dialog::instance() {
