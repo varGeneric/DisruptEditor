@@ -222,6 +222,10 @@ std::string getAbsoluteFilePath(const std::string &path) {
 			return fullPath;
 	}
 
+	uint32_t hash = Hash::instance().getFilenameHash(path);
+	if (unknownFiles.count(hash))
+		return unknownFiles[hash];
+
 	return std::string();
 }
 

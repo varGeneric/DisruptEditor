@@ -26,6 +26,7 @@
 #include "glm/gtc/matrix_transform.hpp"
 #include "CSector.h"
 #include "batchFile.h"
+#include "Audio.h"
 
 struct BuildingEntity {
 	std::string wlu;
@@ -123,8 +124,26 @@ int main(int argc, char **argv) {
 	dd::initialize(&RenderInterface::instance());
 
 	//Debug
-	{
+	/*{
 		tfDIR dir;
+		/*tfDirOpen(&dir, "D:\\Desktop\\bin\\sound\\soundbinary");
+		//tfDirOpen(&dir, "D:\\Desktop\\bin\\sound\\__UNKNOWN/sfx");
+		//tfDirOpen(&dir, "D:\\Desktop\\bin\\default");
+		while (dir.has_next) {
+			tfFILE file;
+			tfReadFile(&dir, &file);
+
+			if (!file.is_dir && strstr(file.name, ".sbao") != NULL) {
+				SDL_Log("Loading %s\n", file.name);
+
+				sbaoFile bf;
+				bf.open(file.path);
+			}
+
+			tfDirNext(&dir);
+		}
+		tfDirClose(&dir);
+
 		tfDirOpen(&dir, "D:\\Desktop\\bin\\windy_city\\worlds\\windy_city\\generated\\batchmeshentity");
 		while (dir.has_next) {
 			tfFILE file;
@@ -157,7 +176,7 @@ int main(int argc, char **argv) {
 			tfDirNext(&dir);
 		}
 		tfDirClose(&dir);
-	}
+	}*/
 
 	tinyxml2::XMLDocument spawnPointList;
 
@@ -329,6 +348,7 @@ int main(int argc, char **argv) {
 
 		if (ImGui::BeginMenu("Tools")) {
 			if (ImGui::MenuItem("DARE Converter")) {
+				windows["DARE"] ^= true;
 			}
 			if (ImGui::MenuItem("Domino Editor")) {
 				windows["Domino"] ^= true;
@@ -404,10 +424,28 @@ int main(int argc, char **argv) {
 		}
 
 		if (windows["DARE"] && ImGui::Begin("DARE Converter", &windows["DARE"], 0)) {
-			if (ImGui::Button("Convert OGG to SBAO")) {
-				const char *src = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "ogg\0*.ogg\0", NULL, NULL);
-				const char *dst = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "sbao\0*.sbao\0", NULL, "00000000");
+			static sbaoFile file;
+			static std::string currentFile;
+			static int currentSound = 0;
+			if (ImGui::Button("Open")) {
+				currentFile = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "sbao\0*.sbao\0", NULL, NULL);
+				file.open(currentFile.c_str());
 			}
+
+			int layerNum = 1;
+			for (auto it = file.layers.begin(); it != file.layers.end(); ++it) {
+				ImGui::PushID(it);
+				ImGui::Text("%u", layerNum);
+				ImGui::SameLine();
+				if (ImGui::Button("Play")) {
+					Audio::instance().stopSound(currentSound);
+					it->play(false);
+				}
+
+				ImGui::PopID();
+				layerNum++;
+			}
+
 			ImGui::End();
 		}
 
