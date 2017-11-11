@@ -29,6 +29,7 @@ Dialog::Dialog() {
 	tfDirClose(&dir);
 
 	main.open(getAbsoluteFilePath("languages/main_english.loc").c_str());
+	main.open(getAbsoluteFilePath("languages/patch1_english.loc").c_str());
 }
 
 Dialog & Dialog::instance() {
