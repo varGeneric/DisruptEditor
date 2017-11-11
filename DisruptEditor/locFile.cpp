@@ -50,10 +50,11 @@ bool locFile::open(const char *filename) {
 	Vector<std::wstring> strings;
 	uint32_t numStringFrags;
 	uint32_t maxStringFragmentIndex;
+	int stringFragmentIndexMask;
 	{
 		numStringFrags = SDL_ReadLE32(fp);
 		maxStringFragmentIndex = std::min(254u, numStringFrags);
-		int stringFragmentIndexMask = (int)numStringFrags * 255;
+		stringFragmentIndexMask = (int)numStringFrags * 255;
 		Vector<locTableEntry> stringFragments(numStringFrags);
 		SDL_RWread(fp, stringFragments.data() + 1, sizeof(locTableEntry), stringFragments.size() - 1);
 		SDL_assert_release(SDL_RWtell(fp) == SDL_RWsize(fp));
@@ -63,16 +64,19 @@ bool locFile::open(const char *filename) {
 		for (int i = 0; i < numStringFrags; i++) {
 			strings.push_back(stringFragments[i].resolve(stringFragments));
 		}
+
+		/*FILE *fp = fopen("str.txt", "w");
+		for (int i = 0; i < numStringFrags; i++) {
+			fprintf(fp, "%s\n", ConvertUTF16ToUTF8(strings[i]).c_str());
+		}
+		fclose(fp);*/
 	}
 
-	SDL_RWseek(fp, 12 + 8 * head.count, RW_SEEK_SET);
-	int consumed = 0;
-	int tryConsumingThatManyBytes = 600;
+	SDL_RWseek(fp, sizeof(head) + 8 * head.count, RW_SEEK_SET);
 	std::wstring str;
 	Vector<std::wstring> compiledStrings;
 	while (SDL_RWtell(fp) < head.fragmentOffset) {
 		uint8_t b = SDL_ReadU8(fp);
-		++consumed;
 
 		if (b == 0) {
 			compiledStrings.push_back(str);
