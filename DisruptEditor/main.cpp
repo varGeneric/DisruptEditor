@@ -311,6 +311,31 @@ int main(int argc, char **argv) {
 		if (ImGui::MenuItem("Domino")) {
 			windows["Domino"] ^= true;
 		}
+		if (ImGui::MenuItem("DARE")) {
+			windows["DARE"] ^= true;
+		}
+		if (ImGui::MenuItem("Sequence")) {
+			windows["CSequence"] ^= true;
+		}
+		if (ImGui::MenuItem("LocString")) {
+			windows["LocString"] ^= true;
+		}
+		if (ImGui::MenuItem("SpawnPoint")) {
+			windows["SpawnPoint"] ^= true;
+		}
+		if (ImGui::BeginMenu("Hasher")) {
+			static char buffer[255] = { '\0' };
+			ImGui::InputText("##UID", buffer, sizeof(buffer));
+			uint32_t fnv = Hash::instance().getFilenameHash(buffer);
+			uint32_t crc = Hash::instance().getHash(buffer);
+
+			char outbuffer[255];
+			snprintf(outbuffer, sizeof(outbuffer), "%u", fnv);
+			ImGui::InputText("FNV##UIDOUT", outbuffer, sizeof(buffer), ImGuiInputTextFlags_ReadOnly);
+			snprintf(outbuffer, sizeof(outbuffer), "%u", crc);
+			ImGui::InputText("CRC##UIDOUT", outbuffer, sizeof(buffer), ImGuiInputTextFlags_ReadOnly);
+			ImGui::EndMenu();
+		}
 		if (ImGui::BeginMenu("Batch")) {
 			if (ImGui::MenuItem("Import Wlu XML")) {
 				for (auto it = wlus.begin(); it != wlus.end(); ++it) {
@@ -345,35 +370,6 @@ int main(int argc, char **argv) {
 
 					it->second.serialize(it->second.origFilename.c_str());
 				}
-			}
-			ImGui::EndMenu();
-		}
-
-		if (ImGui::BeginMenu("Tools")) {
-			if (ImGui::MenuItem("DARE Converter")) {
-				windows["DARE"] ^= true;
-			}
-			if (ImGui::MenuItem("CSequence Editor")) {
-				windows["CSequence"] ^= true;
-			}
-			if (ImGui::MenuItem("LocString Editor")) {
-				windows["LocString"] ^= true;
-			}
-			if (ImGui::MenuItem("SpawnPoint Editor")) {
-				windows["SpawnPoint"] ^= true;
-			}
-			if (ImGui::BeginMenu("Hasher")) {
-				static char buffer[255] = { '\0' };
-				ImGui::InputText("##UID", buffer, sizeof(buffer));
-				uint32_t fnv = Hash::instance().getFilenameHash(buffer);
-				uint32_t crc = Hash::instance().getHash(buffer);
-
-				char outbuffer[255];
-				snprintf(outbuffer, sizeof(outbuffer), "%u", fnv);
-				ImGui::InputText("FNV##UIDOUT", outbuffer, sizeof(buffer), ImGuiInputTextFlags_ReadOnly);
-				snprintf(outbuffer, sizeof(outbuffer), "%u", crc);
-				ImGui::InputText("CRC##UIDOUT", outbuffer, sizeof(buffer), ImGuiInputTextFlags_ReadOnly);
-				ImGui::EndMenu();
 			}
 			ImGui::EndMenu();
 		}
@@ -431,6 +427,7 @@ int main(int argc, char **argv) {
 				currentFile = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "sbao\0*.sbao\0", NULL, NULL);
 				file.open(currentFile.c_str());
 			}
+			ImGui::Text("%s", currentFile.c_str());
 
 			int layerNum = 1;
 			for (auto it = file.layers.begin(); it != file.layers.end(); ++it) {
@@ -439,7 +436,12 @@ int main(int argc, char **argv) {
 				ImGui::SameLine();
 				if (ImGui::Button("Play")) {
 					Audio::instance().stopSound(currentSound);
-					it->play(false);
+					currentSound = it->play(false);
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("Loop")) {
+					Audio::instance().stopSound(currentSound);
+					currentSound = it->play(true);
 				}
 
 				ImGui::PopID();

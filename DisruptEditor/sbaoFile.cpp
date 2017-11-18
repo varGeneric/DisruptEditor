@@ -325,11 +325,12 @@ void oggPage::print() {
 	SDL_Log("%u\t%u\t%u\t%u\t%u\t%u\t%u\n", pos, header.version, header.headerType, header.granulePos, header.serialNo, header.pageSeqNum, header.numSegments);
 }
 
-void sbaoLayer::play(bool loop) {
+int sbaoLayer::play(bool loop) {
 	int channels, sampleRate;
 	short *output;
 	int ret = stb_vorbis_decode_memory(data.data(), data.size(), &channels, &sampleRate, &output);
 	SDL_assert_release(ret > 0);
-	Audio::instance().addSound(sampleRate, channels, output, ret * channels * sizeof(short), loop);
+	int ref = Audio::instance().addSound(sampleRate, channels, output, ret * channels * sizeof(short), loop);
 	free(output);
+	return ref;
 }

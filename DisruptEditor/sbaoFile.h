@@ -8,7 +8,7 @@ struct sbaoLayer {
 	Vector<uint8_t> data;
 	enum Type { VORBIS, PCM };
 	Type type;
-	void play(bool loop);
+	int play(bool loop);
 };
 
 class sbaoFile {

@@ -49,7 +49,6 @@ void Audio::audioCallback(float *stream, int len) {
 		}
 
 		++it;
-		break;
 	}
 	mutex.unlock();
 }

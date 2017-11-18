@@ -79,11 +79,11 @@ LoadingScreen::LoadingScreen() {
 		want.userdata = NULL;
 		want.callback = NULL;
 
-		/*dev = SDL_OpenAudioDevice(NULL, 0, &want, &have, 0);
+		dev = SDL_OpenAudioDevice(NULL, 0, &want, &have, 0);
 		if (dev != 0)
 			SDL_PauseAudioDevice(dev, 0);
 
-		SDL_QueueAudio(dev, audioData, audioSize * channels * sizeof(short));*/
+		SDL_QueueAudio(dev, audioData, audioSize * channels * sizeof(short));
 	}
 
 	thread = SDL_CreateThread(LSThread, NULL, this);
@@ -102,8 +102,8 @@ LoadingScreen::~LoadingScreen() {
 
 void LoadingScreen::threadHandler() {
 	while (running) {
-		//if(SDL_GetQueuedAudioSize(dev) < audioSize * channels * sizeof(short))
-			//SDL_QueueAudio(dev, audioData, audioSize * channels * sizeof(short));
+		if(SDL_GetQueuedAudioSize(dev) < audioSize * channels * sizeof(short))
+			SDL_QueueAudio(dev, audioData, audioSize * channels * sizeof(short));
 
 		SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
 		SDL_RenderCopy(renderer, background, NULL, NULL);
