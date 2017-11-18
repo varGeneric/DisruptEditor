@@ -4,7 +4,6 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <SDL_assert.h>
-#include <SDL_rwops.h>
 #include <SDL_log.h>
 #include "Vector.h"
 
@@ -76,9 +75,15 @@ struct oggPage {
 
 const uint32_t sbaoMagic = 207362;
 
-void sbaoFile::open(const char * filename) {
-	layers.clear();
+void sbaoFile::open(const char *filename) {
 	SDL_RWops *fp = SDL_RWFromFile(filename, "rb");
+	open(fp);
+	SDL_RWclose(fp);
+}
+
+void sbaoFile::open(SDL_RWops *fp) {
+	layers.clear();
+	
 	//SDL_RWops *out = SDL_RWFromFile("test.ogg", "wb");
 	sbaoHeader head;
 	SDL_RWread(fp, &head, sizeof(head), 1);
@@ -167,14 +172,11 @@ void sbaoFile::open(const char * filename) {
 			}
 		}
 	} else if (type == 0 || type == 4294049865 || type == 1677572653 || type == 1511924971 || type == 2232265428 || type == 2464119532) {//Unknown
-		SDL_RWclose(fp);
 		return;
 	} else {
-		SDL_RWclose(fp);
 		return;
 	}
 
-	SDL_RWclose(fp);
 	return;
 
 	SDL_RWseek(fp, 128, RW_SEEK_SET); //DEBUG
@@ -258,7 +260,6 @@ void sbaoFile::open(const char * filename) {
 
 	size_t pos = SDL_RWtell(fp);
 
-	SDL_RWclose(fp);
 	//SDL_RWclose(out);
 }
 

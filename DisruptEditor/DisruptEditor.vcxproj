@@ -164,6 +164,7 @@
     <ClCompile Include="Entity.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="Hash.cpp" />
+    <ClCompile Include="hkxFile.cpp" />
     <ClCompile Include="imgui.cpp" />
     <ClCompile Include="imgui_draw.cpp" />
     <ClCompile Include="imgui_impl_sdl_gl3.cpp" />
@@ -203,6 +204,7 @@
     <ClInclude Include="glad.h" />
     <ClInclude Include="GLHelper.h" />
     <ClInclude Include="Hash.h" />
+    <ClInclude Include="hkxFile.h" />
     <ClInclude Include="imgui_impl_sdl_gl3.h" />
     <ClInclude Include="Implementation.h" />
     <ClInclude Include="khrplatform.h" />

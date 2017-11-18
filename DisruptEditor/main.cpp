@@ -308,6 +308,9 @@ int main(int argc, char **argv) {
 		if (ImGui::MenuItem("Terrain")) {
 			windows["Terrain"] ^= true;
 		}
+		if (ImGui::MenuItem("Domino")) {
+			windows["Domino"] ^= true;
+		}
 		if (ImGui::BeginMenu("Batch")) {
 			if (ImGui::MenuItem("Import Wlu XML")) {
 				for (auto it = wlus.begin(); it != wlus.end(); ++it) {
@@ -349,9 +352,6 @@ int main(int argc, char **argv) {
 		if (ImGui::BeginMenu("Tools")) {
 			if (ImGui::MenuItem("DARE Converter")) {
 				windows["DARE"] ^= true;
-			}
-			if (ImGui::MenuItem("Domino Editor")) {
-				windows["Domino"] ^= true;
 			}
 			if (ImGui::MenuItem("CSequence Editor")) {
 				windows["CSequence"] ^= true;
@@ -449,14 +449,25 @@ int main(int argc, char **argv) {
 			ImGui::End();
 		}
 
-		if (windows["Domino"] && ImGui::Begin("Domino!", &windows["Domino"], 0)) {
-			static std::string currentFile;
+		if (windows["Domino"] && ImGui::Begin("Domino!", &windows["Domino"], ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
 			static DominoBox db;
-			if (ImGui::Button("Open")) {
-				currentFile = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, NULL, NULL, NULL);
-				db.open(currentFile.c_str());
+			ImGui::BeginMenuBar();
+			if (ImGui::MenuItem("Open")) {
 			}
+			if (ImGui::MenuItem("Save")) {
+			}
+			if (ImGui::MenuItem("Save As")) {
+			}
+			if (ImGui::MenuItem("Import Lua")) {
+				const char *currentFile = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, NULL, NULL, NULL);
+				db.open(currentFile);
+			}
+			if (ImGui::MenuItem("Export Lua")) {
+				const char *currentFile = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, NULL, NULL, NULL);
+			}
+			ImGui::EndMenuBar();
 
+			db.draw();
 
 			ImGui::End();
 		}
@@ -689,7 +700,7 @@ int main(int argc, char **argv) {
 			}
 		}
 
-		if (!ImGui::IsAnyItemActive())
+		if (!ImGui::IsAnyWindowHovered())
 			camera.update(delta);
 
 		glBindVertexArray(RenderInterface::instance().VertexArrayID);

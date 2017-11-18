@@ -2,10 +2,9 @@
 // (internals)
 
 // You may use this file to debug, understand or extend ImGui features but we don't provide any guarantee of forward compatibility!
-// Implement maths operators for ImVec2 (disabled by default to not collide with using IM_VEC2_CLASS_EXTRA along with your own math types+operators)
+// Set:
 //   #define IMGUI_DEFINE_MATH_OPERATORS
-// Define IM_PLACEMENT_NEW() macro helper.
-//   #define IMGUI_DEFINE_PLACEMENT_NEW
+// To implement maths operators for ImVec2 (disabled by default to not collide with using IM_VEC2_CLASS_EXTRA along with your own math types+operators)
 
 #pragma once
 
@@ -159,12 +158,10 @@ static inline float  ImLinearSweep(float current, float target, float speed)    
 
 // We call C++ constructor on own allocated memory via the placement "new(ptr) Type()" syntax.
 // Defining a custom placement new() with a dummy parameter allows us to bypass including <new> which on some platforms complains when user has disabled exceptions.
-#ifdef IMGUI_DEFINE_PLACEMENT_NEW
 struct ImPlacementNewDummy {};
 inline void* operator new(size_t, ImPlacementNewDummy, void* ptr) { return ptr; }
 inline void operator delete(void*, ImPlacementNewDummy, void*) {}
 #define IM_PLACEMENT_NEW(_PTR)  new(ImPlacementNewDummy(), _PTR)
-#endif
 
 //-----------------------------------------------------------------------------
 // Types
@@ -197,7 +194,8 @@ enum ImGuiColumnsFlags_
     ImGuiColumnsFlags_NoBorder              = 1 << 0,   // Disable column dividers
     ImGuiColumnsFlags_NoResize              = 1 << 1,   // Disable resizing columns when clicking on the dividers
     ImGuiColumnsFlags_NoPreserveWidths      = 1 << 2,   // Disable column width preservation when adjusting columns
-    ImGuiColumnsFlags_NoForceWithinWindow   = 1 << 3    // Disable forcing columns to fit within window
+    ImGuiColumnsFlags_NoForceWithinWindow   = 1 << 3,   // Disable forcing columns to fit within window
+    ImGuiColumnsFlags_GrowParentContentsSize= 1 << 4,   // (WIP) Restore pre-1.51 behavior of extending the parent window contents size but _without affecting the columns width at all_. Will eventually remove.
 };
 
 enum ImGuiSelectableFlagsPrivate_
@@ -422,6 +420,7 @@ struct ImGuiContext
     ImVector<ImGuiWindow*>  Windows;
     ImVector<ImGuiWindow*>  WindowsSortBuffer;
     ImVector<ImGuiWindow*>  CurrentWindowStack;
+    ImGuiStorage            WindowsById;
     ImGuiWindow*            CurrentWindow;                      // Being drawn into
     ImGuiWindow*            NavWindow;                          // Nav/focused window for navigation
     ImGuiWindow*            HoveredWindow;                      // Will catch mouse inputs
@@ -702,6 +701,7 @@ struct IMGUI_API ImGuiWindow
     bool                    Collapsed;                          // Set when collapsing window to become only title-bar
     bool                    SkipItems;                          // Set when items can safely be all clipped (e.g. window not visible or collapsed)
     bool                    Appearing;                          // Set during the frame where the window is appearing (or re-appearing)
+    bool                    CloseButton;                        // Set when the window has a close button (p_open != NULL)
     int                     BeginCount;                         // Number of Begin() during the current frame (generally 0 or 1, 1+ if appending via multiple Begin/End pairs)
     ImGuiID                 PopupId;                            // ID in the popup stack when this window is used as a popup/menu (because we use generic Name/ID for recycling)
     int                     AutoFitFramesX, AutoFitFramesY;
@@ -781,6 +781,8 @@ namespace ImGui
     IMGUI_API ImGuiWindow*  GetParentWindow();
     IMGUI_API ImGuiWindow*  FindWindowByName(const char* name);
     IMGUI_API void          FocusWindow(ImGuiWindow* window);
+    IMGUI_API void          BringWindowToFront(ImGuiWindow* window);
+    IMGUI_API void          BringWindowToBack(ImGuiWindow* window);
 
     IMGUI_API void          Initialize();
     IMGUI_API void          EndFrame();                 // Ends the ImGui frame. Automatically called by Render()! you most likely don't need to ever call that yourself directly. If you don't need to render you can call EndFrame() but you'll have wasted CPU already. If you don't need to render, don't create any windows instead!
@@ -840,6 +842,7 @@ namespace ImGui
     IMGUI_API bool          ButtonBehavior(const ImRect& bb, ImGuiID id, bool* out_hovered, bool* out_held, ImGuiButtonFlags flags = 0);
     IMGUI_API bool          ButtonEx(const char* label, const ImVec2& size_arg = ImVec2(0,0), ImGuiButtonFlags flags = 0);
     IMGUI_API bool          CloseButton(ImGuiID id, const ImVec2& pos, float radius);
+    IMGUI_API bool          ArrowButton(ImGuiID id, ImGuiDir dir, ImVec2 padding, ImGuiButtonFlags flags = 0);
 
     IMGUI_API bool          SliderBehavior(const ImRect& frame_bb, ImGuiID id, float* v, float v_min, float v_max, float power, int decimal_precision, ImGuiSliderFlags flags = 0);
     IMGUI_API bool          SliderFloatN(const char* label, float* v, int components, float v_min, float v_max, const char* display_format, float power);

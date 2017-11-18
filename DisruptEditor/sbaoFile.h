@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <SDL_rwops.h>
 #include "Vector.h"
 
 struct sbaoLayer {
@@ -13,6 +14,7 @@ struct sbaoLayer {
 class sbaoFile {
 public:
 	void open(const char* filename);
+	void open(SDL_RWops* fp);
 	Vector<sbaoLayer> layers;
 };
 

@@ -803,7 +803,8 @@ struct ImGuiIO
     ImVec2        DisplayVisibleMax;        // <unset> (0.0f,0.0f)  // If the values are the same, we defaults to Min=(0.0f) and Max=DisplaySize
 
     // Advanced/subtle behaviors
-    bool          OSXBehaviors;             // = defined(__APPLE__) // OS X style: Text editing cursor movement using Alt instead of Ctrl, Shortcuts using Cmd/Super instead of Ctrl, Line/Text Start and End using Cmd+Arrows instead of Home/End, Double click selects by word instead of selecting whole text, Multi-selection in lists uses Cmd/Super instead of Ctrl
+    bool          OptMacOSXBehaviors;       // = defined(__APPLE__) // OS X style: Text editing cursor movement using Alt instead of Ctrl, Shortcuts using Cmd/Super instead of Ctrl, Line/Text Start and End using Cmd+Arrows instead of Home/End, Double click selects by word instead of selecting whole text, Multi-selection in lists uses Cmd/Super instead of Ctrl
+    bool          OptCursorBlink;           // = true               // Enable blinking cursor, for users who consider it annoying.
 
     //------------------------------------------------------------------
     // Settings (User Functions)
@@ -1049,7 +1050,7 @@ struct ImGuiStorage
     {
         ImGuiID key;
         union { int val_i; float val_f; void* val_p; };
-        Pair(ImGuiID _key, int _val_i) { key = _key; val_i = _val_i; }
+        Pair(ImGuiID _key, int _val_i)   { key = _key; val_i = _val_i; }
         Pair(ImGuiID _key, float _val_f) { key = _key; val_f = _val_f; }
         Pair(ImGuiID _key, void* _val_p) { key = _key; val_p = _val_p; }
     };
@@ -1058,7 +1059,7 @@ struct ImGuiStorage
     // - Get***() functions find pair, never add/allocate. Pairs are sorted so a query is O(log N)
     // - Set***() functions find pair, insertion on demand if missing.
     // - Sorted insertion is costly, paid once. A typical frame shouldn't need to insert any new pair.
-    IMGUI_API void      Clear();
+    void                Clear() { Data.clear(); }
     IMGUI_API int       GetInt(ImGuiID key, int default_val = 0) const;
     IMGUI_API void      SetInt(ImGuiID key, int val);
     IMGUI_API bool      GetBool(ImGuiID key, bool default_val = false) const;
