@@ -49,36 +49,37 @@ std::wstring ConvertUTF8ToUTF16(const std::string pszTextUTF8) {
 bool locFile::open(const char *filename) {
 	SDL_RWops *fp = SDL_RWFromFile(filename, "rb");
 
+	//Read Header
 	locHeader head;
 	SDL_RWread(fp, &head, sizeof(head), 1);
 	SDL_assert_release(head.magic == 85075);
 	SDL_assert_release(head.fragmentOffset <= SDL_RWsize(fp));
 
+	//Read String Fragment Table
 	SDL_RWseek(fp, head.fragmentOffset, RW_SEEK_SET);
-
 	Vector<std::wstring> strings;
 	uint32_t numStringFrags;
-	uint32_t maxStringFragmentIndex;
 	int stringFragmentIndexMask;
 	{
 		numStringFrags = SDL_ReadLE32(fp);
-		maxStringFragmentIndex = std::min(254u, numStringFrags);
-		stringFragmentIndexMask = (int)numStringFrags * 255;
+		stringFragmentIndexMask = numStringFrags * 255;
 		Vector<locFragment> stringFragments(numStringFrags);
 		SDL_RWread(fp, stringFragments.data() + 1, sizeof(locFragment), stringFragments.size() - 1);
 		SDL_assert_release(SDL_RWtell(fp) == SDL_RWsize(fp));
 
-		// resolve list
+		//Resolve String Fragment Table
 		strings.reserve(numStringFrags);
 		for (int i = 0; i < numStringFrags; i++) {
 			strings.push_back(stringFragments[i].resolve(stringFragments));
 		}
 	}
 
+	//Read String index table
 	SDL_RWseek(fp, sizeof(head), RW_SEEK_SET);
 	Vector<locTableEntry> tables(head.count);
 	SDL_RWread(fp, tables.data(), sizeof(locTableEntry), tables.size());
 
+	//Read Strings
 	for (locTableEntry &entry : tables) {
 		SDL_Log("%u  %u\n", entry.idOffset, entry.offset);
 		//SDL_assert_release(entry.offset < head.fragmentOffset);
