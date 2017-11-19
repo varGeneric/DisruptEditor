@@ -1,0 +1,22 @@
+<domino>
+    <box path="domino/system/accessidcontroller.lua" desc="">
+        <control_in name="BlockAccessId" desc="" />
+        <control_in name="UnblockAccessId" desc="" />
+        <control_in name="HasAccessId" desc="" />
+
+        <data_in name="Player" desc="" />
+        <data_in name="AccessId" desc="" />
+
+        <control_out name="AddedDisabledAccessId" desc="" />
+        <control_out name="RemovedDisabledAccessId" desc="" />
+        <control_out name="Has" desc="" />
+        <control_out name="HasNOT" desc="" />
+    </box>
+    <box path="domino/system/AchievementsController.lua" desc="">
+        <control_in name="IncrementAchievementStat" desc="" />
+
+        <data_in name="AchievementStat" desc="" />
+
+        <control_out name="AchievementStatIncremented" desc="" />
+    </box>
+</domino>

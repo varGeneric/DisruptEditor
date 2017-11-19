@@ -17,8 +17,17 @@ public:
 
 class DominoSlot {
 public:
-	std::string name, value;
+	std::string name;
+	std::string description;
 	DominoSlotType type;
+};
+
+class DominoConnectors {
+public:
+	std::string description;
+	Vector<DominoSlot> in, out;
+	glm::vec2 GetInputSlotPos(int slot_no, const glm::vec2 &pos, const glm::vec2 &size) const { return glm::vec2(pos.x, pos.y - 10.f + size.y * ((float)slot_no + 1) / ((float)in.size() + 1)); }
+	glm::vec2 GetOutputSlotPos(int slot_no, const glm::vec2 &pos, const glm::vec2 &size) const { return glm::vec2(pos.x + size.x, pos.y - 10.f + size.y * ((float)slot_no + 1) / ((float)out.size() + 1)); }
 };
 
 class DominoCBox {
@@ -31,10 +40,6 @@ public:
 	int id;
 	std::string boxClass;
 	std::string getShortName();
-	Vector<DominoSlot> in, out;
-
-	glm::vec2 GetInputSlotPos(int slot_no) const { return glm::vec2(pos.x, pos.y - 10.f + size.y * ((float)slot_no + 1) / ((float)in.size() + 1)); }
-	glm::vec2 GetOutputSlotPos(int slot_no) const { return glm::vec2(pos.x + size.x, pos.y - 10.f + size.y * ((float)slot_no + 1) / ((float)out.size() + 1)); }
 };
 
 class DominoBox {

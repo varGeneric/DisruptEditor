@@ -6,6 +6,12 @@
 #include <regex>
 #include "imgui.h"
 
+/*
+
+Parsing
+
+*/
+
 std::string readLuaLine(FILE *fp) {
 	char buffer[500];
 	if (!fgets(buffer, sizeof(buffer), fp))
@@ -40,7 +46,66 @@ std::string skipToNextFunction(FILE *fp) {
 	return line;
 }
 
+/*
+
+Globals
+
+*/
+
+std::map<std::string, DominoConnectors> gConnectors;
+
+void loadConnectors() {
+	gConnectors.clear();
+	tinyxml2::XMLDocument doc;
+	doc.LoadFile("res/domino.xml");
+	for (auto it = doc.RootElement()->FirstChildElement(); it; it = it->NextSiblingElement()) {
+		std::string path = it->Attribute("path");
+		std::transform(path.begin(), path.end(), path.begin(), ::tolower);
+		const char* desc = it->Attribute("desc");
+
+		DominoConnectors &c = gConnectors[path];
+		if (desc)
+			c.description = desc;
+
+		for (auto j = it->FirstChildElement(); j; j = j->NextSiblingElement()) {
+			std::string type = j->Name();
+			if (type == "control_in") {
+				DominoSlot &slot = c.in.push_back();
+				slot.name = j->Attribute("name");
+				slot.type = CONTROL;
+				const char* desc = j->Attribute("desc");
+				if (desc)
+					slot.description = desc;
+			} else if (type == "control_out") {
+				DominoSlot &slot = c.out.push_back();
+				slot.name = j->Attribute("name");
+				slot.type = CONTROL;
+				const char* desc = j->Attribute("desc");
+				if (desc)
+					slot.description = desc;
+			} else if (type == "data_in") {
+				DominoSlot &slot = c.in.push_back();
+				slot.name = j->Attribute("name");
+				slot.type = DATA;
+				const char* desc = j->Attribute("desc");
+				if (desc)
+					slot.description = desc;
+			} else if (type == "data_out") {
+				DominoSlot &slot = c.out.push_back();
+				slot.name = j->Attribute("name");
+				slot.type = DATA;
+				const char* desc = j->Attribute("desc");
+				if (desc)
+					slot.description = desc;
+			}
+
+		}
+	}
+
+}
+
 void DominoBox::open(const char *filename) {
+	loadConnectors();
 	boxes.clear();
 	connections.clear();
 	localVariables.clear();
@@ -207,10 +272,14 @@ void DominoBox::draw() {
 		ImGui::BeginGroup(); // Lock horizontal position
 		ImGui::Text("%s", it->second.getShortName().c_str());
 
-		for (DominoSlot &slot : it->second.in) {
+		std::string path = it->second.boxClass;
+		std::transform(path.begin(), path.end(), path.begin(), ::tolower);
+		DominoConnectors &connectors = gConnectors[path];
+
+		for (DominoSlot &slot : connectors.in) {
 			ImGui::Text("%s", slot.name.c_str());
 		}
-		for (DominoSlot &slot : it->second.out) {
+		for (DominoSlot &slot : connectors.out) {
 			ImGui::Text("%s", slot.name.c_str());
 		}
 
@@ -240,11 +309,13 @@ void DominoBox::draw() {
 		draw_list->AddRect(node_rect_min, node_rect_max, ImColor(100, 100, 100), 4.0f);
 
 		int slot_idx = 1;
-		for (DominoSlot &slot : it->second.in) {
-			draw_list->AddCircleFilled(offset + it->second.GetInputSlotPos(slot_idx++), NODE_SLOT_RADIUS, ImColor(150, 150, 150, 150));
+		for (DominoSlot &slot : connectors.in) {
+			ImColor color = ImColor(150, 150, 150, 150);
+			draw_list->AddCircleFilled(offset + connectors.GetInputSlotPos(slot_idx++, it->second.pos, it->second.size), NODE_SLOT_RADIUS, color);
 		}
-		for (DominoSlot &slot : it->second.out) {
-			draw_list->AddCircleFilled(offset + it->second.GetOutputSlotPos(slot_idx++), NODE_SLOT_RADIUS, ImColor(150, 150, 150, 150));
+		for (DominoSlot &slot : connectors.out) {
+			ImColor color = ImColor(150, 150, 150, 150);
+			draw_list->AddCircleFilled(offset + connectors.GetOutputSlotPos(slot_idx++, it->second.pos, it->second.size), NODE_SLOT_RADIUS, color);
 		}
 
 		ImGui::PopID();
@@ -307,10 +378,12 @@ std::string DominoCBox::deserialize(FILE *fp) {
 
 	//Process local variables
 	for (auto &it : localVariables) {
-		DominoSlot &slot = out.push_back();
+		/*DominoSlot &slot = out.push_back();
 		slot.name = it.first;
 		slot.type = CONTROL;
 		slot.value = it.second;
+		if (slot.value == "DummyFunction")
+			slot.value.clear();*/
 	}
 
 	return line;

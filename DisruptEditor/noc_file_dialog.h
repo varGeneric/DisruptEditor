@@ -170,7 +170,7 @@ const char *noc_file_dialog_open(int flags,
     ofn.lpstrFileTitle = NULL;
     ofn.nMaxFileTitle = 0;
     ofn.lpstrInitialDir = default_path;
-    ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+    ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
 
     if (flags & NOC_FILE_DIALOG_OPEN)
         ret = GetOpenFileNameA(&ofn);
