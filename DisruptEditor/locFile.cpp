@@ -28,7 +28,7 @@ struct locFragment {
 };
 #pragma pack(pop)
 
-std::string ConvertUTF16ToUTF8(const std::wstring pszTextUTF16) {
+std::string ConvertUTF16ToUTF8(const std::wstring &pszTextUTF16) {
 	if (pszTextUTF16.empty()) return std::string();
 
 	char* dst = SDL_iconv_string("UTF-8", "UTF-16", (const char*)pszTextUTF16.c_str(), pszTextUTF16.size() * 2 + 2);
@@ -37,7 +37,7 @@ std::string ConvertUTF16ToUTF8(const std::wstring pszTextUTF16) {
 	return str;
 }
 
-std::wstring ConvertUTF8ToUTF16(const std::string pszTextUTF8) {
+std::wstring ConvertUTF8ToUTF16(const std::string &pszTextUTF8) {
 	if (pszTextUTF8.empty()) return std::wstring();
 
 	char* dst = SDL_iconv_string("UTF-16", "UTF-8", pszTextUTF8.c_str(), pszTextUTF8.size() + 1);
