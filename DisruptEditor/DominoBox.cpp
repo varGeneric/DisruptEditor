@@ -89,8 +89,6 @@ void DominoBox::open(const char *filename) {
 
 		DominoCBox cbox;
 		cbox.id = std::stoi(cm[1]);
-		if (cbox.id == 34)
-			int a = 1;
 		cbox.boxClass = cm[2];
 		line = cbox.deserialize(fp);
 
@@ -186,6 +184,17 @@ void DominoBox::draw() {
 	for (float y = fmodf(offset.y, GRID_SZ); y < canvas_sz.y; y += GRID_SZ)
 		draw_list->AddLine(ImVec2(0.0f, y) + win_pos, ImVec2(canvas_sz.x, y) + win_pos, GRID_COLOR);
 
+	// Display links
+	draw_list->ChannelsSetCurrent(0); // Background
+	/*for (int link_idx = 0; link_idx < links.Size; link_idx++) {
+		NodeLink* link = &links[link_idx];
+		Node* node_inp = &nodes[link->InputIdx];
+		Node* node_out = &nodes[link->OutputIdx];
+		ImVec2 p1 = offset + node_inp->GetOutputSlotPos(link->InputSlot);
+		ImVec2 p2 = offset + node_out->GetInputSlotPos(link->OutputSlot);
+		draw_list->AddBezierCurve(p1, p1 + ImVec2(+50, 0), p2 + ImVec2(-50, 0), p2, ImColor(200, 200, 100), 3.0f);
+	}*/
+
 	for (auto it = boxes.begin(); it != boxes.end(); ++it) {
 		ImGui::PushID(it->first);
 
@@ -199,6 +208,9 @@ void DominoBox::draw() {
 		ImGui::Text("%s", it->second.getShortName().c_str());
 
 		for (DominoSlot &slot : it->second.in) {
+			ImGui::Text("%s", slot.name.c_str());
+		}
+		for (DominoSlot &slot : it->second.out) {
 			ImGui::Text("%s", slot.name.c_str());
 		}
 
@@ -227,15 +239,13 @@ void DominoBox::draw() {
 		draw_list->AddRectFilled(node_rect_min, node_rect_max, node_bg_color, 4.0f);
 		draw_list->AddRect(node_rect_min, node_rect_max, ImColor(100, 100, 100), 4.0f);
 
-		int slot_idx = 0;
+		int slot_idx = 1;
 		for (DominoSlot &slot : it->second.in) {
-			draw_list->AddCircleFilled(offset + it->second.GetInputSlotPos(slot_idx), NODE_SLOT_RADIUS, ImColor(150, 150, 150, 150));
+			draw_list->AddCircleFilled(offset + it->second.GetInputSlotPos(slot_idx++), NODE_SLOT_RADIUS, ImColor(150, 150, 150, 150));
 		}
-
-		/*for (int slot_idx = 0; slot_idx < node->InputsCount; slot_idx++)
-			draw_list->AddCircleFilled(offset + node->GetInputSlotPos(slot_idx), NODE_SLOT_RADIUS, ImColor(150, 150, 150, 150));
-		for (int slot_idx = 0; slot_idx < node->OutputsCount; slot_idx++)
-			draw_list->AddCircleFilled(offset + node->GetOutputSlotPos(slot_idx), NODE_SLOT_RADIUS, ImColor(150, 150, 150, 150));*/
+		for (DominoSlot &slot : it->second.out) {
+			draw_list->AddCircleFilled(offset + it->second.GetOutputSlotPos(slot_idx++), NODE_SLOT_RADIUS, ImColor(150, 150, 150, 150));
+		}
 
 		ImGui::PopID();
 	}
@@ -251,7 +261,7 @@ void DominoBox::autoOrganize() {
 	glm::vec2 pos;
 	for (auto it = boxes.begin(); it != boxes.end(); ++it) {
 		it->second.pos = pos;
-		pos.y += 30.f;
+		pos.y += 90.f;
 	}
 }
 
@@ -262,16 +272,18 @@ std::string DominoCBox::deserialize(FILE *fp) {
 	SDL_assert_release(line == "l0._graph = self;");
 	line = readLuaLine(fp);
 
+	std::map<std::string, std::string> localVariables;
+
 	do {
 		std::smatch cm;
 		std::regex_match(line, cm, std::regex("self\\[(.*)\\] = cbox:CreateBox\\(\"(.*)\"\\);"));
 		if (!cm.empty())
-			return line;
+			break;
 
 		std::regex_match(line, cm, std::regex("l0\\.(.*) = (.*);"));
-		if (cm.size() == 3)
+		if (cm.size() == 3) {
 			localVariables[cm[1]] = cm[2];
-		else {
+		} else {
 			//Lets see if it's an array
 			std::regex_match(line, cm, std::regex("l0\\.(.*) = \\{"));
 			if (cm.size() == 2) {
@@ -292,6 +304,14 @@ std::string DominoCBox::deserialize(FILE *fp) {
 
 		line = readLuaLine(fp);
 	} while (line != "end;");
+
+	//Process local variables
+	for (auto &it : localVariables) {
+		DominoSlot &slot = out.push_back();
+		slot.name = it.first;
+		slot.type = CONTROL;
+		slot.value = it.second;
+	}
 
 	return line;
 }

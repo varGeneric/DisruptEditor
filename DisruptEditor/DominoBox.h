@@ -17,7 +17,7 @@ public:
 
 class DominoSlot {
 public:
-	std::string name;
+	std::string name, value;
 	DominoSlotType type;
 };
 
@@ -31,10 +31,10 @@ public:
 	int id;
 	std::string boxClass;
 	std::string getShortName();
-	std::map<std::string, std::string> localVariables;
 	Vector<DominoSlot> in, out;
 
-	glm::vec2 GetInputSlotPos(int slot_no) const { return glm::vec2(pos.x, pos.y + size.y * ((float)slot_no + 1) / ((float)in.size() + 1)); }
+	glm::vec2 GetInputSlotPos(int slot_no) const { return glm::vec2(pos.x, pos.y - 10.f + size.y * ((float)slot_no + 1) / ((float)in.size() + 1)); }
+	glm::vec2 GetOutputSlotPos(int slot_no) const { return glm::vec2(pos.x + size.x, pos.y - 10.f + size.y * ((float)slot_no + 1) / ((float)out.size() + 1)); }
 };
 
 class DominoBox {
