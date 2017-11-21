@@ -27,6 +27,7 @@ public:
 	std::mutex mutex;
 	int addSound(int sampleRate, int channels, const short *input, int inputLen, bool loops);
 	void stopSound(int id);
+	void stopAll();
 private:
 	SDL_AudioDeviceID dev;
 	int count = 1;

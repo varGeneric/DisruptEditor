@@ -69,6 +69,14 @@ void Audio::stopSound(int id) {
 	mutex.unlock();
 }
 
+void Audio::stopAll() {
+	mutex.lock();
+	for (auto it = sounds.begin(); it != sounds.end(); ++it)
+		it->second.destroy();
+	sounds.clear();
+	mutex.unlock();
+}
+
 PlayingSound::PlayingSound(int sampleRate, int channels, const short *input, int inputLen, bool loops) {
 	loop = loops;
 	data.assign(input, input + (inputLen / sizeof(short)));

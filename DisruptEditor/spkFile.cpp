@@ -1,39 +1,41 @@
 #include "spkFile.h"
 
-#include <stdio.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <SDL_assert.h>
 #include <SDL_log.h>
 #include "Vector.h"
 
-#include <vorbis/vorbisfile.h>
-
-struct spkHeader {
-	uint32_t magic;
-	uint32_t numPackets;
-};
-
 const uint32_t spkMagic = 1397771010;
 
+#pragma pack(push, 1)
+struct spkHeader {
+	uint32_t magic = spkMagic;
+	uint32_t type = 0;
+	uint32_t unk2 = 0;
+	uint32_t unk3 = 0;
+	uint32_t unk4 = 0;
+	uint32_t size = 0;
+};
+#pragma pack(pop)
+
 void spkFile::open(const char * filename) {
-	FILE *fp = fopen(filename, "rb");
+	if (!filename) return;
+	SDL_RWops *fp = SDL_RWFromFile(filename, "rb");
 	spkHeader head;
-	fread(&head, sizeof(head), 1, fp);
+	SDL_RWread(fp, &head, sizeof(head), 1);
 	SDL_assert_release(head.magic == spkMagic);
 
-	SDL_Log("%i\n", head.numPackets);
+	if (head.type == 1) {
+		//Embedded Elsewhere
+	} else if (head.type == 3) {
+		sbao.open(fp);
 
-	/*Vector<uint32_t> unk(head.numPackets);
-	fread(unk.data(), sizeof(uint32_t), head.numPackets, fp);
+		size_t offset = SDL_RWtell(fp);
+		SDL_assert_release(offset - 360 == head.size);
+	} else {
+		SDL_assert_release(false);
+	}
 
-	//Skip 32 bytes
-	fseek(fp, 32, SEEK_CUR);
-
-	//Read Oggs
-	char oggs[4];
-	fread(oggs, 1, 4, fp);
-	SDL_assert_release(memcmp(oggs, "OggS", 4) == 0);*/
-
-	fclose(fp);
+	SDL_RWclose(fp);
 }

@@ -421,13 +421,30 @@ int main(int argc, char **argv) {
 
 		if (windows["DARE"] && ImGui::Begin("DARE Converter", &windows["DARE"], 0)) {
 			static sbaoFile file;
-			static std::string currentFile;
+			static spkFile spkFile;
 			static int currentSound = 0;
 			if (ImGui::Button("Open")) {
-				currentFile = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "sbao\0*.sbao\0", NULL, NULL);
-				file.open(currentFile.c_str());
+				spkFile.open(noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "spk\0*.spk\0sbao\0*.sbao\0", NULL, NULL));
+				file = spkFile.sbao;
+				//file.open(noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "sbao\0*.sbao\0", NULL, NULL));
 			}
-			ImGui::Text("%s", currentFile.c_str());
+			ImGui::SameLine();
+			if (ImGui::Button("Save")) {
+				file.save(noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "sbao\0*.sbao\0", NULL, NULL));
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Add Layer")) {
+				sbaoLayer &layer = file.layers.push_back();
+				layer.replace( noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "ogg\0*.ogg\0", NULL, NULL) );
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Clear Layers")) {
+				file.layers.clear();
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Stop All")) {
+				Audio::instance().stopAll();
+			}
 
 			int layerNum = 1;
 			for (auto it = file.layers.begin(); it != file.layers.end(); ++it) {
@@ -442,6 +459,18 @@ int main(int argc, char **argv) {
 				if (ImGui::Button("Loop")) {
 					Audio::instance().stopSound(currentSound);
 					currentSound = it->play(true);
+				}
+				ImGui::SameLine();
+				ImGui::Text("Raw Size: %u, Samples: %i, Channels: %i, Sample Rate: %i", it->data.size(), it->samples, it->channels, it->sampleRate);
+				ImGui::SameLine();
+				if (ImGui::Button("Replace")) {
+					it->replace( noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "ogg\0*.ogg\0", NULL, NULL) );
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("Delete")) {
+					file.layers.erase(it);
+					ImGui::PopID();
+					break;
 				}
 
 				ImGui::PopID();
