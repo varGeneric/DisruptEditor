@@ -12,17 +12,16 @@ struct fcbHeader {
 	uint16_t headerFlags;
 	uint32_t totalObjectCount;
 	uint32_t totalValueCount;
+	void swapEndian();
 };
 #pragma pack(pop)
 
 class Attribute {
 public:
 	Attribute() {}
-	Attribute(SDL_RWops* fp) {
-		hash = SDL_ReadLE32(fp);
-	};
-	void deserializeA(SDL_RWops *fp);
-	void deserialize(SDL_RWops *fp, bool &bailOut);
+	Attribute(SDL_RWops* fp, bool bigEndian);
+	void deserializeA(SDL_RWops *fp, bool bigEndian);
+	void deserialize(SDL_RWops *fp, bool bigEndian);
 	void serialize(SDL_RWops *fp);
 	void deserializeXML(const tinyxml2::XMLAttribute *attr);
 	void serializeXML(tinyxml2::XMLPrinter &printer);
@@ -37,8 +36,8 @@ public:
 class Node {
 public:
 	Node() {};
-	void deserialize(SDL_RWops *fp, bool &bailOut);
-	void deserializeA(SDL_RWops *fp, Vector<Node*> &list);
+	void deserialize(SDL_RWops *fp, bool bigEndian);
+	void deserializeA(SDL_RWops *fp, Vector<Node*> &list, bool bigEndian);
 	void serialize(SDL_RWops *fp);
 	void deserializeXML(const tinyxml2::XMLElement *node);
 	void serializeXML(tinyxml2::XMLPrinter &printer);
@@ -60,3 +59,4 @@ public:
 };
 
 Node readFCB(const char* filename);
+Node readFCB(SDL_RWops *fp);

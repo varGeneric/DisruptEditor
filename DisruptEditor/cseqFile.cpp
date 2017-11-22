@@ -15,11 +15,7 @@ bool cseqFile::open(const char *filename) {
 	SDL_RWread(fp, &head, sizeof(head), 1);
 	SDL_assert_release(head.magic == 23438637261664779);
 
-	fcbHeader fcbHead;
-	SDL_RWread(fp, &fcbHead, sizeof(fcbHead), 1);
-
-	Vector<Node*> list;
-	root.deserializeA(fp, list);
+	root = readFCB(fp);
 
 	SDL_RWclose(fp);
 	return true;

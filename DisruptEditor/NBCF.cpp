@@ -2,9 +2,10 @@
 
 #include <SDL_assert.h>
 #include <SDL_log.h>
+#include <SDL_endian.h>
 #include "Hash.h"
 
-uint32_t ReadCountA(SDL_RWops *fp, bool &isOffset) {
+uint32_t ReadCountA(SDL_RWops *fp, bool &isOffset, bool bigEndian) {
 	uint8_t value = SDL_ReadU8(fp);
 	isOffset = false;
 
@@ -13,10 +14,10 @@ uint32_t ReadCountA(SDL_RWops *fp, bool &isOffset) {
 	}
 
 	isOffset = value != 0xFF;
-	return SDL_ReadLE32(fp);
+	return bigEndian ? SDL_ReadBE32(fp) : SDL_ReadLE32(fp);
 }
 
-uint32_t ReadCountB(SDL_RWops *fp, bool &isOffset) {
+uint32_t ReadCountB(SDL_RWops *fp, bool &isOffset, bool bigEndian) {
 	size_t pos = SDL_RWtell(fp);
 
 	uint8_t value = SDL_ReadU8(fp);
@@ -29,7 +30,7 @@ uint32_t ReadCountB(SDL_RWops *fp, bool &isOffset) {
 		isOffset = value == 0xFE;
 
 		SDL_RWseek(fp, -1, RW_SEEK_CUR);
-		uint32_t v = SDL_ReadLE32(fp);
+		uint32_t v = bigEndian ? SDL_ReadBE32(fp) : SDL_ReadLE32(fp);
 		v = v >> 8;
 
 		if (isOffset) {
@@ -52,44 +53,45 @@ void writeSize(SDL_RWops *fp, size_t osize) {
 	}
 }
 
-void Attribute::deserializeA(SDL_RWops * fp) {
-	hash = SDL_ReadLE32(fp);
+Attribute::Attribute(SDL_RWops * fp, bool bigEndian) {
+	hash = bigEndian ? SDL_ReadBE32(fp) : SDL_ReadLE32(fp);
+}
+
+void Attribute::deserializeA(SDL_RWops * fp, bool bigEndian) {
+	hash = bigEndian ? SDL_ReadBE32(fp) : SDL_ReadLE32(fp);
 
 	bool isOffset;
 	size_t position = SDL_RWtell(fp);
-	uint32_t size = ReadCountA(fp, isOffset);
+	uint32_t size = ReadCountA(fp, isOffset, bigEndian);
 
 	if (isOffset) {
 		SDL_RWseek(fp, position - size, RW_SEEK_SET);
 
-		size = ReadCountA(fp, isOffset);
+		size = ReadCountA(fp, isOffset, bigEndian);
 		SDL_assert_release(!isOffset);
 
 		buffer.resize(size);
 		SDL_RWread(fp, buffer.data(), 1, size);
 
 		SDL_RWseek(fp, position, RW_SEEK_SET);
-		ReadCountA(fp, isOffset);
+		ReadCountA(fp, isOffset, bigEndian);
 	} else {
 		buffer.resize(size);
 		SDL_RWread(fp, buffer.data(), 1, size);
 	}
 }
 
-void Attribute::deserialize(SDL_RWops * fp, bool &bailOut) {
+void Attribute::deserialize(SDL_RWops * fp, bool bigEndian) {
 	size_t offset = SDL_RWtell(fp);
 
 	bool isOffset;
-	int32_t c = ReadCountB(fp, isOffset);
+	int32_t c = ReadCountB(fp, isOffset, bigEndian);
 	if (isOffset) {
 		SDL_RWseek(fp, c, RW_SEEK_SET);
-		deserialize(fp, bailOut);
+		deserialize(fp, bigEndian);
 		SDL_RWseek(fp, offset + 4, RW_SEEK_SET);
 	} else {
-		if (c > 1024 * 400) {//Hard limit of 400 kb
-			bailOut = true;
-			return;
-		}
+		SDL_assert_release(c < 1024 * 400);//Hard limit of 400 kb
 		buffer.resize(c);
 		SDL_RWread(fp, buffer.data(), 1, c);
 	}
@@ -186,35 +188,34 @@ std::string Attribute::getByteString() {
 	return str;
 }
 
-void Node::deserialize(SDL_RWops* fp, bool &bailOut) {
-	if (bailOut) return;
+void Node::deserialize(SDL_RWops* fp, bool bigEndian) {
 	size_t pos = SDL_RWtell(fp);
 
 	bool isOffset;
-	int32_t c = ReadCountB(fp, isOffset);
+	int32_t c = ReadCountB(fp, isOffset, bigEndian);
 
 	if (isOffset) {
 		SDL_RWseek(fp, c, RW_SEEK_SET);
-		deserialize(fp, bailOut);
+		deserialize(fp, bigEndian);
 		SDL_RWseek(fp, pos + 4, RW_SEEK_SET);
 	} else {
 		offset = pos;
-		hash = SDL_ReadLE32(fp);
+		hash = bigEndian ? SDL_ReadBE32(fp) : SDL_ReadLE32(fp);
 
-		uint16_t num1 = SDL_ReadLE16(fp);
+		uint16_t num1 = bigEndian ? SDL_ReadBE16(fp) : SDL_ReadLE16(fp);
 
 		size_t pos2 = SDL_RWtell(fp);
 		size_t num2 = pos2 + num1;
 		//SDL_assert_release(num1);
 
 		bool isOffset2;
-		int32_t c2 = ReadCountB(fp, isOffset2);
+		int32_t c2 = ReadCountB(fp, isOffset2, bigEndian);
 		bool flag = false;
 		if (isOffset2) {
 			SDL_RWseek(fp, c2, RW_SEEK_SET);
 
 			bool isOffset3;
-			c2 = ReadCountB(fp, isOffset3);
+			c2 = ReadCountB(fp, isOffset3, bigEndian);
 			SDL_assert_release(!isOffset3);
 			pos2 += 4;
 			flag = true;
@@ -222,14 +223,12 @@ void Node::deserialize(SDL_RWops* fp, bool &bailOut) {
 
 		attributes.resize(c2);
 		for (int index = 0; index < c2; ++index) {
-			attributes[index] = Attribute(fp);
+			attributes[index] = Attribute(fp, bigEndian);
 		}
 		if (flag)
 			SDL_RWseek(fp, pos2, RW_SEEK_SET);
 		for (auto &attribute : attributes) {
-			attribute.deserialize(fp, bailOut);
-			if (bailOut)
-				return;
+			attribute.deserialize(fp, bigEndian);
 		}
 
 		size_t a = SDL_RWtell(fp);
@@ -242,27 +241,27 @@ void Node::deserialize(SDL_RWops* fp, bool &bailOut) {
 
 		children.resize(c);
 		for (int index = 0; index < c; ++index)
-			children[index].deserialize(fp, bailOut);
+			children[index].deserialize(fp, bigEndian);
 	}
 }
 
-void Node::deserializeA(SDL_RWops * fp, Vector<Node*> &list) {
+void Node::deserializeA(SDL_RWops * fp, Vector<Node*> &list, bool bigEndian) {
 	bool isOffset;
-	uint32_t childCount = ReadCountA(fp, isOffset);
+	uint32_t childCount = ReadCountA(fp, isOffset, bigEndian);
 
 	if (isOffset) {
 		SDL_assert_release(list.size() > childCount);
 		*this = *list[childCount];
 		return;
 	} else {
-		hash = SDL_ReadLE32(fp);
+		hash = bigEndian ? SDL_ReadBE32(fp) : SDL_ReadLE32(fp);
 
-		uint32_t attributeCount = ReadCountA(fp, isOffset);
+		uint32_t attributeCount = ReadCountA(fp, isOffset, bigEndian);
 		SDL_assert_release(!isOffset);
 
 		attributes.resize(attributeCount);
 		for (uint32_t i = 0; i < attributeCount; ++i) {
-			attributes[i].deserializeA(fp);
+			attributes[i].deserializeA(fp, bigEndian);
 		}
 	}
 
@@ -270,7 +269,7 @@ void Node::deserializeA(SDL_RWops * fp, Vector<Node*> &list) {
 
 	children.resize(childCount);
 	for (int index = 0; index < childCount; ++index)
-		children[index].deserializeA(fp, list);
+		children[index].deserializeA(fp, list, bigEndian);
 }
 
 void Node::serialize(SDL_RWops * fp) {
@@ -404,22 +403,43 @@ Node readFCB(const char * filename) {
 	if (!fp)
 		return node;
 
+	node = readFCB(fp);
+
+	SDL_RWclose(fp);
+
+	return node;
+}
+
+Node readFCB(SDL_RWops * fp) {
+	Node node;
+
 	fcbHeader head;
 	SDL_RWread(fp, &head, sizeof(head), 1);
+	bool bigEndian = false;
 
 	if (memcmp(head.magic, "nbCF", 4) != 0) {
-		SDL_RWclose(fp);
-		return node;
+		if (memcmp(head.magic, "FCbn", 4) == 0) {
+			bigEndian = true;
+			head.swapEndian();
+		} else {
+			return node;
+		}
 	}
 
 	if (head.version == 16389) {
 		bool bailOut = false;
-		node.deserialize(fp, bailOut);
+		node.deserialize(fp, bigEndian);
 	} else if (head.version == 3) {
 		Vector<Node*> list;
-		node.deserializeA(fp, list);
+		node.deserializeA(fp, list, bigEndian);
 	}
-	SDL_RWclose(fp);
 
 	return node;
+}
+
+void fcbHeader::swapEndian() {
+	version = SDL_Swap16(version);
+	headerFlags = SDL_Swap16(headerFlags);
+	totalObjectCount = SDL_Swap32(totalObjectCount);
+	totalValueCount = SDL_Swap32(totalValueCount);
 }

@@ -18,9 +18,8 @@ Dialog::Dialog() {
 		if (!file.is_dir && tfGetExt(&file) == std::string("ai.rml")) {
 			SDL_Log("Loading %s...", file.name);
 			SDL_RWops *fp = SDL_RWFromFile(file.path, "rb");
-			SDL_RWseek(fp, sizeof(fcbHeader) + 12, RW_SEEK_SET);
-			Vector<Node*> list;
-			behaviortrees[file.name].deserializeA(fp, list);
+			SDL_RWseek(fp, 12, RW_SEEK_SET);
+			behaviortrees[file.name] = readFCB(fp);
 			SDL_RWclose(fp);
 		}
 
