@@ -1,9 +1,7 @@
 #include "locFile.h"
 
 #include <algorithm>
-#include <SDL_assert.h>
-#include <SDL_rwops.h>
-#include <SDL_log.h>
+#include <SDL.h>
 #include <string>
 #include <stdio.h>
 #include <stdint.h>
@@ -12,19 +10,23 @@
 
 #pragma pack(push, 1)
 struct locHeader {
-	uint32_t magic;
+	uint16_t magic;
+	uint16_t one;
 	uint16_t langCode;
 	uint16_t count;
 	uint32_t fragmentOffset;
+	void swapEndianess();
 };
 struct locTableEntry {
 	uint32_t idOffset;
 	uint32_t offset;
+	void swapEndianess();
 };
 struct locFragment {
 	uint16_t rightIndex = 0;
 	uint16_t leftIndex = 0;
 	std::wstring resolve(const Vector<locFragment> &list) const;
+	void swapEndianess();
 };
 #pragma pack(pop)
 
@@ -49,10 +51,17 @@ std::wstring ConvertUTF8ToUTF16(const std::string &pszTextUTF8) {
 bool locFile::open(const char *filename) {
 	SDL_RWops *fp = SDL_RWFromFile(filename, "rb");
 
+	bool bigEndian = false;
+
 	//Read Header
 	locHeader head;
 	SDL_RWread(fp, &head, sizeof(head), 1);
-	SDL_assert_release(head.magic == 85075);
+	if (head.magic != 19539) {
+		head.swapEndianess();
+		bigEndian = true;
+	}
+	SDL_assert_release(head.magic == 19539);
+	SDL_assert_release(head.one == 1);
 	SDL_assert_release(head.fragmentOffset <= SDL_RWsize(fp));
 
 	//Read String Fragment Table
@@ -61,11 +70,16 @@ bool locFile::open(const char *filename) {
 	uint32_t numStringFrags;
 	int stringFragmentIndexMask;
 	{
-		numStringFrags = SDL_ReadLE32(fp);
+		numStringFrags = bigEndian ? SDL_ReadBE32(fp) : SDL_ReadLE32(fp);
 		stringFragmentIndexMask = numStringFrags * 255;
 		Vector<locFragment> stringFragments(numStringFrags);
 		SDL_RWread(fp, stringFragments.data() + 1, sizeof(locFragment), stringFragments.size() - 1);
 		SDL_assert_release(SDL_RWtell(fp) == SDL_RWsize(fp));
+
+		if (bigEndian) {
+			for (locFragment &frag : stringFragments)
+				frag.swapEndianess();
+		}
 
 		//Resolve String Fragment Table
 		strings.reserve(numStringFrags);
@@ -78,17 +92,21 @@ bool locFile::open(const char *filename) {
 	SDL_RWseek(fp, sizeof(head), RW_SEEK_SET);
 	Vector<locTableEntry> tables(head.count);
 	SDL_RWread(fp, tables.data(), sizeof(locTableEntry), tables.size());
+	if (bigEndian) {
+		for (locTableEntry &entry : tables)
+			entry.swapEndianess();
+	}
 
 	//Read Strings
 	for (locTableEntry &entry : tables) {
 		SDL_Log("%u  %u\n", entry.idOffset, entry.offset);
 		//SDL_assert_release(entry.offset < head.fragmentOffset);
 
-		uint16_t entryCount = SDL_ReadLE16(fp);
+		/*uint16_t entryCount = SDL_ReadLE16(fp);
 		for (int j = 0; j < entryCount; j++) {
 			uint32_t id = entry.idOffset + SDL_ReadLE16(fp);
 			uint16_t count = SDL_ReadLE16(fp);
-		}
+		}*/
 	}
 	//SDL_assert_release(SDL_RWtell(fp) == head.fragmentOffset);
 
@@ -110,4 +128,23 @@ std::wstring locFragment::resolve(const Vector<locFragment> &list) const {
 	SDL_assert_release(rightIndex < list.size());
 
 	return list[leftIndex].resolve(list) + list[rightIndex].resolve(list);
+}
+
+void locFragment::swapEndianess() {
+	rightIndex = SDL_Swap16(rightIndex);
+	leftIndex = SDL_Swap16(leftIndex);
+	std::swap(rightIndex, leftIndex);
+}
+
+void locHeader::swapEndianess() {
+	magic = SDL_Swap16(magic);
+	one = SDL_Swap16(one);
+	langCode = SDL_Swap16(langCode);
+	count = SDL_Swap16(count);
+	fragmentOffset = SDL_Swap32(fragmentOffset);
+}
+
+void locTableEntry::swapEndianess() {
+	idOffset = SDL_Swap32(idOffset);
+	offset = SDL_Swap32(offset);
 }
