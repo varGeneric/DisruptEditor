@@ -154,6 +154,7 @@
     <ClCompile Include="Audio.cpp" />
     <ClCompile Include="batchFile.cpp" />
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="CommandHandler.cpp" />
     <ClCompile Include="Common.cpp" />
     <ClCompile Include="CSector.cpp" />
     <ClCompile Include="cseqFile.cpp" />
@@ -191,6 +192,7 @@
     <ClInclude Include="bootSound.h" />
     <ClInclude Include="bootTvTex.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="CommandHandler.h" />
     <ClInclude Include="Common.h" />
     <ClInclude Include="CSector.h" />
     <ClInclude Include="cseqFile.h" />

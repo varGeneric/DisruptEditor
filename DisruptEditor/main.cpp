@@ -27,6 +27,7 @@
 #include "CSector.h"
 #include "batchFile.h"
 #include "Audio.h"
+#include "CommandHandler.h"
 
 struct BuildingEntity {
 	std::string wlu;
@@ -73,6 +74,13 @@ void reloadBuildingEntities() {
 int main(int argc, char **argv) {
 	SDL_Init(SDL_INIT_EVERYTHING);
 	srand(time(NULL));
+
+	if (argc > 1) {
+		const char* filename = argv[2];
+		handleFile(filename);
+
+		return 0;
+	}
 
 	std::unordered_map<std::string, bool> windows;
 
@@ -751,12 +759,7 @@ int main(int argc, char **argv) {
 					}
 					break;
 				case SDL_DROPFILE:
-					Node node = readFCB(event.drop.file);
-					std::string out = event.drop.file + std::string(".xml");
-					FILE *fp = fopen(out.c_str(), "w");
-					tinyxml2::XMLPrinter printer(fp);
-					node.serializeXML(printer);
-					fclose(fp);
+					handleFile(event.drop.file);
 					break;
 			}
 		}
