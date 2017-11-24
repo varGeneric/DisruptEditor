@@ -1,5 +1,6 @@
 #include "sbaoFile.h"
 
+#include <algorithm>
 #include <stdio.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -23,7 +24,37 @@ struct sbaoHeader {
 	uint32_t unk5 = 1342177280;
 	uint32_t unk6 = 2;
 };
+struct oggPageHeader {
+	uint32_t magic = 0;
+	uint8_t version = 0;
+	uint8_t headerType = 0;
+	uint64_t granulePos = 0;
+	uint32_t serialNo = 0;
+	uint32_t pageSeqNum = 0;
+	uint32_t checksum = 0;
+	uint8_t numSegments = 0;
+};
 #pragma pack(pop)
+
+size_t getOggPageSize(uint8_t *ptr) {
+	oggPageHeader *header = (oggPageHeader*)ptr;
+	ptr += sizeof(*header);
+
+	SDL_assert_release(header->magic == 1399285583);
+
+	size_t packetSize = 0;
+	for (uint8_t i = 0; i < header->numSegments; ++i) {
+		packetSize += *ptr;
+		++ptr;
+	}
+
+	return sizeof(*header) + header->numSegments + packetSize;
+}
+
+void writeZero(SDL_RWops *fp, size_t num) {
+	for (size_t i = 0; i < num; ++i)
+		SDL_WriteU8(fp, 0);
+}
 
 void sbaoFile::open(const char *filename) {
 	if (!filename) return;
@@ -54,12 +85,23 @@ void sbaoFile::open(SDL_RWops *fp) {
 		uint32_t numLayers = SDL_ReadLE32(fp);
 		uint32_t totalBlocks = SDL_ReadLE32(fp);
 		uint32_t totalInfoSize = SDL_ReadLE32(fp);
-		SDL_RWseek(fp, totalInfoSize, RW_SEEK_CUR);
+		SDL_Log("Info at: %u\n", SDL_RWtell(fp));
+		Vector<uint32_t> infoTable(totalInfoSize / sizeof(uint32_t));
+		SDL_RWread(fp, infoTable.data(), totalInfoSize, 1);
 		SDL_RWseek(fp, 64 - numLayers * 4, RW_SEEK_CUR);
 
 		// Process the second header
 		Vector<uint32_t> headerSizes(numLayers);
 		SDL_RWread(fp, headerSizes.data(), sizeof(uint32_t), numLayers);
+
+		//Debug
+		SDL_Log("numLayers: %u\n", numLayers);
+		SDL_Log("totalBlocks: %u\n", totalBlocks);
+		SDL_Log("totalInfoSize: %u\n", totalInfoSize);
+		SDL_Log("headerSizes: ");
+		for(uint32_t value : headerSizes)
+			SDL_Log("%u, ", value);
+		SDL_Log("\n");
 
 		layers.reserve(numLayers);
 		for (unsigned long i = 0; i< numLayers; i++) {
@@ -117,33 +159,35 @@ void sbaoFile::open(SDL_RWops *fp) {
 			}
 		}
 
+		SDL_Log("Block data at %u", SDL_RWtell(fp));
+
 		//Parse Blocks
 		for (uint32_t blockI = 0; blockI < totalBlocks; ++blockI) {
+			uint32_t BlockID = SDL_ReadLE32(fp);
+			if (BlockID != 3) {
+				// Mark the end of the stream for all of the layers
+				fillCache();
+				return;
+			}
+			uint32_t unk = SDL_ReadLE32(fp);
+			SDL_assert_release(blockI == totalBlocks - 2 || unk == infoTable[1] || (unk == 0 && blockI == totalBlocks - 1));
+
+			// Read in the block sizes
+			Vector<uint32_t> BlockSizes;
 			for (unsigned long i = 0; i < numLayers; i++) {
-				uint32_t BlockID = SDL_ReadLE32(fp);
-				if (BlockID != 3) {
-					// Mark the end of the stream for all of the layers
-					fillCache();
-					return;
-				}
-				uint32_t unk = SDL_ReadLE32(fp);
+				uint32_t BlockSize = SDL_ReadLE32(fp);
+				BlockSizes.push_back(BlockSize);
+			}
 
-				// Read in the block sizes
-				Vector<uint32_t> BlockSizes;
-				for (unsigned long i = 0; i < numLayers; i++) {
-					uint32_t BlockSize = SDL_ReadLE32(fp);
-					BlockSizes.push_back(BlockSize);
-				}
+			SDL_Log("%u - %u, %u", unk, BlockSizes[0], BlockSizes[1]);
 
-				for (unsigned long i = 0; i < numLayers; i++) {
-					// Get a reference to the layer
-					sbaoLayer& layer = layers[i];
+			for (unsigned long i = 0; i < numLayers; i++) {
+				SDL_Log("b = %u", SDL_RWtell(fp));
 
-					// Feed it a block
-					Vector<uint8_t> block(BlockSizes[i]);
-					SDL_RWread(fp, block.data(), 1, block.size());
-					layer.data.appendBinary(block.begin(), block.end());
-				}
+				// Feed it a block
+				Vector<uint8_t> block(BlockSizes[i]);
+				SDL_RWread(fp, block.data(), 1, block.size());
+				layers[i].data.appendBinary(block.begin(), block.end());
 			}
 		}
 
@@ -175,7 +219,81 @@ void sbaoFile::save(const char * filename) {
 			}
 		}
 
-		SDL_ShowSimpleMessageBox(0, "Dare Error", "Interleaved 9 streams are not implemented yet, please bug you know who to add this.", NULL);
+		SDL_RWops *fp = SDL_RWFromFile(filename, "wb");
+		if (!fp) {
+			SDL_ShowSimpleMessageBox(0, "Dare Saving Error", SDL_GetError(), NULL);
+			return;
+		}
+
+		Vector< Vector<uint8_t> > headers(layers.size());
+		Vector< uint8_t* > ptrs(layers.size());
+
+		//Get first 4 packets of ogg as the header
+		for (int i = 0; i < layers.size(); ++i) {
+			size_t size = 0;
+
+			uint8_t *ptr = layers[i].data.data();
+			for (int c = 0; c < 4; ++c) {
+				size_t pageSize = getOggPageSize(ptr);
+				ptr += pageSize;
+				size += pageSize;
+			}
+			ptrs[i] = ptr;
+
+			headers[i].appendBinary(layers[i].data.data(), layers[i].data.data() + size);
+		}
+
+		uint32_t maxOgglength = 0;
+		for (sbaoLayer &layer : layers)
+			maxOgglength = std::max(maxOgglength, (uint32_t)layer.data.size());
+
+		uint32_t totalBlocks = (maxOgglength / 162) + 1;
+		uint32_t totalInfoSize = 16;
+
+		uint32_t infoTable[] = { 9224, 340, 0, 0 };
+
+		sbaoHeader head;
+		SDL_RWwrite(fp, &head, sizeof(head), 1);
+		SDL_WriteLE32(fp, 1048585);//type = interweaved 9 stream
+		SDL_WriteLE32(fp, 0);
+		SDL_WriteLE32(fp, layers.size());
+		SDL_WriteLE32(fp, totalBlocks);//totalBlocks
+		SDL_WriteLE32(fp, sizeof(infoTable));//totalInfoSize
+		SDL_RWwrite(fp, infoTable, sizeof(infoTable), 1);
+		writeZero(fp, 64 - layers.size() * 4);
+		
+		//Write Header sizes
+		for (int i = 0; i < layers.size(); ++i)
+			SDL_WriteLE32(fp, headers[i].size());
+
+		//Write Headers
+		for (int i = 0; i < layers.size(); ++i)
+			SDL_RWwrite(fp, headers[i].data(), 1, headers[i].size());
+
+		//Write Blocks
+		for (uint32_t blockI = 0; blockI < totalBlocks; ++blockI) {
+			SDL_WriteLE32(fp, 3);//BlockId
+			SDL_WriteLE32(fp, blockI == totalBlocks - 1 ? 0 : 340);//unk
+
+			// Read in the block sizes
+			for (unsigned long i = 0; i < layers.size(); i++) {
+				uint32_t left = layers[i].data.end() - ptrs[i];
+				uint32_t out = std::min(left, (uint32_t)162);
+				SDL_Log("%u", out);
+
+				SDL_WriteLE32(fp, out);
+			}
+
+			for (unsigned long i = 0; i < layers.size(); i++) {
+				uint32_t left = layers[i].data.end() - ptrs[i];
+				uint32_t out = std::min(left, (uint32_t)162);
+
+				SDL_RWwrite(fp, ptrs[i], 1, out);
+				ptrs[i] += out;
+			}
+		}
+
+		SDL_RWclose(fp);
 		return;
 	}
 
