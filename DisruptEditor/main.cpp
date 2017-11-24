@@ -335,6 +335,7 @@ int main(int argc, char **argv) {
 			static char buffer[255] = { '\0' };
 			ImGui::InputText("##UID", buffer, sizeof(buffer));
 			uint32_t fnv = Hash::instance().getFilenameHash(buffer);
+			uint64_t fnv64 = Hash::instance().getFilenameHash64(buffer);
 			uint32_t crc = Hash::instance().getHash(buffer);
 
 			char outbuffer[255];
@@ -342,6 +343,8 @@ int main(int argc, char **argv) {
 			ImGui::InputText("FNV##UIDOUT", outbuffer, sizeof(buffer), ImGuiInputTextFlags_ReadOnly);
 			snprintf(outbuffer, sizeof(outbuffer), "%u", crc);
 			ImGui::InputText("CRC##UIDOUT", outbuffer, sizeof(buffer), ImGuiInputTextFlags_ReadOnly);
+			snprintf(outbuffer, sizeof(outbuffer), "%llu", fnv64);
+			ImGui::InputText("FNV64##UIDOUT", outbuffer, sizeof(buffer), ImGuiInputTextFlags_ReadOnly);
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("Batch")) {

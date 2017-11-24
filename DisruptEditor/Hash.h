@@ -13,6 +13,7 @@ public:
 
 	//FNV Stuff
 	uint32_t getFilenameHash(std::string str);
+	uint64_t getFilenameHash64(std::string str);
 	std::string getReverseHashFNV(uint32_t hash);
 
 	enum Types { STRING, STRINGHASH, BINHEX, BOOL, FLOAT, INT16, INT32, UINT8, UINT16, UINT32, UINT64, VEC2, VEC3, VEC4 };

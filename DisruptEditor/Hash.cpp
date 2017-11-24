@@ -262,6 +262,19 @@ uint32_t Hash::getFilenameHash(std::string str) {
 	return hash32;
 }
 
+uint64_t Hash::getFilenameHash64(std::string str) {
+	std::transform(str.begin(), str.end(), str.begin(), ::tolower);
+	std::replace(str.begin(), str.end(), '/', '\\');
+
+	uint64_t hash64 = 0xCBF29CE484222325;
+	for (char t : str) {
+		hash64 *= (uint64_t)0x100000001B3;
+		hash64 ^= (uint64_t)t;
+	}
+
+	return hash64 & 0x1FFFFFFFFFFFFFFF | 0xA000000000000000;
+}
+
 Hash::Types Hash::getHashType(const char *str) {
 	uint32_t hash = crc32buf(str, strlen(str));
 	return getHashType(hash);
