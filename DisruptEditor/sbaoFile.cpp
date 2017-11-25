@@ -85,7 +85,10 @@ void sbaoFile::open(SDL_RWops *fp) {
 		uint32_t numLayers = SDL_ReadLE32(fp);
 		uint32_t totalBlocks = SDL_ReadLE32(fp);
 		uint32_t totalInfoSize = SDL_ReadLE32(fp);
-		SDL_Log("Info at: %u\n", SDL_RWtell(fp));
+
+		SDL_assert_release(totalInfoSize == 8 + (numLayers * 4));
+
+		SDL_LogVerbose(SDL_LOG_CATEGORY_AUDIO, "Info at: %u\n", SDL_RWtell(fp));
 		Vector<uint32_t> infoTable(totalInfoSize / sizeof(uint32_t));
 		SDL_RWread(fp, infoTable.data(), totalInfoSize, 1);
 		SDL_RWseek(fp, 64 - numLayers * 4, RW_SEEK_CUR);
@@ -95,13 +98,12 @@ void sbaoFile::open(SDL_RWops *fp) {
 		SDL_RWread(fp, headerSizes.data(), sizeof(uint32_t), numLayers);
 
 		//Debug
-		SDL_Log("numLayers: %u\n", numLayers);
-		SDL_Log("totalBlocks: %u\n", totalBlocks);
-		SDL_Log("totalInfoSize: %u\n", totalInfoSize);
-		SDL_Log("headerSizes: ");
+		SDL_LogVerbose(SDL_LOG_CATEGORY_AUDIO, "numLayers: %u\n", numLayers);
+		SDL_LogVerbose(SDL_LOG_CATEGORY_AUDIO, "totalBlocks: %u\n", totalBlocks);
+		SDL_LogVerbose(SDL_LOG_CATEGORY_AUDIO, "totalInfoSize: %u\n", totalInfoSize);
+		SDL_LogVerbose(SDL_LOG_CATEGORY_AUDIO, "headerSizes: ");
 		for(uint32_t value : headerSizes)
-			SDL_Log("%u, ", value);
-		SDL_Log("\n");
+			SDL_LogVerbose(SDL_LOG_CATEGORY_AUDIO, "%u, ", value);
 
 		layers.reserve(numLayers);
 		for (unsigned long i = 0; i< numLayers; i++) {
@@ -118,7 +120,7 @@ void sbaoFile::open(SDL_RWops *fp) {
 			} else if ((layer.data[0] == 5 || layer.data[0] == 3 || layer.data[0] == 6) && headerSizes[i] >= 28) {
 				// Check the header size
 				if (headerSizes[i] != 28 && headerSizes[i] != 36) {
-					SDL_Log("Warning: Header size is unrecognized (ADPCM, %u bytes, should be 28 or 36)", headerSizes[i]);
+					SDL_LogVerbose(SDL_LOG_CATEGORY_AUDIO, "Warning: Header size is unrecognized (ADPCM, %u bytes, should be 28 or 36)", headerSizes[i]);
 				}
 
 				// It is likely a simple block
@@ -156,19 +158,31 @@ void sbaoFile::open(SDL_RWops *fp) {
 				}*/
 			} else if (memcmp(layer.data.data(), "OggS", 4) == 0) {
 				layer.type = sbaoLayer::VORBIS;
+			} else {
+				return;
 			}
 		}
 
-		SDL_Log("Block data at %u", SDL_RWtell(fp));
+		{
+			std::string str;
+			for (uint32_t value : infoTable)
+				str += std::to_string(value) + " ";
+
+			SDL_Log("%u - %u - %u - %u\n%s", SDL_RWtell(fp), numLayers, totalBlocks, totalInfoSize, str.c_str());
+
+			/*for (uint32_t value : headerSizes)
+			SDL_Log("HS %u", value);*/
+		}
+
+		SDL_assert_release(SDL_RWtell(fp) - 120 == infoTable[0]);
+
+		SDL_LogVerbose(SDL_LOG_CATEGORY_AUDIO, "Block data at %u", SDL_RWtell(fp));
 
 		//Parse Blocks
+		uint32_t count = 0;
 		for (uint32_t blockI = 0; blockI < totalBlocks; ++blockI) {
 			uint32_t BlockID = SDL_ReadLE32(fp);
-			if (BlockID != 3) {
-				// Mark the end of the stream for all of the layers
-				fillCache();
-				return;
-			}
+			SDL_assert_release(BlockID == 3);
 			uint32_t unk = SDL_ReadLE32(fp);
 			SDL_assert_release(blockI == totalBlocks - 2 || unk == infoTable[1] || (unk == 0 && blockI == totalBlocks - 1));
 
@@ -179,10 +193,11 @@ void sbaoFile::open(SDL_RWops *fp) {
 				BlockSizes.push_back(BlockSize);
 			}
 
-			SDL_Log("%u - %u, %u", unk, BlockSizes[0], BlockSizes[1]);
+			//SDL_Log("%u - %u, %u", unk, BlockSizes[0], BlockSizes[1]);
+			count += unk;
 
 			for (unsigned long i = 0; i < numLayers; i++) {
-				SDL_Log("b = %u", SDL_RWtell(fp));
+				SDL_LogVerbose(SDL_LOG_CATEGORY_AUDIO, "b = %u", SDL_RWtell(fp));
 
 				// Feed it a block
 				Vector<uint8_t> block(BlockSizes[i]);
@@ -190,7 +205,13 @@ void sbaoFile::open(SDL_RWops *fp) {
 				layers[i].data.appendBinary(block.begin(), block.end());
 			}
 		}
+		SDL_Log("unkc %u", count);
 
+		for (unsigned long i = 0; i < numLayers; i++) {
+			SDL_assert_release(infoTable[i + 2] == layers[i].data.size() - headerSizes[i]);
+		}
+		
+		SDL_assert_release(SDL_RWtell(fp) == SDL_RWsize(fp));
 
 	} else if (type == 0 || type == 4294049865 || type == 1677572653 || type == 1511924971 || type == 2232265428 || type == 2464119532) {//Unknown
 	} else {
@@ -230,17 +251,8 @@ void sbaoFile::save(const char * filename) {
 
 		//Get first 4 packets of ogg as the header
 		for (int i = 0; i < layers.size(); ++i) {
-			size_t size = 0;
-
-			uint8_t *ptr = layers[i].data.data();
-			for (int c = 0; c < 4; ++c) {
-				size_t pageSize = getOggPageSize(ptr);
-				ptr += pageSize;
-				size += pageSize;
-			}
-			ptrs[i] = ptr;
-
-			headers[i].appendBinary(layers[i].data.data(), layers[i].data.data() + size);
+			ptrs[i] = layers[i].data.data() + 4608;
+			headers[i].appendBinary(layers[i].data.data(), layers[i].data.data() + 4608);
 		}
 
 		uint32_t maxOgglength = 0;
@@ -248,9 +260,12 @@ void sbaoFile::save(const char * filename) {
 			maxOgglength = std::max(maxOgglength, (uint32_t)layer.data.size());
 
 		uint32_t totalBlocks = (maxOgglength / 162) + 1;
-		uint32_t totalInfoSize = 16;
 
-		uint32_t infoTable[] = { 9224, 340, 0, 0 };
+		Vector<uint32_t> infoTable;
+		infoTable.push_back(0);//TODO
+		infoTable.push_back(0);//TODO
+		for (int i = 0; i < layers.size(); ++i)
+			infoTable.push_back(layers[i].data.end() - ptrs[i]);
 
 		sbaoHeader head;
 		SDL_RWwrite(fp, &head, sizeof(head), 1);
@@ -258,8 +273,9 @@ void sbaoFile::save(const char * filename) {
 		SDL_WriteLE32(fp, 0);
 		SDL_WriteLE32(fp, layers.size());
 		SDL_WriteLE32(fp, totalBlocks);//totalBlocks
-		SDL_WriteLE32(fp, sizeof(infoTable));//totalInfoSize
-		SDL_RWwrite(fp, infoTable, sizeof(infoTable), 1);
+		SDL_WriteLE32(fp, infoTable.size() * sizeof(uint32_t));//totalInfoSize
+		size_t infoOffset = SDL_RWtell(fp);
+		SDL_RWwrite(fp, infoTable.data(), sizeof(uint32_t), infoTable.size());
 		writeZero(fp, 64 - layers.size() * 4);
 		
 		//Write Header sizes
@@ -279,7 +295,7 @@ void sbaoFile::save(const char * filename) {
 			for (unsigned long i = 0; i < layers.size(); i++) {
 				uint32_t left = layers[i].data.end() - ptrs[i];
 				uint32_t out = std::min(left, (uint32_t)162);
-				SDL_Log("%u", out);
+				SDL_LogVerbose(SDL_LOG_CATEGORY_AUDIO, "%u", out);
 
 				SDL_WriteLE32(fp, out);
 			}
@@ -292,6 +308,11 @@ void sbaoFile::save(const char * filename) {
 				ptrs[i] += out;
 			}
 		}
+
+		//Rewrite info table
+		SDL_RWseek(fp, infoOffset, RW_SEEK_SET);
+		infoTable[1] = SDL_RWtell(fp) - 120;
+		SDL_RWwrite(fp, infoTable.data(), sizeof(uint32_t), infoTable.size());
 
 		SDL_RWclose(fp);
 		return;
@@ -340,6 +361,16 @@ void sbaoLayer::replace(const char * filename) {
 	SDL_RWclose(fp);
 
 	fillCache();
+}
+
+void sbaoLayer::save(const char * filename) {
+	if (!filename) return;
+
+	SDL_RWops *fp = SDL_RWFromFile(filename, "wb");
+	if (!fp) return;
+
+	SDL_RWwrite(fp, data.data(), 1, data.size());
+	SDL_RWclose(fp);
 }
 
 int sbaoLayer::play(bool loop) {

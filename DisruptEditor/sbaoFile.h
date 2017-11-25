@@ -11,6 +11,7 @@ struct sbaoLayer {
 	int channels, sampleRate, samples;
 	void fillCache();
 	void replace(const char* filename);
+	void save(const char* filename);
 
 	enum Type { VORBIS, PCM };
 	Type type;
