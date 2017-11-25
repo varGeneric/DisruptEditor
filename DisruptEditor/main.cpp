@@ -122,7 +122,7 @@ int main(int argc, char **argv) {
 	ImGui_ImplSdlGL3_Init(window);
 
 	//Style
-	ImGui::StyleColorsDark(&ImGui::GetStyle());
+	ImGui::StyleColorsDark(NULL);
 
 	Camera camera;
 	camera.type = Camera::FLYCAM;
@@ -435,9 +435,9 @@ int main(int argc, char **argv) {
 			static spkFile spkFile;
 			static int currentSound = 0;
 			if (ImGui::Button("Open")) {
-				spkFile.open(noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "spk\0*.spk\0sbao\0*.sbao\0", NULL, NULL));
-				file = spkFile.sbao;
-				//file.open(noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "sbao\0*.sbao\0", NULL, NULL));
+				//spkFile.open(noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "spk\0*.spk\0sbao\0*.sbao\0", NULL, NULL));
+				//file = spkFile.sbao;
+				file.open(noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "sbao\0*.sbao\0", NULL, NULL));
 			}
 			ImGui::SameLine();
 			if (ImGui::Button("Save")) {
@@ -476,6 +476,10 @@ int main(int argc, char **argv) {
 				ImGui::SameLine();
 				if (ImGui::Button("Replace")) {
 					it->replace( noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "ogg\0*.ogg\0", NULL, NULL) );
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("Save")) {
+					it->save(noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "ogg\0*.ogg\0", NULL, NULL));
 				}
 				ImGui::SameLine();
 				if (ImGui::Button("Delete")) {

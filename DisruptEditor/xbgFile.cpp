@@ -13,8 +13,9 @@
 #pragma pack(push, 1)
 struct XBGHead {
 	uint32_t magic;
-	unsigned short unknown[14];
-	float unknown2[20];
+	uint16_t majorVersion;
+	uint16_t minorVersion;
+	uint32_t unk[26];
 	uint32_t lodCount;
 };
 struct Bone {
@@ -67,6 +68,8 @@ void xbgFile::open(const char *file) {
 	XBGHead head;
 	SDL_RWread(fp, &head, sizeof(head), 1);
 	SDL_assert_release(head.magic == 1195724621);
+	SDL_assert_release(head.majorVersion == 97);
+	SDL_assert_release(head.minorVersion == 50);
 
 	SDL_RWseek(fp, head.lodCount * sizeof(float), RW_SEEK_CUR);
 	SDL_RWseek(fp, 8, RW_SEEK_CUR);
