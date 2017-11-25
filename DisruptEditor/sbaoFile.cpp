@@ -262,8 +262,8 @@ void sbaoFile::save(const char * filename) {
 		uint32_t totalBlocks = (maxOgglength / 162) + 1;
 
 		Vector<uint32_t> infoTable;
-		infoTable.push_back(0);//TODO
-		infoTable.push_back(0);//TODO
+		infoTable.push_back(0);//Temporary
+		infoTable.push_back(340);//Todo
 		for (int i = 0; i < layers.size(); ++i)
 			infoTable.push_back(layers[i].data.end() - ptrs[i]);
 
@@ -285,6 +285,8 @@ void sbaoFile::save(const char * filename) {
 		//Write Headers
 		for (int i = 0; i < layers.size(); ++i)
 			SDL_RWwrite(fp, headers[i].data(), 1, headers[i].size());
+
+		infoTable[0] = SDL_RWtell(fp) - 120;
 
 		//Write Blocks
 		for (uint32_t blockI = 0; blockI < totalBlocks; ++blockI) {
@@ -311,7 +313,6 @@ void sbaoFile::save(const char * filename) {
 
 		//Rewrite info table
 		SDL_RWseek(fp, infoOffset, RW_SEEK_SET);
-		infoTable[1] = SDL_RWtell(fp) - 120;
 		SDL_RWwrite(fp, infoTable.data(), sizeof(uint32_t), infoTable.size());
 
 		SDL_RWclose(fp);
