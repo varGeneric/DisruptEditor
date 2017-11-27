@@ -60,3 +60,5 @@ public:
 
 Node readFCB(const char* filename);
 Node readFCB(SDL_RWops *fp);
+
+void writeFCBB(SDL_RWops *fp, Node &node);

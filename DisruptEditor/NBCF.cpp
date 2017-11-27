@@ -437,6 +437,17 @@ Node readFCB(SDL_RWops * fp) {
 	return node;
 }
 
+void writeFCBB(SDL_RWops *fp, Node &node) {
+	fcbHeader fcb;
+	memcpy(fcb.magic, "nbCF", 4);
+	fcb.version = 16389;
+	fcb.totalObjectCount = 1 + node.countNodes();
+	fcb.totalValueCount = fcb.totalObjectCount - 1;
+
+	SDL_RWwrite(fp, &fcb, sizeof(fcb), 1);
+	node.serialize(fp);
+}
+
 void fcbHeader::swapEndian() {
 	version = SDL_Swap16(version);
 	headerFlags = SDL_Swap16(headerFlags);

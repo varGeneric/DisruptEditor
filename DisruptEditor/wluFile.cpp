@@ -60,16 +60,12 @@ bool wluFile::open(std::string filename) {
 bool wluFile::openWD1(SDL_RWops *fp) {
 	SDL_RWread(fp, &wluhead, sizeof(wluhead), 1);
 
-	SDL_assert_release(wluhead.base.magic == 1111577413);
-	SDL_assert_release(wluhead.base.unknown1 == 3 || wluhead.base.unknown1 == 0 || wluhead.base.unknown1 == 1 || wluhead.base.unknown1 == 2);
-	SDL_assert_release(wluhead.base.unknown2 == 0);
-	SDL_assert_release(memcmp(wluhead.fcb.magic, "nbCF", 4) == 0);
-	SDL_assert_release(wluhead.fcb.version == 16389);
-	SDL_assert_release(wluhead.fcb.headerFlags == 0);
-	SDL_assert_release(wluhead.fcb.totalObjectCount == wluhead.fcb.totalValueCount + 1);
+	SDL_assert_release(wluhead.magic == 1111577413);
+	SDL_assert_release(wluhead.unknown1 == 3 || wluhead.unknown1 == 0 || wluhead.unknown1 == 1 || wluhead.unknown1 == 2);
+	SDL_assert_release(wluhead.unknown2 == 0);
 
 	SDL_RWseek(fp, 0, RW_SEEK_END);
-	size_t size = SDL_RWtell(fp) - sizeof(wluhead.base);
+	size_t size = SDL_RWtell(fp) - sizeof(wluhead);
 	SDL_RWseek(fp, sizeof(wluhead), RW_SEEK_SET);
 
 	//Pad size to 4 bytes
@@ -82,20 +78,20 @@ bool wluFile::openWD1(SDL_RWops *fp) {
 	bailOut = false;
 	root.deserialize(fp, bailOut);
 
-	SDL_RWseek(fp, wluhead.base.size + sizeof(wluhead.base), RW_SEEK_SET);
+	SDL_RWseek(fp, wluhead.size + sizeof(wluhead), RW_SEEK_SET);
 	seekpad(fp, 4);
 
 	size_t offset = SDL_RWtell(fp);
 	size_t extraBegin = offset;
-	if (offset != size + sizeof(wluhead.base)) {
-		handleHeaders(fp, size + sizeof(wluhead.base));
+	if (offset != size + sizeof(wluhead)) {
+		handleHeaders(fp, size + sizeof(wluhead));
 
 		offset = SDL_RWtell(fp);
-		SDL_assert_release(offset == size + sizeof(wluhead.base));
+		SDL_assert_release(offset == size + sizeof(wluhead));
 	}
 
 	//Read in Extra Data
-	extraData.resize(size + sizeof(wluhead.base) - extraBegin);
+	extraData.resize(size + sizeof(wluhead) - extraBegin);
 	if (!extraData.empty()) {
 		SDL_RWseek(fp, extraBegin, RW_SEEK_SET);
 		SDL_RWread(fp, extraData.data(), 1, extraData.size());
@@ -119,10 +115,10 @@ bool wluFile::openWD1(SDL_RWops *fp) {
 }
 
 bool wluFile::openWD2(SDL_RWops * fp) {
-	SDL_RWread(fp, &wlu2head, sizeof(wlu2head), 1);
+	SDL_RWread(fp, &wluhead, sizeof(wluhead), 1);
 
-	SDL_assert_release(wlu2head.magic == 4129362901);
-	SDL_assert_release(wlu2head.unknown2 == 0);
+	SDL_assert_release(wluhead.magic == 4129362901);
+	SDL_assert_release(wluhead.unknown2 == 0);
 
 	root = readFCB(fp);
 
@@ -164,28 +160,23 @@ void wluFile::serialize(const char* filename) {
 	SDL_RWops *fp = SDL_RWFromFile(filename, "wb");
 	
 	if (isWD2) {
-		SDL_RWwrite(fp, &wlu2head, sizeof(wlu2head), 1);
-		root.serialize(fp);
-		wlu2head.size = SDL_RWtell(fp) - sizeof(wlu2head);
+		SDL_RWwrite(fp, &wluhead, sizeof(wluhead), 1);
+		writeFCBB(fp, root);
+		wluhead.size = SDL_RWtell(fp) - sizeof(wluhead);
 		writepad(fp, 16);
 		SDL_RWseek(fp, 0, RW_SEEK_SET);
-		SDL_RWwrite(fp, &wlu2head, sizeof(wlu2head), 1);
+		SDL_RWwrite(fp, &wluhead, sizeof(wluhead), 1);
 	} else {
-		wluhead.base.magic = 1111577413;
+		wluhead.magic = 1111577413;
 		//wluhead.base.unknown1 = wluhead.base.unknown2 = 0;
-
-		memcpy(wluhead.fcb.magic, "nbCF", 4);
-		wluhead.fcb.version = 16389;
-		wluhead.fcb.totalObjectCount = 1 + root.countNodes();
-		wluhead.fcb.totalValueCount = wluhead.fcb.totalObjectCount - 1;
 
 		SDL_RWwrite(fp, &wluhead, sizeof(wluhead), 1);
 
-		root.serialize(fp);
+		writeFCBB(fp, root);
 
 		SDL_RWseek(fp, 0, RW_SEEK_END);
 		writepad(fp, 4);
-		wluhead.base.size = SDL_RWtell(fp) - sizeof(wluhead.base);
+		wluhead.size = SDL_RWtell(fp) - sizeof(wluhead);
 
 		//Write Extra Data
 		//fwrite(extraData.data(), 1, extraData.size(), fp);

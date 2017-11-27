@@ -7,19 +7,7 @@
 #include "NBCF.h"
 
 #pragma pack(push, 1)
-struct baseHeader {
-	uint32_t magic;
-	uint32_t size;
-	uint32_t unknown1;//0 or 1 or 2 or 3
-	uint32_t unknown2;//0
-};
-
 struct wluHeader {
-	baseHeader base;
-	fcbHeader fcb;
-};
-
-struct wlu2Header {
 	uint32_t magic;
 	uint32_t size;
 	uint32_t unknown1;//0 or 1 or 2 or 3
@@ -60,7 +48,6 @@ private:
 
 	bool isWD2 = false;
 	wluHeader wluhead;
-	wlu2Header wlu2head;
 	Vector<uint8_t> extraData;
 	void handleHeaders(SDL_RWops *fp, size_t size);
 	Node* selectedEntity = NULL;
