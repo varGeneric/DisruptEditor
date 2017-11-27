@@ -613,8 +613,6 @@ int main(int argc, char **argv) {
 				doc.LoadFile(xmlFileName.c_str());
 				wlu.root.deserializeXML(doc.RootElement());
 			}
-			if (wlu.bailOut)
-				ImGui::TextColored(ImVec4(1.f, 0.f, 0.f, 1.f), "This file could not be completely read, do not save it!");
 			
 			ImGui::End();
 			ImGui::SetNextWindowSize(ImVec2(600, 400), ImGuiCond_FirstUseEver);

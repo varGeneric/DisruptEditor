@@ -35,8 +35,6 @@ public:
 	void serialize(const char* filename);
 
 	void draw(bool drawImgui = false, bool draw3D = false);
-
-	bool bailOut;//If the file could possibly be corrupt
 	
 	Node root;
 

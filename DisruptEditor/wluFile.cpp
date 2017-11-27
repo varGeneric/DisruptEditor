@@ -75,8 +75,7 @@ bool wluFile::openWD1(SDL_RWops *fp) {
 	//2296 size
 	//2265 wlu base size + 16
 
-	bailOut = false;
-	root.deserialize(fp, bailOut);
+	root = readFCB(fp);
 
 	SDL_RWseek(fp, wluhead.size + sizeof(wluhead), RW_SEEK_SET);
 	seekpad(fp, 4);
@@ -111,7 +110,7 @@ bool wluFile::openWD1(SDL_RWops *fp) {
 	fclose(fp);
 	}*/
 
-	return !bailOut;
+	return true;
 }
 
 bool wluFile::openWD2(SDL_RWops * fp) {
