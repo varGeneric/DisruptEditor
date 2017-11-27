@@ -196,7 +196,13 @@ int main(int argc, char **argv) {
 
 		loadingScreen->setTitle("Loading WLUs");
 		Vector<FileInfo> files = getFileListFromAbsDir(settings.patchDir + "/worlds/windy_city/generated/wlu", "xml.data.fcb");
-		int count = 0;
+		for (FileInfo &file : files) {
+			SDL_Log("Loading %s\n", file.name.c_str());
+			wlus[file.name].shortName = file.name;
+			wlus[file.name].open(file.fullPath);
+			SDL_PumpEvents();
+		}
+		files = getFileListFromAbsDir(settings.patchDir + "/worlds/san_francisco/generated/wlu", "wlu");
 		for (FileInfo &file : files) {
 			SDL_Log("Loading %s\n", file.name.c_str());
 			wlus[file.name].shortName = file.name;

@@ -6,8 +6,9 @@
 #include "Vector.h"
 #include "NBCF.h"
 
+#pragma pack(push, 1)
 struct baseHeader {
-	char magic[4];
+	uint32_t magic;
 	uint32_t size;
 	uint32_t unknown1;//0 or 1 or 2 or 3
 	uint32_t unknown2;//0
@@ -16,6 +17,13 @@ struct baseHeader {
 struct wluHeader {
 	baseHeader base;
 	fcbHeader fcb;
+};
+
+struct wlu2Header {
+	uint32_t magic;
+	uint32_t size;
+	uint32_t unknown1;//0 or 1 or 2 or 3
+	uint32_t unknown2;//0
 };
 
 struct qualityHeader {
@@ -29,6 +37,7 @@ struct roadHeader {
 	uint32_t size;
 	uint8_t unknown[8];
 };
+#pragma pack(pop)
 
 class wluFile {
 public:
@@ -46,7 +55,12 @@ public:
 	std::string shortName; //ex. wlu_data_01_loop_vigilante_01.xml.data.fcb
 	std::string origFilename; //ex. original filename opened with
 private:
+	bool openWD1(SDL_RWops *fp);
+	bool openWD2(SDL_RWops *fp);
+
+	bool isWD2 = false;
 	wluHeader wluhead;
+	wlu2Header wlu2head;
 	Vector<uint8_t> extraData;
 	void handleHeaders(SDL_RWops *fp, size_t size);
 	Node* selectedEntity = NULL;

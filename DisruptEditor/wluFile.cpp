@@ -41,9 +41,26 @@ bool wluFile::open(std::string filename) {
 	SDL_RWclose(fp);
 	fp = SDL_RWFromConstMem(data.data(), data.size());
 
+	uint32_t magic = SDL_ReadLE32(fp);
+	SDL_RWseek(fp, 0, RW_SEEK_SET);
+	bool ret;
+	if (magic == 1111577413) {
+		//WD1 File
+		ret = openWD1(fp);
+		isWD2 = false;
+	} else if (magic == 4129362901) {
+		//WD2 File
+		ret = openWD2(fp);
+		isWD2 = true;
+	}
+
+	SDL_RWclose(fp);
+}
+
+bool wluFile::openWD1(SDL_RWops *fp) {
 	SDL_RWread(fp, &wluhead, sizeof(wluhead), 1);
 
-	SDL_assert_release(memcmp(wluhead.base.magic, "ESAB", 4) == 0);
+	SDL_assert_release(wluhead.base.magic == 1111577413);
 	SDL_assert_release(wluhead.base.unknown1 == 3 || wluhead.base.unknown1 == 0 || wluhead.base.unknown1 == 1 || wluhead.base.unknown1 == 2);
 	SDL_assert_release(wluhead.base.unknown2 == 0);
 	SDL_assert_release(memcmp(wluhead.fcb.magic, "nbCF", 4) == 0);
@@ -84,24 +101,32 @@ bool wluFile::open(std::string filename) {
 		SDL_RWread(fp, extraData.data(), 1, extraData.size());
 	}
 
-	SDL_RWclose(fp);
-
-
 	//Handle .embed
 	/*fp = fopen((filename + ".embed").c_str(), "rb");
 	if (fp) {
-		uint32_t magic, size;
-		fread(&magic, sizeof(magic), 1, fp);
-		fread(&size, sizeof(size), 1, fp);
+	uint32_t magic, size;
+	fread(&magic, sizeof(magic), 1, fp);
+	fread(&size, sizeof(size), 1, fp);
 
-		fseek(fp, 1, SEEK_CUR);
-		fseek(fp, size * 37, SEEK_CUR);
-		SDL_assert_release(feof(fp));
+	fseek(fp, 1, SEEK_CUR);
+	fseek(fp, size * 37, SEEK_CUR);
+	SDL_assert_release(feof(fp));
 
-		fclose(fp);
+	fclose(fp);
 	}*/
 
 	return !bailOut;
+}
+
+bool wluFile::openWD2(SDL_RWops * fp) {
+	SDL_RWread(fp, &wlu2head, sizeof(wlu2head), 1);
+
+	SDL_assert_release(wlu2head.magic == 4129362901);
+	SDL_assert_release(wlu2head.unknown2 == 0);
+
+	root = readFCB(fp);
+
+	return true;
 }
 
 void wluFile::handleHeaders(SDL_RWops * fp, size_t size) {
@@ -137,28 +162,38 @@ void wluFile::handleHeaders(SDL_RWops * fp, size_t size) {
 
 void wluFile::serialize(const char* filename) {
 	SDL_RWops *fp = SDL_RWFromFile(filename, "wb");
+	
+	if (isWD2) {
+		SDL_RWwrite(fp, &wlu2head, sizeof(wlu2head), 1);
+		root.serialize(fp);
+		wlu2head.size = SDL_RWtell(fp) - sizeof(wlu2head);
+		writepad(fp, 16);
+		SDL_RWseek(fp, 0, RW_SEEK_SET);
+		SDL_RWwrite(fp, &wlu2head, sizeof(wlu2head), 1);
+	} else {
+		wluhead.base.magic = 1111577413;
+		//wluhead.base.unknown1 = wluhead.base.unknown2 = 0;
 
-	memcpy(wluhead.base.magic, "ESAB", 4);
-	//wluhead.base.unknown1 = wluhead.base.unknown2 = 0;
+		memcpy(wluhead.fcb.magic, "nbCF", 4);
+		wluhead.fcb.version = 16389;
+		wluhead.fcb.totalObjectCount = 1 + root.countNodes();
+		wluhead.fcb.totalValueCount = wluhead.fcb.totalObjectCount - 1;
 
-	memcpy(wluhead.fcb.magic, "nbCF", 4);
-	wluhead.fcb.version = 16389;
-	wluhead.fcb.totalObjectCount = 1 + root.countNodes();
-	wluhead.fcb.totalValueCount = wluhead.fcb.totalObjectCount - 1;
+		SDL_RWwrite(fp, &wluhead, sizeof(wluhead), 1);
 
-	SDL_RWwrite(fp, &wluhead, sizeof(wluhead), 1);
+		root.serialize(fp);
 
-	root.serialize(fp);
+		SDL_RWseek(fp, 0, RW_SEEK_END);
+		writepad(fp, 4);
+		wluhead.base.size = SDL_RWtell(fp) - sizeof(wluhead.base);
 
-	SDL_RWseek(fp, 0, RW_SEEK_END);
-	writepad(fp, 4);
-	wluhead.base.size = SDL_RWtell(fp) - sizeof(wluhead.base);
+		//Write Extra Data
+		//fwrite(extraData.data(), 1, extraData.size(), fp);
 
-	//Write Extra Data
-	//fwrite(extraData.data(), 1, extraData.size(), fp);
-
-	SDL_RWseek(fp, 0, RW_SEEK_SET);
-	SDL_RWwrite(fp, &wluhead, sizeof(wluhead), 1);
+		SDL_RWseek(fp, 0, RW_SEEK_SET);
+		SDL_RWwrite(fp, &wluhead, sizeof(wluhead), 1);
+	}
+	
 	SDL_RWclose(fp);
 }
 
