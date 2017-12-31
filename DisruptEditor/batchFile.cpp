@@ -11,15 +11,11 @@ struct batchHeader {
 	uint32_t magic;
 	uint32_t unk1; //32
 	uint32_t type; //0 for compound, 1 for phys
-	uint32_t unk2;
+	uint32_t size;
 	uint32_t unk3;
 	uint32_t unk4;//0
 	uint32_t unk5;//0
 	uint32_t unk6;//0
-	uint32_t unk7;//0
-	uint32_t unk8;//0
-	uint32_t unk9;//0
-	uint32_t unk10;//0
 };
 struct compoundHeader {
 	uint32_t unk1;
@@ -27,6 +23,10 @@ struct compoundHeader {
 	uint32_t unk3;
 	uint32_t unk4;
 	uint32_t unk5;
+	uint32_t unk6;
+	uint32_t unk7;
+	uint32_t unk8;
+	uint32_t unk9;
 };
 #pragma pack(pop)
 
@@ -57,7 +57,6 @@ bool batchFile::open(const char * filename) {
 	SDL_assert_release(head.magic == 1112818504);
 	SDL_assert_release(head.unk1 == 32);
 	SDL_assert_release(head.type == 0 || head.type == 1);
-	SDL_assert_release(head.unk2 < SDL_RWsize(fp));
 	SDL_assert_release(head.unk4 == 0);
 	SDL_assert_release(head.unk5 == 0);
 	SDL_assert_release(head.unk6 == 0);
@@ -68,9 +67,13 @@ bool batchFile::open(const char * filename) {
 
 	if (head.type == 0) {
 		SDL_assert_release(strstr(filename, "_compound.cbatch"));
+		SDL_assert_release(head.size + sizeof(head) == SDL_RWsize(fp));
 
 		compoundHeader compound;
 		SDL_RWread(fp, &compound, sizeof(compound), 1);
+
+		//SDL_assert_release(compound.unk3 == 0);
+
 		std::string srcFilename = readString(fp, bigEndian);
 		seekpad(fp, 4);
 

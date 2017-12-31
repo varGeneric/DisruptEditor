@@ -15,7 +15,7 @@ struct spkHeader {
 	uint32_t unk2 = 0;
 	uint32_t unk3 = 0;
 	uint32_t unk4 = 0;
-	uint32_t size = 0;
+	uint32_t rawSize = 0;
 };
 #pragma pack(pop)
 
@@ -28,11 +28,16 @@ void spkFile::open(const char * filename) {
 
 	if (head.type == 1) {
 		//Embedded Elsewhere
+		type = REFERENCE;
 	} else if (head.type == 3) {
+		type = EMBEDDED;
 		sbao.open(fp);
 
+		//SDL_assert_release(head.unk2 + 2 == head.unk3 + 1 == head.unk4);
+
 		size_t offset = SDL_RWtell(fp);
-		SDL_assert_release(offset - 360 == head.size);
+		SDL_assert_release(offset - 360 == head.rawSize);
+	} else if (head.type == 9) {
 	} else {
 		SDL_assert_release(false);
 	}

@@ -214,7 +214,9 @@ void sbaoFile::open(SDL_RWops *fp) {
 		SDL_assert_release(SDL_RWtell(fp) == SDL_RWsize(fp));
 
 	} else if (type == 0 || type == 4294049865 || type == 1677572653 || type == 1511924971 || type == 2232265428 || type == 2464119532) {//Unknown
+		int a = 0;
 	} else {
+		int a = 0;
 	}
 
 	fillCache();

@@ -132,35 +132,36 @@ int main(int argc, char **argv) {
 	dd::initialize(&RenderInterface::instance());
 
 	//Debug
-	/*{
+	{
 		tfDIR dir;
-		/*tfDirOpen(&dir, "D:\\Desktop\\bin\\sound\\soundbinary");
-		//tfDirOpen(&dir, "D:\\Desktop\\bin\\sound\\__UNKNOWN/sfx");
-		//tfDirOpen(&dir, "D:\\Desktop\\bin\\default");
+		/*tfDirOpen(&dir, "D:\\Desktop\\bin\\windy_city\\worlds\\windy_city\\generated\\batchmeshentity");
 		while (dir.has_next) {
 			tfFILE file;
 			tfReadFile(&dir, &file);
 
-			if (!file.is_dir && strstr(file.name, ".sbao") != NULL) {
-				SDL_Log("Loading %s\n", file.name);
+			if (!file.is_dir && strstr(file.name, ".cbatch") != NULL) {
+				SDL_Log("Loading %s", file.name);
 
-				sbaoFile bf;
+				batchFile bf;
 				bf.open(file.path);
 			}
 
 			tfDirNext(&dir);
 		}
-		tfDirClose(&dir);
+		tfDirClose(&dir);*/
 
-		tfDirOpen(&dir, "D:\\Desktop\\bin\\windy_city\\worlds\\windy_city\\generated\\batchmeshentity");
+		//tfDirOpen(&dir, "D:\\Desktop\\bin\\sound\\soundbinary");
+		//tfDirOpen(&dir, "D:\\Desktop\\bin\\sound\\__UNKNOWN/sfx");
+		/*tfDirOpen(&dir, "D:\\Desktop\\bin\\windy_city\\soundbinary");
+		SDL_LogSetAllPriority(SDL_LOG_PRIORITY_INFO);
 		while (dir.has_next) {
 			tfFILE file;
 			tfReadFile(&dir, &file);
 
-			if (!file.is_dir && strstr(file.name, "_compound.cbatch") != NULL) {
+			if (!file.is_dir && strstr(file.name, ".spk") != NULL) {
 				SDL_Log("Loading %s\n", file.name);
 
-				batchFile bf;
+				spkFile bf;
 				bf.open(file.path);
 			}
 
@@ -169,7 +170,7 @@ int main(int argc, char **argv) {
 		tfDirClose(&dir);
 		
 
-		tfDirOpen(&dir, "D:/Desktop/bin/windy_city/__UNKNOWN/srhr");
+		/*tfDirOpen(&dir, "D:/Desktop/bin/windy_city/__UNKNOWN/srhr");
 		while (dir.has_next) {
 			tfFILE file;
 			tfReadFile(&dir, &file);
@@ -183,8 +184,8 @@ int main(int argc, char **argv) {
 
 			tfDirNext(&dir);
 		}
-		tfDirClose(&dir);
-	}*/
+		tfDirClose(&dir);*/
+	}
 
 	tinyxml2::XMLDocument spawnPointList;
 
@@ -330,6 +331,9 @@ int main(int argc, char **argv) {
 		}
 		if (ImGui::MenuItem("Sequence")) {
 			windows["CSequence"] ^= true;
+		}
+		if (ImGui::MenuItem("Move")) {
+			windows["Move"] ^= true;
 		}
 		if (ImGui::MenuItem("LocString")) {
 			windows["LocString"] ^= true;

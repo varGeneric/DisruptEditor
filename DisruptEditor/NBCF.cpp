@@ -248,6 +248,7 @@ void Node::deserialize(SDL_RWops* fp, bool bigEndian) {
 void Node::deserializeA(SDL_RWops * fp, Vector<Node*> &list, bool bigEndian) {
 	bool isOffset;
 	uint32_t childCount = ReadCountA(fp, isOffset, bigEndian);
+	offset = SDL_RWtell(fp);
 
 	if (isOffset) {
 		SDL_assert_release(list.size() > childCount);
@@ -333,6 +334,7 @@ void Node::deserializeXML(const tinyxml2::XMLElement *node) {
 void Node::serializeXML(tinyxml2::XMLPrinter &printer) {
 	std::string hashName = getHashName();
 
+	//printer.PushComment((std::string("Offset: ") + std::to_string(offset)).c_str());
 	printer.OpenElement(hashName.c_str());
 
 	for (auto &attribute : attributes)
@@ -433,6 +435,9 @@ Node readFCB(SDL_RWops * fp) {
 		Vector<Node*> list;
 		node.deserializeA(fp, list, bigEndian);
 	}
+
+	if (SDL_RWsize(fp) != SDL_RWtell(fp))
+		SDL_Log("Warning: Extra data at the end of fcb");
 
 	return node;
 }

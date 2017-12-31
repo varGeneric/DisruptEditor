@@ -48,10 +48,8 @@ void loadEntityLibrary() {
 		size_t curOffset = SDL_RWtell(fp) + 4;
 
 		SDL_RWseek(fp, offset, RW_SEEK_SET);
-		bool bailOut = false;
 		Node entityParent;
-		entityParent.deserialize(fp, bailOut);
-		SDL_assert_release(!bailOut);
+		entityParent.deserialize(fp, false);
 		addEntity(UID, *entityParent.children.begin());
 
 		SDL_RWseek(fp, curOffset, RW_SEEK_SET);

@@ -27,6 +27,9 @@ Dialog::Dialog() {
 	}
 	tfDirClose(&dir);
 
+	//main.open("D:\\wd2\\common\\languages\\main_english.loc");
+	main.open("D:\\wiiu\\common\\languages\\main_english.loc");
+
 	main.open(getAbsoluteFilePath("languages/dlc_solo_english.loc").c_str());
 	main.open(getAbsoluteFilePath("languages/main_english.loc").c_str());
 	main.open(getAbsoluteFilePath("languages/patch1_english.loc").c_str());
