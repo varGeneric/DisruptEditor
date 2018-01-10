@@ -59,6 +59,7 @@ void writeZero(SDL_RWops *fp, size_t num) {
 void sbaoFile::open(const char *filename) {
 	if (!filename) return;
 	SDL_RWops *fp = SDL_RWFromFile(filename, "rb");
+	SDL_Log("%s", filename);
 	open(fp);
 	SDL_RWclose(fp);
 }
@@ -69,7 +70,7 @@ void sbaoFile::open(SDL_RWops *fp) {
 	sbaoHeader head;
 	SDL_RWread(fp, &head, sizeof(head), 1);
 	SDL_assert_release(head.magic == sbaoMagic);
-	SDL_assert_release(head.unk5 == 1342177280 || head.unk5 == 805306368);
+	//SDL_assert_release(head.unk5 == 1342177280 || head.unk5 == 805306368);
 	SDL_assert_release(head.unk6 == 2);
 
 	//Read First 4 bytes
@@ -212,11 +213,20 @@ void sbaoFile::open(SDL_RWops *fp) {
 		}
 		
 		SDL_assert_release(SDL_RWtell(fp) == SDL_RWsize(fp));
-
-	} else if (type == 0 || type == 4294049865 || type == 1677572653 || type == 1511924971 || type == 2232265428 || type == 2464119532) {//Unknown
-		int a = 0;
 	} else {
-		int a = 0;
+		//Find OggS Packet
+		char buffer[4] = { 0 };
+		while (memcmp(buffer, "OggS", 4) != 0) {
+			int a = SDL_RWread(fp, buffer, 4, 1);
+			if (a != 4)
+				return;
+		}
+
+		SDL_RWseek(fp, -4, RW_SEEK_CUR);
+		sbaoLayer &layer = layers.push_back();
+		layer.type = sbaoLayer::VORBIS;
+		layer.data.resize(SDL_RWsize(fp) - SDL_RWtell(fp));
+		SDL_RWread(fp, layer.data.data(), 1, layer.data.size());
 	}
 
 	fillCache();

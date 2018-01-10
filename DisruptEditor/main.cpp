@@ -381,13 +381,13 @@ int main(int argc, char **argv) {
 					backup += ".bak";
 					CopyFileA(it->second.origFilename.c_str(), backup.c_str(), TRUE);
 
-					it->second.root.findFirstChild("Entities")->children.clear();//DEBUG
+					/*it->second.root.findFirstChild("Entities")->children.clear();//DEBUG
 					for (auto a = it->second.root.children.begin(); a != it->second.root.children.end();) {
 						if (a->getHashName() != "Entities")
 							a = it->second.root.children.erase(a);
 						else
 							++a;
-					}
+					}*/
 
 					it->second.serialize(it->second.origFilename.c_str());
 				}
@@ -531,7 +531,38 @@ int main(int argc, char **argv) {
 		ImGui::SetNextWindowSize(ImVec2(400, 200), ImGuiCond_FirstUseEver);
 		ImGui::SetNextWindowPos(ImVec2(80.f, 80.f), ImGuiCond_FirstUseEver);
 		if (windows["LocString"] && ImGui::Begin("LocString", &windows["LocString"], 0)) {
-			
+			auto &locStrings = Dialog::instance().locStrings;
+			auto &soundidlinelinks = Dialog::instance().soundidlinelinks;
+
+			static spkFile file;
+			char search[500];
+			ImGui::InputText("Search", search, sizeof(search));
+
+			for (auto it : locStrings) {
+				//ImGui::Text("%i %s", it.first, it.second.c_str());
+
+				if (it.second.find(search) == std::string::npos && strlen(search) != 0)
+					continue;
+
+				if (soundidlinelinks.count(it.first)) {
+					char imguiline[500];
+					char buffer[500];
+					snprintf(imguiline, sizeof(imguiline), "%i %08x %s", it.first, soundidlinelinks[it.first], it.second.c_str());
+					snprintf(buffer, sizeof(buffer), "soundbinary\\%08x.spk", soundidlinelinks[it.first]);
+					if (getAbsoluteFilePath(buffer).empty()) {
+						soundidlinelinks.erase(it.first);
+						continue;
+					}
+					if (ImGui::Selectable(imguiline)) {
+						file.sbao.layers.clear();
+
+						Audio::instance().stopAll();
+						file.open(getAbsoluteFilePath(buffer).c_str());
+						if(!file.sbao.layers.empty())
+							file.sbao.layers[0].play(false);
+					}
+				}
+			}
 
 			ImGui::End();
 		}

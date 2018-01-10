@@ -35,9 +35,6 @@
     <ClCompile Include="Dialog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="locFile.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Entity.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -117,6 +114,9 @@
       <Filter>Source Files\File Formats</Filter>
     </ClCompile>
     <ClCompile Include="DominoBox.cpp">
+      <Filter>Source Files\File Formats</Filter>
+    </ClCompile>
+    <ClCompile Include="locFile.cpp">
       <Filter>Source Files\File Formats</Filter>
     </ClCompile>
   </ItemGroup>
@@ -205,9 +205,6 @@
     <ClInclude Include="LoadingScreen.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="locFile.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="batchFile.h">
       <Filter>Source Files\File Formats</Filter>
     </ClInclude>
@@ -251,6 +248,9 @@
       <Filter>Source Files\File Formats</Filter>
     </ClInclude>
     <ClInclude Include="DominoBox.h">
+      <Filter>Source Files\File Formats</Filter>
+    </ClInclude>
+    <ClInclude Include="locFile.h">
       <Filter>Source Files\File Formats</Filter>
     </ClInclude>
   </ItemGroup>

@@ -105,13 +105,14 @@ void loadConnectors() {
 }
 
 void DominoBox::open(const char *filename) {
+	FILE *fp = fopen(filename, "r");
+	if (!fp) return;
+
 	loadConnectors();
 	boxes.clear();
 	connections.clear();
 	localVariables.clear();
 	scrolling = glm::vec2();
-
-	FILE *fp = fopen(filename, "r");
 
 	//Read Dependencies
 	std::string line = scanToNextLine(fp, "function export:Create(cbox)");

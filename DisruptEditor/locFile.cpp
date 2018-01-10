@@ -97,18 +97,18 @@ bool locFile::open(const char *filename) {
 			entry.swapEndianess();
 	}
 
-	//Read Strings
+	uint16_t total = 0;
 	for (locTableEntry &entry : tables) {
-		SDL_Log("%u  %u\n", entry.idOffset, entry.offset);
-		//SDL_assert_release(entry.offset < head.fragmentOffset);
-
-		/*uint16_t entryCount = SDL_ReadLE16(fp);
-		for (int j = 0; j < entryCount; j++) {
-			uint32_t id = entry.idOffset + SDL_ReadLE16(fp);
-			uint16_t count = SDL_ReadLE16(fp);
-		}*/
+		//SDL_Log("%u %u", entry.idOffset, entry.offset);
+		total += entry.offset;
+		SDL_assert_release(entry.offset < head.fragmentOffset);
 	}
-	//SDL_assert_release(SDL_RWtell(fp) == head.fragmentOffset);
+	SDL_Log("%u", total);
+
+	//Read Strings
+	//10 shorts
+	uint16_t f1 = SDL_ReadLE16(fp);
+	uint16_t f2 = SDL_ReadLE16(fp);
 
 	SDL_RWclose(fp);
 	return true;
