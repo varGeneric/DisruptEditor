@@ -12,6 +12,8 @@
 #include "imgui.h"
 #include "Implementation.h"
 #include "Entity.h"
+#include "ImGuizmo.h"
+#include "DDRenderInterface.h"
 
 static inline void seekpad(SDL_RWops *fp, long pad) {
 	//16-byte chunk alignment
@@ -187,6 +189,48 @@ void wluFile::serialize(const char* filename) {
 	SDL_RWclose(fp);
 }
 
+
+void EditTransform(const float *cameraView, float *cameraProjection, float* matrix) {
+	static ImGuizmo::OPERATION mCurrentGizmoOperation(ImGuizmo::ROTATE);
+	static ImGuizmo::MODE mCurrentGizmoMode(ImGuizmo::WORLD);
+	static bool useSnap = false;
+	static float snap[3] = { 1.f, 1.f, 1.f };
+
+	if (ImGui::IsKeyPressed(90))
+		mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
+	if (ImGui::IsKeyPressed(69))
+		mCurrentGizmoOperation = ImGuizmo::ROTATE;
+	if (ImGui::RadioButton("Translate", mCurrentGizmoOperation == ImGuizmo::TRANSLATE))
+		mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
+	ImGui::SameLine();
+	if (ImGui::RadioButton("Rotate", mCurrentGizmoOperation == ImGuizmo::ROTATE))
+		mCurrentGizmoOperation = ImGuizmo::ROTATE;
+
+	if (mCurrentGizmoOperation != ImGuizmo::SCALE) {
+		if (ImGui::RadioButton("Local", mCurrentGizmoMode == ImGuizmo::LOCAL))
+			mCurrentGizmoMode = ImGuizmo::LOCAL;
+		ImGui::SameLine();
+		if (ImGui::RadioButton("World", mCurrentGizmoMode == ImGuizmo::WORLD))
+			mCurrentGizmoMode = ImGuizmo::WORLD;
+	}
+	if (ImGui::IsKeyPressed(83))
+		useSnap = !useSnap;
+	ImGui::Checkbox("", &useSnap);
+	ImGui::SameLine();
+
+	switch (mCurrentGizmoOperation) {
+		case ImGuizmo::TRANSLATE:
+			ImGui::InputFloat3("Snap", &snap[0]);
+			break;
+		case ImGuizmo::ROTATE:
+			ImGui::InputFloat("Angle Snap", &snap[0]);
+			break;
+	}
+	ImGuiIO& io = ImGui::GetIO();
+	ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+	ImGuizmo::Manipulate(cameraView, cameraProjection, mCurrentGizmoOperation, mCurrentGizmoMode, matrix, NULL, useSnap ? &snap[0] : NULL);
+}
+
 void wluFile::draw(bool drawImgui, bool draw3D) {
 	Node *Entities = root.findFirstChild("Entities");
 	if (!Entities) return;
@@ -220,12 +264,20 @@ void wluFile::draw(bool drawImgui, bool draw3D) {
 		char imguiHash[512];
 		Attribute *hidName = entity.getAttribute("hidName");
 		Attribute *hidPos = entity.getAttribute("hidPos");
-		glm::vec3 pos = *(glm::vec3*)hidPos->buffer.data();
+		glm::vec3 &pos = entity.get<glm::vec3>("hidPos");
+		glm::vec3 &angles = entity.get<glm::vec3>("hidAngles");
+		float scale[3] = { 1.f };
+		glm::mat4 matrix;
+
+		RenderInterface &renderInterface = RenderInterface::instance();
+
+		ImGuizmo::RecomposeMatrixFromComponents(&pos.x, &angles.x, scale, &matrix[0][0]);
+		EditTransform(&renderInterface.View[0][0], &renderInterface.Projection[0][0], &matrix[0][0]);
+		ImGuizmo::DecomposeMatrixToComponents(&matrix[0][0], &pos.x, &angles.x, scale);
+		ImGui::Separator();
 
 		//Iterate through Entity Attributes
 		snprintf(imguiHash, sizeof(imguiHash), "%s##%p", hidName->buffer.data(), &entity);
-		
-		dd::sphere((float*)&pos, red, 5.f, 0, false);
 
 		Attribute *ArchetypeGuid = entity.getAttribute("ArchetypeGuid");
 		if (ArchetypeGuid) {

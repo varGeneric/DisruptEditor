@@ -28,7 +28,7 @@ Dialog::Dialog() {
 	}
 	tfDirClose(&dir);
 
-	SDL_RWops *fp = SDL_RWFromFile(getAbsoluteFilePath("soundbinary/soundidlinelinks.slid").c_str(), "rb");
+	SDL_RWops *fp = openFile("soundbinary/soundidlinelinks.slid");
 	uint32_t count = SDL_ReadLE32(fp);
 	for (uint32_t i = 0; i < count; ++i) {
 		uint32_t soundID = SDL_ReadLE32(fp);

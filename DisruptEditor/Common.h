@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include "glm/glm.hpp"
 #include "glad.h"
+#include <SDL_rwops.h>
 
 class xbgFile;
 class materialFile;
@@ -36,6 +37,9 @@ std::string loadFile(const std::string &file);
 
 std::string getAbsoluteFilePath(const std::string &path);
 std::string getAbsoluteFilePath(uint32_t path);
+
+SDL_RWops* openFile(const std::string &path);
+SDL_RWops* openFile(uint32_t path);
 
 xbgFile& loadXBG(const std::string &path);
 xbgFile& loadXBG(uint32_t path);

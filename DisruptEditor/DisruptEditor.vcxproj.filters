@@ -119,6 +119,12 @@
     <ClCompile Include="locFile.cpp">
       <Filter>Source Files\File Formats</Filter>
     </ClCompile>
+    <ClCompile Include="ImGuizmo.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
+    <ClCompile Include="ImSequencer.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stb_image.h">
@@ -253,6 +259,12 @@
     <ClInclude Include="locFile.h">
       <Filter>Source Files\File Formats</Filter>
     </ClInclude>
+    <ClInclude Include="ImSequencer.h">
+      <Filter>Externals</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGuizmo.h">
+      <Filter>Externals</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Res.rc">
@@ -263,5 +275,8 @@
     <Image Include="Icon.ico">
       <Filter>Resource Files</Filter>
     </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="NatvisFile.natvis" />
   </ItemGroup>
 </Project>

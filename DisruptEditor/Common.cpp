@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <SDL_assert.h>
 #include <Shlwapi.h>
+#include <stdio.h>
 #include <SDL_log.h>
 #include "NBCF.h"
 #include "xbgFile.h"
@@ -16,30 +17,7 @@
 Settings settings;
 std::unordered_map<std::string, materialFile> materials;
 std::unordered_map<std::string, xbtFile> textures;
-std::unordered_map<uint32_t, std::string> unknownFiles;
 std::unordered_map<uint32_t, std::string> knownFiles;
-
-void handleUnknownPath(const char* base) {
-	tfDIR dir;
-	tfDirOpen(&dir, base);
-	while (dir.has_next) {
-		tfFILE file;
-		tfReadFile(&dir, &file);
-
-		if (!file.is_dir && strlen(file.name) > 8) {
-			file.name[8] = '\0';
-
-			uint32_t hash = std::stoul(file.name, NULL, 16);
-			if (unknownFiles.count(hash) == 0) {
-				unknownFiles[hash] = file.path;
-			}
-
-		}
-
-		tfDirNext(&dir);
-	}
-	tfDirClose(&dir);
-}
 
 void reloadSettings() {
 	tinyxml2::XMLDocument doc;
@@ -67,27 +45,6 @@ void reloadSettings() {
 
 	if (doc.RootElement()->FirstChildElement("drawBuildings"))
 		settings.drawBuildings = doc.RootElement()->FirstChildElement("drawBuildings")->BoolAttribute("src");
-
-
-	//Reload Unknowns
-	unknownFiles.clear();
-	for (const std::string &base : settings.searchPaths) {
-		std::string unknownPath = base + "__UNKNOWN";
-		if (!PathFileExistsA(unknownPath.c_str())) continue;
-		tfDIR dir;
-		tfDirOpen(&dir, unknownPath.c_str());
-		while (dir.has_next) {
-			tfFILE file;
-			tfReadFile(&dir, &file);
-
-			if (file.is_dir && strcmp(file.name, ".") != 0 && strcmp(file.name, ".."))
-				handleUnknownPath(file.path);
-
-			tfDirNext(&dir);
-		}
-		tfDirClose(&dir);
-
-	}
 
 	//Reload Filelist
 	knownFiles.clear();
@@ -223,18 +180,32 @@ std::string getAbsoluteFilePath(const std::string &path) {
 	}
 
 	uint32_t hash = Hash::instance().getFilenameHash(path);
-	if (unknownFiles.count(hash))
-		return unknownFiles[hash];
+	//if (unknownFiles.count(hash))
+		//return unknownFiles[hash];
 
 	return std::string();
 }
 
 std::string getAbsoluteFilePath(uint32_t path) {
-	if (unknownFiles.count(path))
-		return unknownFiles[path];
+	//if (unknownFiles.count(path))
+		//return unknownFiles[path];
 	if (knownFiles.count(path))
 		return getAbsoluteFilePath(knownFiles[path]);
 	return "";
+}
+
+SDL_RWops * openFile(const std::string & path) {
+	//FILE *oFP = fopen(getAbsoluteFilePath(path).c_str(), "rb");
+
+	SDL_RWops *fp = SDL_RWFromFile(getAbsoluteFilePath(path).c_str(), "rb");
+	return fp;
+}
+
+SDL_RWops * openFile(uint32_t path) {
+	FILE *oFP = fopen(getAbsoluteFilePath(path).c_str(), "rb");
+
+	SDL_RWops *fp = SDL_RWFromFP(oFP, SDL_TRUE);
+	return fp;
 }
 
 std::unordered_map<uint32_t, xbgFile> xbgs;

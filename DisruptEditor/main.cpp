@@ -28,6 +28,7 @@
 #include "batchFile.h"
 #include "Audio.h"
 #include "CommandHandler.h"
+#include "ImGuizmo.h"
 
 struct BuildingEntity {
 	std::string wlu;
@@ -196,16 +197,18 @@ int main(int argc, char **argv) {
 		reloadSettings();
 
 		loadingScreen->setTitle("Loading WLUs");
-		Vector<FileInfo> files = getFileListFromAbsDir(settings.patchDir + "/worlds/windy_city/generated/wlu", "xml.data.fcb");
+		Vector<FileInfo> files = getFileList("worlds/windy_city/generated/wlu", "xml.data.fcb");
 		for (FileInfo &file : files) {
 			SDL_Log("Loading %s\n", file.name.c_str());
+			loadingScreen->setProgress(file.name, (&file - &files[0]) / (float)files.size());
 			wlus[file.name].shortName = file.name;
 			wlus[file.name].open(file.fullPath);
 			SDL_PumpEvents();
 		}
-		files = getFileListFromAbsDir(settings.patchDir + "/worlds/san_francisco/generated/wlu", "wlu");
+		files = getFileList("worlds/san_francisco/generated/wlu", "wlu");
 		for (FileInfo &file : files) {
-			SDL_Log("Loading %s\n", file.name.c_str());
+			SDL_Log("Loading %s\n", file.name.c_str(), (&file - &files[0]) / (float)files.size());
+			loadingScreen->setProgress(file.name);
 			wlus[file.name].shortName = file.name;
 			wlus[file.name].open(file.fullPath);
 			SDL_PumpEvents();
@@ -220,9 +223,9 @@ int main(int argc, char **argv) {
 		loadingScreen->setTitle("Loading Entity Library");
 		loadEntityLibrary();
 
-		SDL_PumpEvents();
+		/*SDL_PumpEvents();
 		loadingScreen->setTitle("Loading Language Files");
-		Dialog::instance();
+		Dialog::instance();*/
 
 		SDL_PumpEvents();
 		loadingScreen->setTitle("Loading Particle Library");
@@ -298,6 +301,7 @@ int main(int argc, char **argv) {
 	bool windowOpen = true;
 	while (windowOpen) {
 		ImGui_ImplSdlGL3_NewFrame(window);
+		ImGuizmo::BeginFrame();
 		glClearColor(0.2f, 0.2f, 0.2f, 1.f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		glBindVertexArray(RenderInterface::instance().VertexArrayID);
@@ -535,7 +539,7 @@ int main(int argc, char **argv) {
 			auto &soundidlinelinks = Dialog::instance().soundidlinelinks;
 
 			static spkFile file;
-			char search[500];
+			char search[500] = {0};
 			ImGui::InputText("Search", search, sizeof(search));
 
 			for (auto it : locStrings) {
@@ -675,8 +679,8 @@ int main(int argc, char **argv) {
 				Node &entity = *entityPtr;
 
 				Attribute *hidName = entity.getAttribute("hidName");
-				Attribute *hidPos = entity.getAttribute("hidPos");
-				glm::vec3 pos = *(glm::vec3*)hidPos->buffer.data();
+				glm::vec3 &pos = entity.get<glm::vec3>("hidPos");
+				glm::vec3 &angles = entity.get<glm::vec3>("hidAngles");
 
 				//
 				Node *hidBBox = entity.findFirstChild("hidBBox");
@@ -691,7 +695,13 @@ int main(int argc, char **argv) {
 					if (XBG && XBG->buffer.size() > 5) {
 						auto &model = loadXBG((char*)XBG->buffer.data());
 						renderInterface.model.use();
-						glm::mat4 MVP = renderInterface.VP * glm::translate(glm::mat4(), pos);
+
+						glm::mat4 modelMatrix = glm::translate(glm::mat4(), pos);
+						modelMatrix = glm::rotate(modelMatrix, angles.x, glm::vec3(1, 0, 0));
+						modelMatrix = glm::rotate(modelMatrix, angles.y, glm::vec3(0, 1, 0));
+						modelMatrix = glm::rotate(modelMatrix, angles.z, glm::vec3(0, 0, 1));
+
+						glm::mat4 MVP = renderInterface.VP * modelMatrix;
 						glUniformMatrix4fv(renderInterface.model.uniforms["MVP"], 1, GL_FALSE, &MVP[0][0]);
 						model.draw();
 					}
@@ -791,6 +801,7 @@ int main(int argc, char **argv) {
 		glBindVertexArray(RenderInterface::instance().VertexArrayID);
 		dd::flush(0);
 		ImGui::Render();
+		ImGui_ImplSdlGL3_RenderDrawData(ImGui::GetDrawData());
 		SDL_GL_SwapWindow(window);
 		frameCount++;
 

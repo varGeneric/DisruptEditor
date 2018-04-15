@@ -22,7 +22,7 @@
     <ProjectGuid>{60CE386B-2172-4878-82D2-C20B51DD60EA}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>DisruptEditor</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -167,9 +167,11 @@
     <ClCompile Include="Hash.cpp" />
     <ClCompile Include="hkxFile.cpp" />
     <ClCompile Include="imgui.cpp" />
+    <ClCompile Include="ImGuizmo.cpp" />
     <ClCompile Include="imgui_draw.cpp" />
     <ClCompile Include="imgui_impl_sdl_gl3.cpp" />
     <ClCompile Include="Implementation.cpp" />
+    <ClCompile Include="ImSequencer.cpp" />
     <ClCompile Include="LoadingScreen.cpp" />
     <ClCompile Include="locFile.cpp" />
     <ClCompile Include="main.cpp" />
@@ -206,8 +208,10 @@
     <ClInclude Include="GLHelper.h" />
     <ClInclude Include="Hash.h" />
     <ClInclude Include="hkxFile.h" />
+    <ClInclude Include="ImGuizmo.h" />
     <ClInclude Include="imgui_impl_sdl_gl3.h" />
     <ClInclude Include="Implementation.h" />
+    <ClInclude Include="ImSequencer.h" />
     <ClInclude Include="khrplatform.h" />
     <ClInclude Include="LoadingScreen.h" />
     <ClInclude Include="locFile.h" />
@@ -237,6 +241,9 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="Icon.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="NatvisFile.natvis" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

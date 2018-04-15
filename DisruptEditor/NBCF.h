@@ -47,6 +47,11 @@ public:
 	Attribute* getAttribute(const char* name);
 	Attribute* getAttribute(uint32_t hash);
 
+	template <typename T>
+	T& get(const char* name);
+	template <typename T>
+	T& get(uint32_t hash);
+
 	int countNodes();
 
 	std::string getHashName();
@@ -62,3 +67,25 @@ Node readFCB(const char* filename);
 Node readFCB(SDL_RWops *fp);
 
 void writeFCBB(SDL_RWops *fp, Node &node);
+
+template<typename T>
+inline T & Node::get(const char * name) {
+	static T dummy;
+	Attribute *attr = getAttribute(name);
+	if (attr) {
+		SDL_assert_release(sizeof(T) == attr->buffer.size());
+		return *((T*)attr->buffer.data());
+	}
+	return dummy;
+}
+
+template<typename T>
+inline T & Node::get(uint32_t hash) {
+	static T dummy;
+	Attribute *attr = getAttribute(hash);
+	if (attr) {
+		SDL_assert_release(sizeof(T) == attr->buffer.size());
+		return *((T*)attr->buffer.data());
+	}
+	return dummy;
+}

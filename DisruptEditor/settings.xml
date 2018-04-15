@@ -1,16 +1,17 @@
 <Settings>
-	<PackFolder src="D:\Desktop\bin\patch\" />
-	<PackFolder src="D:\Desktop\bin\dlc_solo\" />
-	<PackFolder src="D:\Desktop\bin\dlc_solo_english\" />
-	<PackFolder src="D:\Desktop\bin\dlc_pill_people\" />
-	<PackFolder src="D:\Desktop\bin\windy_city\" />
-	<PackFolder src="D:\Desktop\bin\windy_city_english\" />
-	<PackFolder src="D:\Desktop\bin\shaders\" />
-	<PackFolder src="D:\Desktop\bin\shadersobj\" />
-	<PackFolder src="D:\Desktop\bin\sound\" />
-	<PackFolder src="D:\Desktop\bin\sound_english\" />
+	<PackFolder src="F:\bin\patch_mod\" />
+	<PackFolder src="F:\bin\dlc_solo\" />
+	<PackFolder src="F:\bin\dlc_solo_english\" />
+	<PackFolder src="F:\bin\dlc_pill_people\" />
+	<PackFolder src="F:\bin\windy_city\" />
+	<PackFolder src="F:\bin\windy_city_english\" />
+	<PackFolder src="F:\bin\shaders\" />
+	<PackFolder src="F:\bin\shadersobj\" />
+	<PackFolder src="F:\bin\sound\" />
+	<PackFolder src="F:\bin\sound_english\" />
+	<PackFolder src="F:\bin\common\" />
 
-	<patchDir src="C:\Program Files\Ubisoft\WATCH_DOGS\data_win64\patch" />
+	<patchDir src="F:\bin\patch_mod\" />
 	<textDrawDistance src="5" />
-	<drawBuildings src="1" />
+	<drawBuildings src="0" />
 </Settings>

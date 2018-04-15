@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+  <Type Name="Vector&lt;*&gt;">
+    <DisplayString Condition="mEnd == mBegin">[{mEnd - mBegin}] {{}}</DisplayString>
+    <DisplayString Condition="mEnd - mBegin == 1">[{mEnd - mBegin}] {{ {*mBegin} }}</DisplayString>
+    <DisplayString Condition="mEnd - mBegin == 2">[{mEnd - mBegin}] {{ {*mBegin}, {*(mBegin+1)} }}</DisplayString>
+    <DisplayString Condition="mEnd - mBegin == 3">[{mEnd - mBegin}] {{ {*mBegin}, {*(mBegin+1)}, {*(mBegin+2)} }}</DisplayString>
+    <DisplayString Condition="mEnd - mBegin == 4">[{mEnd - mBegin}] {{ {*mBegin}, {*(mBegin+1)}, {*(mBegin+2)}, {*(mBegin+3)} }}</DisplayString>
+    <DisplayString Condition="mEnd - mBegin == 5">[{mEnd - mBegin}] {{ {*mBegin}, {*(mBegin+1)}, {*(mBegin+2)}, {*(mBegin+3)}, {*(mBegin+4)} }}</DisplayString>
+    <DisplayString Condition="mEnd - mBegin == 6">[{mEnd - mBegin}] {{ {*mBegin}, {*(mBegin+1)}, {*(mBegin+2)}, {*(mBegin+3)}, {*(mBegin+4)}, {*(mBegin+5)} }}</DisplayString>
+    <DisplayString Condition="mEnd - mBegin &gt; 6">[{mEnd - mBegin}] {{ {*mBegin}, {*(mBegin+1)}, {*(mBegin+2)}, {*(mBegin+3)}, {*(mBegin+4)}, {*(mBegin+5)}, ... }}</DisplayString>
+    <Expand>
+      <Item Name="[size]">mEnd - mBegin</Item>
+      <Item Name="[capacity]">mCapacity - mBegin</Item>
+      <ArrayItems>
+        <Size>mEnd - mBegin</Size>
+        <ValuePointer>mBegin</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <Type Name="String">
+    <DisplayString>{str,s}</DisplayString>
+    <!--<Item Name="length">mEnd - mBegin</Item>
+    <Item Name="capacity">mCapacity - mBegin</Item>
+    <Item Name="value">mBegin,sb</Item>-->
+  </Type>
+</AutoVisualizer>
