@@ -13,7 +13,7 @@ struct sbaoLayer {
 	void replace(const char* filename);
 	void save(const char* filename);
 
-	enum Type { VORBIS, PCM };
+	enum Type { VORBIS, PCM, ADPCM };
 	Type type;
 	int play(bool loop);
 };
@@ -23,7 +23,9 @@ public:
 	void open(const char* filename);
 	void open(SDL_RWops* fp);
 	void save(const char* filename);
+	Vector<uint8_t> save();
 	Vector<sbaoLayer> layers;
+	uint32_t id;
 private:
 	void fillCache();
 };

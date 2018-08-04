@@ -235,9 +235,22 @@ void sbaoFile::open(SDL_RWops *fp) {
 void sbaoFile::save(const char * filename) {
 	if (!filename) return;
 
+	Vector<uint8_t> data = save();
+	SDL_RWops *fp = SDL_RWFromFile(filename, "wb");
+	if (!fp) return;
+	SDL_RWwrite(fp, data.data(), 1, data.size());
+	SDL_RWclose(fp);
+}
+
+Vector<uint8_t> sbaoFile::save() {
+	uint8_t data[1024 * 1024 * 64];
+	SDL_RWops *fp = SDL_RWFromMem(data, sizeof(data));
+	size_t size = 0;
+
 	if (layers.empty()) {
 		SDL_ShowSimpleMessageBox(0, "Dare Error", "You don't have any layers, please add some", NULL);
-		return;
+		SDL_RWclose(fp);
+		return Vector<uint8_t>();
 	}
 
 	if (layers.size() > 1) {
@@ -248,14 +261,9 @@ void sbaoFile::save(const char * filename) {
 		for (sbaoLayer &layer : layers) {
 			if (layer.samples != totalSamples || layer.sampleRate != sampleRate || layer.channels != channels) {
 				SDL_ShowSimpleMessageBox(0, "Dare Error", "Your layers do not have equivalent attributes", NULL);
-				return;
+				SDL_RWclose(fp);
+				return Vector<uint8_t>();
 			}
-		}
-
-		SDL_RWops *fp = SDL_RWFromFile(filename, "wb");
-		if (!fp) {
-			SDL_ShowSimpleMessageBox(0, "Dare Saving Error", SDL_GetError(), NULL);
-			return;
 		}
 
 		Vector< Vector<uint8_t> > headers(layers.size());
@@ -289,7 +297,7 @@ void sbaoFile::save(const char * filename) {
 		size_t infoOffset = SDL_RWtell(fp);
 		SDL_RWwrite(fp, infoTable.data(), sizeof(uint32_t), infoTable.size());
 		writeZero(fp, 64 - layers.size() * 4);
-		
+
 		//Write Header sizes
 		for (int i = 0; i < layers.size(); ++i)
 			SDL_WriteLE32(fp, headers[i].size());
@@ -305,7 +313,7 @@ void sbaoFile::save(const char * filename) {
 			SDL_WriteLE32(fp, 3);//BlockId
 			SDL_WriteLE32(fp, blockI == totalBlocks - 1 ? 0 : 340);//unk
 
-			// Read in the block sizes
+																   // Read in the block sizes
 			for (unsigned long i = 0; i < layers.size(); i++) {
 				uint32_t left = layers[i].data.end() - ptrs[i];
 				uint32_t out = std::min(left, (uint32_t)162);
@@ -323,25 +331,21 @@ void sbaoFile::save(const char * filename) {
 			}
 		}
 
+		size = SDL_RWtell(fp);
+
 		//Rewrite info table
 		SDL_RWseek(fp, infoOffset, RW_SEEK_SET);
 		SDL_RWwrite(fp, infoTable.data(), sizeof(uint32_t), infoTable.size());
-
-		SDL_RWclose(fp);
-		return;
+	} else {
+		sbaoHeader head;
+		SDL_RWwrite(fp, &head, sizeof(head), 1);
+		SDL_RWwrite(fp, layers[0].data.data(), 1, layers[0].data.size());
+		size = SDL_RWtell(fp);
 	}
 
-	SDL_RWops *fp = SDL_RWFromFile(filename, "wb");
-	if (!fp) {
-		SDL_ShowSimpleMessageBox(0, "Dare Saving Error", SDL_GetError(), NULL);
-		return;
-	}
-
-	sbaoHeader head;
-	SDL_RWwrite(fp, &head, sizeof(head), 1);
-	SDL_RWwrite(fp, layers[0].data.data(), 1, layers[0].data.size());
-
-	SDL_RWclose(fp);
+	Vector<uint8_t> d(size);
+	memcpy(d.data(), data, size);
+	return d;
 }
 
 void sbaoFile::fillCache() {

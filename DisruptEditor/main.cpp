@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
 	srand(time(NULL));
 
 	if (argc > 1) {
-		const char* filename = argv[2];
+		const char* filename = argv[1];
 		handleFile(filename);
 
 		return 0;
@@ -532,7 +532,7 @@ int main(int argc, char **argv) {
 			ImGui::End();
 		}
 
-		ImGui::SetNextWindowSize(ImVec2(400, 200), ImGuiCond_FirstUseEver);
+		/*ImGui::SetNextWindowSize(ImVec2(400, 200), ImGuiCond_FirstUseEver);
 		ImGui::SetNextWindowPos(ImVec2(80.f, 80.f), ImGuiCond_FirstUseEver);
 		if (windows["LocString"] && ImGui::Begin("LocString", &windows["LocString"], 0)) {
 			auto &locStrings = Dialog::instance().locStrings;
@@ -569,7 +569,7 @@ int main(int argc, char **argv) {
 			}
 
 			ImGui::End();
-		}
+		}*/
 
 		ImGui::SetNextWindowSize(ImVec2(400, 200), ImGuiCond_FirstUseEver);
 		ImGui::SetNextWindowPos(ImVec2(80.f, 80.f), ImGuiCond_FirstUseEver);

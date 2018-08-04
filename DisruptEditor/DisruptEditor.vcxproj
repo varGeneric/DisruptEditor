@@ -151,6 +151,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Adpcm.cpp" />
     <ClCompile Include="Audio.cpp" />
     <ClCompile Include="batchFile.cpp" />
     <ClCompile Include="Camera.cpp" />
@@ -189,6 +190,7 @@
     <ClCompile Include="xbtFile.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Adpcm.h" />
     <ClInclude Include="Audio.h" />
     <ClInclude Include="batchFile.h" />
     <ClInclude Include="bootSound.h" />
@@ -203,6 +205,7 @@
     <ClInclude Include="debug_draw.hpp" />
     <ClInclude Include="Dialog.h" />
     <ClInclude Include="DominoBox.h" />
+    <ClInclude Include="dr_wav.h" />
     <ClInclude Include="Entity.h" />
     <ClInclude Include="glad.h" />
     <ClInclude Include="GLHelper.h" />
