@@ -46,6 +46,32 @@ void reloadSettings() {
 	if (doc.RootElement()->FirstChildElement("drawBuildings"))
 		settings.drawBuildings = doc.RootElement()->FirstChildElement("drawBuildings")->BoolAttribute("src");
 
+	if (doc.RootElement()->FirstChildElement("Controls")) {
+		if (doc.RootElement()->FirstChildElement("Controls")->FirstChildElement("Forward"))
+			settings.keyForward = static_cast<SDL_Scancode>(doc.RootElement()->FirstChildElement("Controls")->FirstChildElement("Forward")->IntAttribute("key"));
+
+		if (doc.RootElement()->FirstChildElement("Controls")->FirstChildElement("Backward"))
+			settings.keyBackward = static_cast<SDL_Scancode>(doc.RootElement()->FirstChildElement("Controls")->FirstChildElement("Backward")->IntAttribute("key"));
+
+		if (doc.RootElement()->FirstChildElement("Controls")->FirstChildElement("Left"))
+			settings.keyLeft = static_cast<SDL_Scancode>(doc.RootElement()->FirstChildElement("Controls")->FirstChildElement("Left")->IntAttribute("key"));
+
+		if (doc.RootElement()->FirstChildElement("Controls")->FirstChildElement("Right"))
+			settings.keyRight = static_cast<SDL_Scancode>(doc.RootElement()->FirstChildElement("Controls")->FirstChildElement("Right")->IntAttribute("key"));
+
+		if (doc.RootElement()->FirstChildElement("Controls")->FirstChildElement("Ascend"))
+			settings.keyAscend = static_cast<SDL_Scancode>(doc.RootElement()->FirstChildElement("Controls")->FirstChildElement("Ascend")->IntAttribute("key"));
+
+		if (doc.RootElement()->FirstChildElement("Controls")->FirstChildElement("Descend"))
+			settings.keyDescend = static_cast<SDL_Scancode>(doc.RootElement()->FirstChildElement("Controls")->FirstChildElement("Descend")->IntAttribute("key"));
+
+		if (doc.RootElement()->FirstChildElement("Controls")->FirstChildElement("Fast"))
+			settings.keyFast = static_cast<SDL_Keymod>(doc.RootElement()->FirstChildElement("Controls")->FirstChildElement("Fast")->IntAttribute("keyMod"));
+
+		if (doc.RootElement()->FirstChildElement("Controls")->FirstChildElement("Slow"))
+			settings.keySlow = static_cast<SDL_Keymod>(doc.RootElement()->FirstChildElement("Controls")->FirstChildElement("Slow")->IntAttribute("keyMod"));
+	}
+
 	//Reload Filelist
 	knownFiles.clear();
 	FILE* fp = fopen("res/Watch Dogs.filelist", "r");

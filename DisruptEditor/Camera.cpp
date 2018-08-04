@@ -14,18 +14,19 @@ void Camera::update(float delta) {
 	switch (type) {
 		case FLYCAM:
 		{
+			// Defualt controls now defined in Common.h
 			const Uint8 *state = SDL_GetKeyboardState(NULL);
-			bool moveForward = state[SDL_SCANCODE_W];
-			bool moveBackward = state[SDL_SCANCODE_S];
-			bool moveLeft = state[SDL_SCANCODE_A];
-			bool moveRight = state[SDL_SCANCODE_D];
-			bool moveUp = state[SDL_SCANCODE_R];
-			bool moveDown = state[SDL_SCANCODE_F];
+			bool moveForward = state[keyForward];
+			bool moveBackward = state[keyBackward];
+			bool moveLeft = state[keyLeft];
+			bool moveRight = state[keyRight];
+			bool moveUp = state[keyAscend];
+			bool moveDown = state[keyDescend];
 
 			float actualMoveSpeed = delta * 10.f * flyMultiplier;
-			if (SDL_GetModState() & KMOD_LCTRL)
+			if (SDL_GetModState() & keySlow)
 				actualMoveSpeed /= 10.f;
-			if (SDL_GetModState() & KMOD_LSHIFT)
+			if (SDL_GetModState() & keyFast)
 				actualMoveSpeed *= 20.f;
 
 			float dx = sinf(phi) * cosf(theta) * actualMoveSpeed;

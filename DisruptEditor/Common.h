@@ -7,6 +7,8 @@
 #include "glm/glm.hpp"
 #include "glad.h"
 #include <SDL_rwops.h>
+#include <SDL_scancode.h>
+#include <SDL_keycode.h>
 
 class xbgFile;
 class materialFile;
@@ -18,6 +20,16 @@ struct Settings {
 	std::string patchDir;
 	float textDrawDistance = 5.f;
 	bool drawBuildings = true;
+
+	// Camera controls
+	SDL_Scancode keyForward = SDL_SCANCODE_W;
+	SDL_Scancode keyBackward = SDL_SCANCODE_S;
+	SDL_Scancode keyLeft = SDL_SCANCODE_A;
+	SDL_Scancode keyRight = SDL_SCANCODE_D;
+	SDL_Scancode keyAscend = SDL_SCANCODE_SPACE;
+	SDL_Scancode keyDescend = SDL_SCANCODE_LALT;
+	SDL_Keymod keyFast = KMOD_LSHIFT;
+	SDL_Keymod keySlow = KMOD_LCTRL;
 };
 
 extern Settings settings;

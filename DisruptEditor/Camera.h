@@ -1,5 +1,7 @@
 #pragma once
 #include "glm/glm.hpp"
+#include <SDL_scancode.h>
+#include <SDL_keycode.h>
 
 class Camera {
 public:
@@ -26,4 +28,14 @@ public:
 	float fov;
 
 	float flyMultiplier;
+
+	SDL_Scancode keyForward;
+	SDL_Scancode keyBackward;
+	SDL_Scancode keyLeft;
+	SDL_Scancode keyRight;
+	SDL_Scancode keyAscend;
+	SDL_Scancode keyDescend;
+
+	SDL_Keymod keyFast;
+	SDL_Keymod keySlow;
 };

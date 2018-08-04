@@ -1,17 +1,22 @@
 <Settings>
-	<PackFolder src="F:\bin\patch_mod\" />
-	<PackFolder src="F:\bin\dlc_solo\" />
-	<PackFolder src="F:\bin\dlc_solo_english\" />
-	<PackFolder src="F:\bin\dlc_pill_people\" />
-	<PackFolder src="F:\bin\windy_city\" />
-	<PackFolder src="F:\bin\windy_city_english\" />
-	<PackFolder src="F:\bin\shaders\" />
-	<PackFolder src="F:\bin\shadersobj\" />
-	<PackFolder src="F:\bin\sound\" />
-	<PackFolder src="F:\bin\sound_english\" />
-	<PackFolder src="F:\bin\common\" />
+	<!--<PackFolder src="D:\Watch Dogs Modding\Revival\patchrevival_unpack" />-->
+	
+	<!--
+	<PackFolder src="D:\Watch Dogs Modding\_StockUnpacks\dlc\dlc_solo\dlc_solo_unpack" />
+	<PackFolder src="D:\Watch Dogs Modding\_StockUnpacks\dlc\dlc_solo\dlc_solo_english_unpack" />
+	<PackFolder src="D:\Watch Dogs Modding\_StockUnpacks\dlc\dlc_exclusive\dlc_exclusive_unpack" />
+	<PackFolder src="D:\Watch Dogs Modding\_StockUnpacks\dlc\dlc_exclusive\dlc_exclusive_english_unpack" />
+	-->
+	<PackFolder src="D:\Watch Dogs Modding\_StockUnpacks\patch_unpack" />
+	<PackFolder src="D:\Watch Dogs Modding\_StockUnpacks\worlds\windy_city\windy_city_unpack" />
+	<PackFolder src="D:\Watch Dogs Modding\_StockUnpacks\worlds\windy_city\windy_city_english_unpack" />
+	<PackFolder src="D:\Watch Dogs Modding\_StockUnpacks\shaders_unpack" />
+	<PackFolder src="D:\Watch Dogs Modding\_StockUnpacks\shadersobj_unpack" />
+	<PackFolder src="D:\Watch Dogs Modding\_StockUnpacks\sound_unpack" />
+	<PackFolder src="D:\Watch Dogs Modding\_StockUnpacks\sound_english_unpack" />
+	<PackFolder src="D:\Watch Dogs Modding\_StockUnpacks\common_unpack" />
 
-	<patchDir src="F:\bin\patch_mod\" />
+	<patchDir src="D:\Watch Dogs Modding\Revival\patchrevival_unpack" />
 	<textDrawDistance src="5" />
 	<drawBuildings src="0" />
 </Settings>

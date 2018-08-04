@@ -197,6 +197,14 @@ int main(int argc, char **argv) {
 	{
 		loadingScreen->setTitle("Scanning Files");
 		reloadSettings();
+		camera.keyForward = settings.keyForward;
+		camera.keyBackward = settings.keyBackward;
+		camera.keyLeft = settings.keyLeft;
+		camera.keyRight = settings.keyRight;
+		camera.keyAscend = settings.keyAscend;
+		camera.keyDescend = settings.keyDescend;
+		camera.keyFast = settings.keyFast;
+		camera.keySlow = settings.keySlow;
 
 		loadingScreen->setTitle("Loading WLUs");
 		Vector<FileInfo> files = getFileList("worlds/windy_city/generated/wlu", "xml.data.fcb");
@@ -323,6 +331,9 @@ int main(int argc, char **argv) {
 		renderInterface.VP = renderInterface.Projection * renderInterface.View;
 
 		ImGui::BeginMainMenuBar();
+		if (ImGui::MenuItem("Layers")) {
+			windows["Layers"] ^= true;
+		}
 		if (ImGui::MenuItem("Entity Library")) {
 			windows["EntityLibrary"] ^= true;
 		}
@@ -411,188 +422,201 @@ int main(int argc, char **argv) {
 		
 		ImGui::SetNextWindowSize(ImVec2(1000, 360), ImGuiCond_FirstUseEver);
 		ImGui::SetNextWindowPos(ImVec2(7.f, 537.f), ImGuiCond_FirstUseEver);
-		if (windows["EntityLibrary"] && ImGui::Begin("Entity Library", &windows["EntityLibrary"], 0)) {
-			//ImGui::PushItemWidth(-1.f);
-			static char searchBuffer[255] = { '\0' };
-			ImGui::InputText("##Search", searchBuffer, sizeof(searchBuffer));
+		if (windows["EntityLibrary"]) {
+			if (ImGui::Begin("Entity Library", &windows["EntityLibrary"], 0)) {
+				//ImGui::PushItemWidth(-1.f);
+				static char searchBuffer[255] = { '\0' };
+				ImGui::InputText("##Search", searchBuffer, sizeof(searchBuffer));
 
-			ImVec2 resSize = ImGui::GetContentRegionAvail();
-			float left = resSize.x;
+				ImVec2 resSize = ImGui::GetContentRegionAvail();
+				float left = resSize.x;
 
-			//ImGui::ListBoxHeader("##Entity List", resSize);
-			for (auto it = entityLibrary.begin(); it != entityLibrary.end(); ++it) {
-				Node &entity = it->second;
+				//ImGui::ListBoxHeader("##Entity List", resSize);
+				for (auto it = entityLibrary.begin(); it != entityLibrary.end(); ++it) {
+					Node &entity = it->second;
 
-				int i = entity.children.size();
+					int i = entity.children.size();
 
-				std::string name = (const char*)entity.getAttribute("hidName")->buffer.data();
-				if (name.find(searchBuffer) != std::string::npos) {
-					ImGui::PushID(name.c_str());
-					ImGui::Image((ImTextureID)generateEntityIcon(&entity), ImVec2(128.f, 128.f));
-					ImGui::PopID();
+					std::string name = (const char*)entity.getAttribute("hidName")->buffer.data();
+					if (name.find(searchBuffer) != std::string::npos) {
+						ImGui::PushID(name.c_str());
+						ImGui::Image((ImTextureID)generateEntityIcon(&entity), ImVec2(128.f, 128.f));
+						ImGui::PopID();
 
-					if(ImGui::IsItemHovered())
-						ImGui::SetTooltip("%s", name.c_str());
+						if (ImGui::IsItemHovered())
+							ImGui::SetTooltip("%s", name.c_str());
 
-					left -= ImGui::GetItemRectSize().x;
-					if (left > ImGui::GetItemRectSize().x + 60.f)
-						ImGui::SameLine();
-					else
-						left = resSize.x;
+						left -= ImGui::GetItemRectSize().x;
+						if (left > ImGui::GetItemRectSize().x + 60.f)
+							ImGui::SameLine();
+						else
+							left = resSize.x;
+					}
 				}
+				//ImGui::ListBoxFooter();
+				//ImGui::PopItemWidth();
 			}
-			//ImGui::ListBoxFooter();
-			//ImGui::PopItemWidth();
 			ImGui::End();
 		}
 
-		if (windows["DARE"] && ImGui::Begin("DARE Converter", &windows["DARE"], 0)) {
-			static sbaoFile file;
-			static spkFile spkFile;
-			static int currentSound = 0;
-			if (ImGui::Button("Open")) {
-				//spkFile.open(noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "spk\0*.spk\0sbao\0*.sbao\0", NULL, NULL));
-				//file = spkFile.sbao;
-				file.open(noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "sbao\0*.sbao\0", NULL, NULL));
-			}
-			ImGui::SameLine();
-			if (ImGui::Button("Save")) {
-				file.save(noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "sbao\0*.sbao\0", NULL, NULL));
-			}
-			ImGui::SameLine();
-			if (ImGui::Button("Add Layer")) {
-				sbaoLayer &layer = file.layers.push_back();
-				layer.replace( noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "ogg\0*.ogg\0", NULL, NULL) );
-			}
-			ImGui::SameLine();
-			if (ImGui::Button("Clear Layers")) {
-				file.layers.clear();
-			}
-			ImGui::SameLine();
-			if (ImGui::Button("Stop All")) {
-				Audio::instance().stopAll();
-			}
-
-			int layerNum = 1;
-			for (auto it = file.layers.begin(); it != file.layers.end(); ++it) {
-				ImGui::PushID(it);
-				ImGui::Text("%u", layerNum);
-				ImGui::SameLine();
-				if (ImGui::Button("Play")) {
-					Audio::instance().stopSound(currentSound);
-					currentSound = it->play(false);
-				}
-				ImGui::SameLine();
-				if (ImGui::Button("Loop")) {
-					Audio::instance().stopSound(currentSound);
-					currentSound = it->play(true);
-				}
-				ImGui::SameLine();
-				ImGui::Text("Raw Size: %u, Samples: %i, Channels: %i, Sample Rate: %i", it->data.size(), it->samples, it->channels, it->sampleRate);
-				ImGui::SameLine();
-				if (ImGui::Button("Replace")) {
-					it->replace( noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "ogg\0*.ogg\0", NULL, NULL) );
+		if (windows["DARE"]) {
+			if (ImGui::Begin("DARE Converter", &windows["DARE"], 0)) {
+				static sbaoFile file;
+				static spkFile spkFile;
+				static int currentSound = 0;
+				if (ImGui::Button("Open")) {
+					//spkFile.open(noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "spk\0*.spk\0sbao\0*.sbao\0", NULL, NULL));
+					//file = spkFile.sbao;
+					file.open(noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "sbao\0*.sbao\0", NULL, NULL));
 				}
 				ImGui::SameLine();
 				if (ImGui::Button("Save")) {
-					it->save(noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "ogg\0*.ogg\0", NULL, NULL));
+					file.save(noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "sbao\0*.sbao\0", NULL, NULL));
 				}
 				ImGui::SameLine();
-				if (ImGui::Button("Delete")) {
-					file.layers.erase(it);
-					ImGui::PopID();
-					break;
+				if (ImGui::Button("Add Layer")) {
+					sbaoLayer &layer = file.layers.push_back();
+					layer.replace(noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "ogg\0*.ogg\0", NULL, NULL));
+				}
+				ImGui::SameLine();
+<<<<<<< HEAD
+				if (ImGui::Button("Save")) {
+					it->save(noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "ogg\0*.ogg\0", NULL, NULL));
+=======
+				if (ImGui::Button("Clear Layers")) {
+					file.layers.clear();
+>>>>>>> Forgot to stage the changes last time.
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("Stop All")) {
+					Audio::instance().stopAll();
 				}
 
-				ImGui::PopID();
-				layerNum++;
-			}
+				int layerNum = 1;
+				for (auto it = file.layers.begin(); it != file.layers.end(); ++it) {
+					ImGui::PushID(it);
+					ImGui::Text("%u", layerNum);
+					ImGui::SameLine();
+					if (ImGui::Button("Play")) {
+						Audio::instance().stopSound(currentSound);
+						currentSound = it->play(false);
+					}
+					ImGui::SameLine();
+					if (ImGui::Button("Loop")) {
+						Audio::instance().stopSound(currentSound);
+						currentSound = it->play(true);
+					}
+					ImGui::SameLine();
+					ImGui::Text("Raw Size: %u, Samples: %i, Channels: %i, Sample Rate: %i", it->data.size(), it->samples, it->channels, it->sampleRate);
+					ImGui::SameLine();
+					if (ImGui::Button("Replace")) {
+						it->replace(noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "ogg\0*.ogg\0", NULL, NULL));
+					}
+					ImGui::SameLine();
+					if (ImGui::Button("Save")) {
+						it->save(noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "ogg\0*.ogg\0", NULL, NULL));
+					}
+					ImGui::SameLine();
+					if (ImGui::Button("Delete")) {
+						file.layers.erase(it);
+						ImGui::PopID();
+						break;
+					}
 
+					ImGui::PopID();
+					layerNum++;
+				}
+			}
 			ImGui::End();
 		}
 
-		if (windows["Domino"] && ImGui::Begin("Domino!", &windows["Domino"], ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
-			static DominoBox db;
-			ImGui::BeginMenuBar();
-			if (ImGui::MenuItem("Open")) {
-			}
-			if (ImGui::MenuItem("Save")) {
-			}
-			if (ImGui::MenuItem("Save As")) {
-			}
-			if (ImGui::MenuItem("Import Lua")) {
-				const char *currentFile = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, NULL, NULL, NULL);
-				db.open(currentFile);
-			}
-			if (ImGui::MenuItem("Export Lua")) {
-				const char *currentFile = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, NULL, NULL, NULL);
-			}
-			ImGui::EndMenuBar();
+		if (windows["Domino"]) {
+			if (ImGui::Begin("Domino!", &windows["Domino"], ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
+				static DominoBox db;
+				ImGui::BeginMenuBar();
+				if (ImGui::MenuItem("Open")) {
+				}
+				if (ImGui::MenuItem("Save")) {
+				}
+				if (ImGui::MenuItem("Save As")) {
+				}
+				if (ImGui::MenuItem("Import Lua")) {
+					const char *currentFile = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, NULL, NULL, NULL);
+					db.open(currentFile);
+				}
+				if (ImGui::MenuItem("Export Lua")) {
+					const char *currentFile = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, NULL, NULL, NULL);
+				}
+				ImGui::EndMenuBar();
 
-			db.draw();
-
+				db.draw();
+			}
 			ImGui::End();
 		}
 
 		/*ImGui::SetNextWindowSize(ImVec2(400, 200), ImGuiCond_FirstUseEver);
 		ImGui::SetNextWindowPos(ImVec2(80.f, 80.f), ImGuiCond_FirstUseEver);
-		if (windows["LocString"] && ImGui::Begin("LocString", &windows["LocString"], 0)) {
-			auto &locStrings = Dialog::instance().locStrings;
-			auto &soundidlinelinks = Dialog::instance().soundidlinelinks;
+		if (windows["LocString"]) {
+			if (ImGui::Begin("LocString", &windows["LocString"], 0)) {
+				auto &locStrings = Dialog::instance().locStrings;
+				auto &soundidlinelinks = Dialog::instance().soundidlinelinks;
 
-			static spkFile file;
-			char search[500] = {0};
-			ImGui::InputText("Search", search, sizeof(search));
+				static spkFile file;
+				char search[500] = { 0 };
+				ImGui::InputText("Search", search, sizeof(search));
 
-			for (auto it : locStrings) {
-				//ImGui::Text("%i %s", it.first, it.second.c_str());
+				for (auto it : locStrings) {
+					//ImGui::Text("%i %s", it.first, it.second.c_str());
 
-				if (it.second.find(search) == std::string::npos && strlen(search) != 0)
-					continue;
-
-				if (soundidlinelinks.count(it.first)) {
-					char imguiline[500];
-					char buffer[500];
-					snprintf(imguiline, sizeof(imguiline), "%i %08x %s", it.first, soundidlinelinks[it.first], it.second.c_str());
-					snprintf(buffer, sizeof(buffer), "soundbinary\\%08x.spk", soundidlinelinks[it.first]);
-					if (getAbsoluteFilePath(buffer).empty()) {
-						soundidlinelinks.erase(it.first);
+					if (it.second.find(search) == std::string::npos && strlen(search) != 0)
 						continue;
-					}
-					if (ImGui::Selectable(imguiline)) {
-						file.sbao.layers.clear();
 
-						Audio::instance().stopAll();
-						file.open(getAbsoluteFilePath(buffer).c_str());
-						if(!file.sbao.layers.empty())
-							file.sbao.layers[0].play(false);
+					if (soundidlinelinks.count(it.first)) {
+						char imguiline[500];
+						char buffer[500];
+						snprintf(imguiline, sizeof(imguiline), "%i %08x %s", it.first, soundidlinelinks[it.first], it.second.c_str());
+						snprintf(buffer, sizeof(buffer), "soundbinary\\%08x.spk", soundidlinelinks[it.first]);
+						if (getAbsoluteFilePath(buffer).empty()) {
+							soundidlinelinks.erase(it.first);
+							continue;
+						}
+						if (ImGui::Selectable(imguiline)) {
+							file.sbao.layers.clear();
+
+							Audio::instance().stopAll();
+							file.open(getAbsoluteFilePath(buffer).c_str());
+							if (!file.sbao.layers.empty())
+								file.sbao.layers[0].play(false);
+						}
 					}
 				}
 			}
-
 			ImGui::End();
 		}*/
 
 		ImGui::SetNextWindowSize(ImVec2(400, 200), ImGuiCond_FirstUseEver);
 		ImGui::SetNextWindowPos(ImVec2(80.f, 80.f), ImGuiCond_FirstUseEver);
-		if (windows["SpawnPoint"] && ImGui::Begin("SpawnPoint List", &windows["SpawnPoint"], 0)) {
-			for (tinyxml2::XMLElement *SpawnPoint = spawnPointList.RootElement()->FirstChildElement(); SpawnPoint; SpawnPoint = SpawnPoint->NextSiblingElement()) {
-				//glm::vec3 Position = SpawnPoint->Attribute("Position");
+		if (windows["SpawnPoint"]) {
+			if (ImGui::Begin("SpawnPoint List", &windows["SpawnPoint"], 0)) {
+				for (tinyxml2::XMLElement *SpawnPoint = spawnPointList.RootElement()->FirstChildElement(); SpawnPoint; SpawnPoint = SpawnPoint->NextSiblingElement()) {
+					//glm::vec3 Position = SpawnPoint->Attribute("Position");
+				}
 			}
-
 			ImGui::End();
 		}
 
 		ImGui::SetNextWindowSize(ImVec2(400, 200), ImGuiCond_FirstUseEver);
 		ImGui::SetNextWindowPos(ImVec2(80.f, 80.f), ImGuiCond_FirstUseEver);
-		if (windows["CSequence"] && ImGui::Begin("CSequence", &windows["CSequence"], 0)) {
-			static std::string currentFile;
-			static cseqFile file;
-			ImGui::Text("%s", currentFile.c_str());
-			ImGui::SameLine();
-			if (ImGui::Button("Open")) {
-				currentFile = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "cseq\0*.cseq\0", getAbsoluteFilePath("sequences").c_str(), NULL);
-				file.open(currentFile.c_str());
+		if (windows["CSequence"]) {
+			if (ImGui::Begin("CSequence", &windows["CSequence"], 0)) {
+				static std::string currentFile;
+				static cseqFile file;
+				ImGui::Text("%s", currentFile.c_str());
+				ImGui::SameLine();
+				if (ImGui::Button("Open")) {
+					currentFile = noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "cseq\0*.cseq\0", getAbsoluteFilePath("sequences").c_str(), NULL);
+					file.open(currentFile.c_str());
+				}
 			}
 
 			ImGui::End();
@@ -601,172 +625,176 @@ int main(int argc, char **argv) {
 		//Draw Layer Window
 		ImGui::SetNextWindowSize(ImVec2(400, 200), ImGuiCond_FirstUseEver);
 		ImGui::SetNextWindowPos(ImVec2(1150.f, 5.f), ImGuiCond_FirstUseEver);
-		if (ImGui::Begin("Layers")) {
-			//Wlu List
-			ImGui::PushItemWidth(-1.f);
-			static char searchWluBuffer[255] = { 0 };
-			ImGui::InputText("##Search", searchWluBuffer, sizeof(searchWluBuffer));
-
-			ImVec2 size = ImGui::GetWindowContentRegionMax();
-			size.y -= 75;
-			size.x -= 5;
-			ImGui::ListBoxHeader("##WLU List", size);
-			for (auto it = wlus.begin(); it != wlus.end(); ++it) {
-				if (it->first.find(searchWluBuffer) != std::string::npos) {
-					bool selected = currentWlu == it->first;
-					if (ImGui::Selectable(it->first.c_str(), selected))
-						currentWlu = it->first;
-				}
-			}
-			ImGui::ListBoxFooter();
-			ImGui::PopItemWidth();
-
-			wluFile &wlu = wlus[currentWlu];
-
-			if (ImGui::Button("Save")) {
-				std::string backup = wlu.origFilename;
-				backup += ".bak";
-				CopyFileA(wlu.origFilename.c_str(), backup.c_str(), TRUE);
-				wlu.serialize(wlu.origFilename.c_str());
-			}
-			ImGui::SameLine();
-			if (ImGui::Button("Reload")) {
-				SDL_assert_release(wlu.open(wlu.origFilename.c_str()));
-			}
-			ImGui::SameLine();
-			if (ImGui::Button("Restore")) {
-				std::string backup = wlu.origFilename;
-				backup += ".bak";
-				CopyFileA(backup.c_str(), wlu.origFilename.c_str(), FALSE);
-				wlu.open(wlu.origFilename.c_str());
-			}
-			ImGui::SameLine();
-			std::string xmlFileName = wlu.shortName + ".xml";
-			if (ImGui::Button("XML")) {
-				FILE *fp = fopen(xmlFileName.c_str(), "wb");
-				tinyxml2::XMLPrinter printer(fp);
-				wlu.root.serializeXML(printer);
-				fclose(fp);
-			}
-			ImGui::SameLine();
-			if (ImGui::Button("Import XML")) {
-				tinyxml2::XMLDocument doc;
-				doc.LoadFile(xmlFileName.c_str());
-				wlu.root.deserializeXML(doc.RootElement());
-			}
-			
-			ImGui::End();
-			ImGui::SetNextWindowSize(ImVec2(600, 400), ImGuiCond_FirstUseEver);
-			ImGui::Begin("Properties");
-
-			wlu.draw();
-
-			Node *Entities = wlu.root.findFirstChild("Entities");
-			if (!Entities) continue;
-
-			for (Node &entityRef : Entities->children) {
-				bool needsCross = true;
-
-				Node *entityPtr = &entityRef;
-				Attribute *ArchetypeGuid = entityRef.getAttribute("ArchetypeGuid");
-				if (ArchetypeGuid) {
-					uint32_t uid = Hash::instance().getFilenameHash((const char*)ArchetypeGuid->buffer.data());
-					entityPtr = findEntityByUID(uid);
-					if (!entityPtr) {
-						SDL_Log("Could not find %s\n", ArchetypeGuid->buffer.data());
-						SDL_assert_release(false && "Could not lookup entity by archtype, check that dlc_solo is loaded first before other packfiles");
-						entityPtr = &entityRef;
+		if (windows["Layers"]) {
+			if (ImGui::Begin("Layers", &windows["Layers"], 0)) {
+				//Wlu List
+				ImGui::PushItemWidth(-1.f);
+				static char searchWluBuffer[255] = { 0 };
+				ImGui::InputText("##Search", searchWluBuffer, sizeof(searchWluBuffer));
+				ImVec2 size = ImGui::GetWindowContentRegionMax();
+				size.y -= 75;
+				size.x -= 5;
+				ImGui::ListBoxHeader("##WLU List", size);
+				for (auto it = wlus.begin(); it != wlus.end(); ++it) {
+					if (it->first.find(searchWluBuffer) != std::string::npos) {
+						bool selected = currentWlu == it->first;
+						if (ImGui::Selectable(it->first.c_str(), selected))
+							currentWlu = it->first;
 					}
 				}
-				Node &entity = *entityPtr;
+				ImGui::ListBoxFooter();
+				ImGui::PopItemWidth();
 
-				Attribute *hidName = entity.getAttribute("hidName");
-				glm::vec3 &pos = entity.get<glm::vec3>("hidPos");
-				glm::vec3 &angles = entity.get<glm::vec3>("hidAngles");
+				wluFile &wlu = wlus[currentWlu];
 
-				//
-				Node *hidBBox = entity.findFirstChild("hidBBox");
+				if (ImGui::Button("Save")) {
+					std::string backup = wlu.origFilename;
+					backup += ".bak";
+					CopyFileA(wlu.origFilename.c_str(), backup.c_str(), TRUE);
+					wlu.serialize(wlu.origFilename.c_str());
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("Reload")) {
+					SDL_assert_release(wlu.open(wlu.origFilename.c_str()));
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("Restore")) {
+					std::string backup = wlu.origFilename;
+					backup += ".bak";
+					CopyFileA(backup.c_str(), wlu.origFilename.c_str(), FALSE);
+					wlu.open(wlu.origFilename.c_str());
+				}
+				ImGui::SameLine();
+				std::string xmlFileName = wlu.shortName + ".xml";
+				if (ImGui::Button("XML")) {
+					FILE *fp = fopen(xmlFileName.c_str(), "wb");
+					tinyxml2::XMLPrinter printer(fp);
+					wlu.root.serializeXML(printer);
+					fclose(fp);
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("Import XML")) {
+					tinyxml2::XMLDocument doc;
+					doc.LoadFile(xmlFileName.c_str());
+					wlu.root.deserializeXML(doc.RootElement());
+				}
 
-				Node *Components = entity.findFirstChild("Components");
-				SDL_assert_release(Components);
+				ImGui::End();
+				ImGui::SetNextWindowSize(ImVec2(600, 400), ImGuiCond_FirstUseEver);
+				ImGui::Begin("Properties");
 
-				Node* CGraphicComponent = Components->findFirstChild("CGraphicComponent");
-				if (CGraphicComponent) {
-					Attribute* XBG = CGraphicComponent->getAttribute(0x3182766C);
+				if (!ImGui::IsWindowCollapsed())
+					wlu.draw();
 
-					if (XBG && XBG->buffer.size() > 5) {
-						auto &model = loadXBG((char*)XBG->buffer.data());
-						renderInterface.model.use();
+				Node *Entities = wlu.root.findFirstChild("Entities");
+				if (!Entities) continue;
 
-						glm::mat4 modelMatrix = glm::translate(glm::mat4(), pos);
-						modelMatrix = glm::rotate(modelMatrix, angles.x, glm::vec3(1, 0, 0));
-						modelMatrix = glm::rotate(modelMatrix, angles.y, glm::vec3(0, 1, 0));
-						modelMatrix = glm::rotate(modelMatrix, angles.z, glm::vec3(0, 0, 1));
+				for (Node &entityRef : Entities->children) {
+					bool needsCross = true;
 
-						glm::mat4 MVP = renderInterface.VP * modelMatrix;
-						glUniformMatrix4fv(renderInterface.model.uniforms["MVP"], 1, GL_FALSE, &MVP[0][0]);
-						model.draw();
+					Node *entityPtr = &entityRef;
+					Attribute *ArchetypeGuid = entityRef.getAttribute("ArchetypeGuid");
+					if (ArchetypeGuid) {
+						uint32_t uid = Hash::instance().getFilenameHash((const char*)ArchetypeGuid->buffer.data());
+						entityPtr = findEntityByUID(uid);
+						if (!entityPtr) {
+							SDL_Log("Could not find %s\n", ArchetypeGuid->buffer.data());
+							SDL_assert_release(false && "Could not lookup entity by archtype, check that dlc_solo is loaded first before other packfiles");
+							entityPtr = &entityRef;
+						}
 					}
-				}
+					Node &entity = *entityPtr;
 
-				Node *CProximityTriggerComponent = Components->findFirstChild("CProximityTriggerComponent");
-				if (CProximityTriggerComponent) {
-					needsCross = false;
-					glm::vec3 extent = *(glm::vec3*)CProximityTriggerComponent->getAttribute("vectorSize")->buffer.data();
-					dd::box(&pos.x, red, extent.x, extent.y, extent.z);
-				}
+					Attribute *hidName = entity.getAttribute("hidName");
+					glm::vec3 &pos = entity.get<glm::vec3>("hidPos");
+					glm::vec3 &angles = entity.get<glm::vec3>("hidAngles");
 
-				if (hidBBox && false) {
-					glm::vec3 boxMin = *((glm::vec3*)hidBBox->getAttribute("vectorBBoxMin")->buffer.data());
-					glm::vec3 boxMax = *((glm::vec3*)hidBBox->getAttribute("vectorBBoxMax")->buffer.data());
-					glm::vec3 boxExtent = boxMax - boxMin;
-					dd::box(&pos.x, blue, boxExtent.x, boxExtent.y, boxExtent.z);
-				}
+					//
+					Node *hidBBox = entity.findFirstChild("hidBBox");
 
-				Node* PatrolDescription = entity.findFirstChild("PatrolDescription");
-				if (PatrolDescription) {
-					needsCross = false;
-					Node* PatrolPointList = PatrolDescription->findFirstChild("PatrolPointList");
+					Node *Components = entity.findFirstChild("Components");
+					SDL_assert_release(Components);
 
-					glm::vec3 last;
-					for (Node &PatrolPoint : PatrolPointList->children) {
-						glm::vec3 pos = *(glm::vec3*)PatrolPoint.getAttribute("vecPos")->buffer.data();
+					Node* CGraphicComponent = Components->findFirstChild("CGraphicComponent");
+					if (CGraphicComponent) {
+						Attribute* XBG = CGraphicComponent->getAttribute(0x3182766C);
 
-						if (last != glm::vec3())
-							dd::line(&last[0], &pos[0], red);
-						else
-							dd::projectedText((char*)hidName->buffer.data(), &pos.x, red, &renderInterface.VP[0][0], 0, 0, renderInterface.windowSize.x, renderInterface.windowSize.y, 0.5f);
-						last = pos;
+						if (XBG && XBG->buffer.size() > 5) {
+							auto &model = loadXBG((char*)XBG->buffer.data());
+							renderInterface.model.use();
+
+							glm::mat4 modelMatrix = glm::translate(glm::mat4(), pos);
+							modelMatrix = glm::rotate(modelMatrix, angles.x, glm::vec3(1, 0, 0));
+							modelMatrix = glm::rotate(modelMatrix, angles.y, glm::vec3(0, 1, 0));
+							modelMatrix = glm::rotate(modelMatrix, angles.z, glm::vec3(0, 0, 1));
+
+							glm::mat4 MVP = renderInterface.VP * modelMatrix;
+							glUniformMatrix4fv(renderInterface.model.uniforms["MVP"], 1, GL_FALSE, &MVP[0][0]);
+							model.draw();
+						}
 					}
-				}
 
-				Node* RaceDescription = entity.findFirstChild("RaceDescription");
-				if (RaceDescription) {
-					needsCross = false;
-					Node* RacePointList = RaceDescription->findFirstChild("RacePointList");
-
-					glm::vec3 last;
-					for (Node &RacePoint : RacePointList->children) {
-						glm::vec3 pos = *(glm::vec3*)RacePoint.getAttribute("vecPos")->buffer.data();
-						float fShortcutRadius = *(float*)RacePoint.getAttribute("fShortcutRadius")->buffer.data();
-
-						dd::sphere((float*)&pos.x, red, fShortcutRadius);
-
-						if (last != glm::vec3())
-							dd::line(&last[0], &pos[0], red);
-						else
-							dd::projectedText((char*)hidName->buffer.data(), &pos.x, red, &renderInterface.VP[0][0], 0, 0, renderInterface.windowSize.x, renderInterface.windowSize.y, 0.5f);
-						last = pos;
+					Node *CProximityTriggerComponent = Components->findFirstChild("CProximityTriggerComponent");
+					if (CProximityTriggerComponent) {
+						needsCross = false;
+						glm::vec3 extent = *(glm::vec3*)CProximityTriggerComponent->getAttribute("vectorSize")->buffer.data();
+						dd::box(&pos.x, red, extent.x, extent.y, extent.z);
 					}
+
+					if (hidBBox && false) {
+						glm::vec3 boxMin = *((glm::vec3*)hidBBox->getAttribute("vectorBBoxMin")->buffer.data());
+						glm::vec3 boxMax = *((glm::vec3*)hidBBox->getAttribute("vectorBBoxMax")->buffer.data());
+						glm::vec3 boxExtent = boxMax - boxMin;
+						dd::box(&pos.x, blue, boxExtent.x, boxExtent.y, boxExtent.z);
+					}
+
+					Node* PatrolDescription = entity.findFirstChild("PatrolDescription");
+					if (PatrolDescription) {
+						needsCross = false;
+						Node* PatrolPointList = PatrolDescription->findFirstChild("PatrolPointList");
+
+						glm::vec3 last;
+						for (Node &PatrolPoint : PatrolPointList->children) {
+							glm::vec3 pos = *(glm::vec3*)PatrolPoint.getAttribute("vecPos")->buffer.data();
+
+							if (last != glm::vec3())
+								dd::line(&last[0], &pos[0], red);
+							else
+								dd::projectedText((char*)hidName->buffer.data(), &pos.x, red, &renderInterface.VP[0][0], 0, 0, renderInterface.windowSize.x, renderInterface.windowSize.y, 0.5f);
+							last = pos;
+						}
+					}
+
+					Node* RaceDescription = entity.findFirstChild("RaceDescription");
+					if (RaceDescription) {
+						needsCross = false;
+						Node* RacePointList = RaceDescription->findFirstChild("RacePointList");
+
+						glm::vec3 last;
+						for (Node &RacePoint : RacePointList->children) {
+							glm::vec3 pos = *(glm::vec3*)RacePoint.getAttribute("vecPos")->buffer.data();
+							float fShortcutRadius = *(float*)RacePoint.getAttribute("fShortcutRadius")->buffer.data();
+
+							dd::sphere((float*)&pos.x, red, fShortcutRadius);
+
+							if (last != glm::vec3())
+								dd::line(&last[0], &pos[0], red);
+							else
+								dd::projectedText((char*)hidName->buffer.data(), &pos.x, red, &renderInterface.VP[0][0], 0, 0, renderInterface.windowSize.x, renderInterface.windowSize.y, 0.5f);
+							last = pos;
+						}
+					}
+
+					if (glm::distance(pos, camera.location) < settings.textDrawDistance)
+						dd::projectedText((char*)hidName->buffer.data(), &pos.x, white, &renderInterface.VP[0][0], 0, 0, renderInterface.windowSize.x, renderInterface.windowSize.y, 0.5f);
+					if (needsCross)
+						dd::cross(&pos.x, 0.25f);
+
 				}
-
-				if (glm::distance(pos, camera.location) < settings.textDrawDistance)
-					dd::projectedText((char*)hidName->buffer.data(), &pos.x, white, &renderInterface.VP[0][0], 0, 0, renderInterface.windowSize.x, renderInterface.windowSize.y, 0.5f);
-				if (needsCross)
-					dd::cross(&pos.x, 0.25f);
-
+				ImGui::End();
 			}
-			ImGui::End();
+			else
+				ImGui::End();
 		}
 
 		//Render Buildings
