@@ -239,7 +239,8 @@ void xbgFile::open(const char *file) {
 	//Section F - TODO
 	{
 		uint32_t count = SDL_ReadLE32(fp);
-		SDL_assert_release(count == 0);
+		// Then remove this when its done
+		// SDL_assert_release(count == 0);
 		for (int32_t i = 0; i < count; ++i) {
 
 		}
