@@ -243,8 +243,8 @@ void sbaoFile::save(const char * filename) {
 }
 
 Vector<uint8_t> sbaoFile::save() {
-	uint8_t data[1024 * 1024 * 64];
-	SDL_RWops *fp = SDL_RWFromMem(data, sizeof(data));
+	Vector<uint8_t> data(1024 * 1024 * 64);
+	SDL_RWops *fp = SDL_RWFromMem(data.data(), data.size());
 	size_t size = 0;
 
 	if (layers.empty()) {
@@ -342,10 +342,10 @@ Vector<uint8_t> sbaoFile::save() {
 		SDL_RWwrite(fp, layers[0].data.data(), 1, layers[0].data.size());
 		size = SDL_RWtell(fp);
 	}
+	SDL_RWclose(fp);
 
-	Vector<uint8_t> d(size);
-	memcpy(d.data(), data, size);
-	return d;
+	data.resize(size);
+	return data;
 }
 
 void sbaoFile::fillCache() {

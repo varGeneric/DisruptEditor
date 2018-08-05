@@ -43,30 +43,32 @@ void reloadBuildingEntities() {
 	buildingEntities.clear();
 	for (auto it = wlus.begin(); it != wlus.end(); ++it) {
 		Node *Entities = it->second.root.findFirstChild("Entities");
-		for (Node &Entity : Entities->children) {
-			//CBatchMeshEntity
-			Attribute *hidEntityClass = Entity.getAttribute("hidEntityClass");
-			if (!hidEntityClass) continue;
+		if (Entities) {
+			for (Node &Entity : Entities->children) {
+				//CBatchMeshEntity
+				Attribute *hidEntityClass = Entity.getAttribute("hidEntityClass");
+				if (!hidEntityClass) continue;
 
-			if (*(uint32_t*)hidEntityClass->buffer.data() == 138694286) {
-				BuildingEntity be;
-				be.wlu = it->first;
-				be.CBatchPath = (char*)Entity.getAttribute("ExportPath")->buffer.data();
+				if (*(uint32_t*)hidEntityClass->buffer.data() == 138694286) {
+					BuildingEntity be;
+					be.wlu = it->first;
+					be.CBatchPath = (char*)Entity.getAttribute("ExportPath")->buffer.data();
 
-				//Cut off .batch
-				be.CBatchPath = be.CBatchPath.substr(0, be.CBatchPath.size() - 6);
+					//Cut off .batch
+					be.CBatchPath = be.CBatchPath.substr(0, be.CBatchPath.size() - 6);
 
-				Attribute *hidPos = Entity.getAttribute("hidPos");
-				if (!hidPos) continue;
-				be.pos = *(glm::vec3*)hidPos->buffer.data();
+					Attribute *hidPos = Entity.getAttribute("hidPos");
+					if (!hidPos) continue;
+					be.pos = *(glm::vec3*)hidPos->buffer.data();
 
-				Node *hidBBox = Entity.findFirstChild("hidBBox");
-				be.min = *(glm::vec3*)hidBBox->getAttribute("vectorBBoxMin")->buffer.data();
-				be.min += be.pos;
-				be.max = *(glm::vec3*)hidBBox->getAttribute("vectorBBoxMax")->buffer.data();
-				be.max += be.pos;
+					Node *hidBBox = Entity.findFirstChild("hidBBox");
+					be.min = *(glm::vec3*)hidBBox->getAttribute("vectorBBoxMin")->buffer.data();
+					be.min += be.pos;
+					be.max = *(glm::vec3*)hidBBox->getAttribute("vectorBBoxMax")->buffer.data();
+					be.max += be.pos;
 
-				buildingEntities.push_back(be);
+					buildingEntities.push_back(be);
+				}
 			}
 		}
 	}
@@ -493,7 +495,7 @@ int main(int argc, char **argv) {
 				}
 				ImGui::SameLine();
 				if (ImGui::Button("Save")) {
-					it->save(noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "ogg\0*.ogg\0", NULL, NULL));
+					it->save(noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "ogg\0*.ogg\0", NULL, NULL));
 				}
 				ImGui::SameLine();
 				if (ImGui::Button("Delete")) {
