@@ -9,6 +9,7 @@
 #include "glm/glm.hpp"
 #include <SDL_log.h>
 #include <SDL_rwops.h>
+#include <SDL_messagebox.h>
 
 #pragma pack(push, 1)
 struct XBGHead {
@@ -247,8 +248,19 @@ void xbgFile::open(const char *file) {
 	//Parse Mesh
 	for (int32_t i = 0; i < head.lodCount; ++i) {
 		uint32_t meshCount = SDL_ReadLE32(fp);
-		meshes.resize(meshCount);
-		for (int32_t j = 0; j < meshCount; ++j) {
+		try {
+			meshes.resize(meshCount);
+		}
+		catch (std::bad_alloc& e)
+		{
+			char *message = new char[74 + strlen(file)];
+			sprintf(message, "malloc() failed on file: %s, consider removing this file and trying again. ", file);
+			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "malloc Error", message, NULL);
+			delete message;
+
+			exit(1);
+		}
+		for (uint32_t j = 0; j < meshCount; ++j) {
 			Mesh &mesh = meshes[j];
 
 			MeshData data;

@@ -135,6 +135,8 @@ inline void Vector<T>::reserve(size_t size) {
 	} else if(size > 0) {
 		mEnd = mBegin = (T*)malloc(size * sizeof(T));
 		mCapacity = mBegin + size;
+		if (!mBegin || !mEnd)
+			throw std::bad_alloc();
 	}
 }
 
@@ -146,7 +148,8 @@ inline void Vector<T>::resize(size_t size) {
 	if (size > oldSize) {
 		for (T* it = mBegin + oldSize, *end = mBegin + size; it != end; ++it)
 			new (it) T();
-	} else if (size < oldSize) {
+	}
+	else if (size < oldSize) {
 		for (T* it = mEnd - 1, *end = mBegin + size - 1; it != end; --it)
 			it->~T();
 	}
