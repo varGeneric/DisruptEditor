@@ -470,6 +470,13 @@ int main(int argc, char **argv) {
 					file.open(noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "sbao\0*.sbao\0", NULL, NULL));
 				}
 				ImGui::SameLine();
+				/*
+				if (ImGui::Button("Open SPK")) {
+					spkFile.open(noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "spk\0*.spk\0", NULL, NULL));
+					file = spkFile.objs[0];
+				}
+				*/
+				ImGui::SameLine();
 				if (ImGui::Button("Save")) {
 					file.save(noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "sbao\0*.sbao\0", NULL, NULL));
 				}
@@ -479,13 +486,8 @@ int main(int argc, char **argv) {
 					layer.replace(noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "ogg\0*.ogg\0", NULL, NULL));
 				}
 				ImGui::SameLine();
-<<<<<<< HEAD
-				if (ImGui::Button("Save")) {
-					it->save(noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "ogg\0*.ogg\0", NULL, NULL));
-=======
 				if (ImGui::Button("Clear Layers")) {
 					file.layers.clear();
->>>>>>> Forgot to stage the changes last time.
 				}
 				ImGui::SameLine();
 				if (ImGui::Button("Stop All")) {
@@ -514,7 +516,7 @@ int main(int argc, char **argv) {
 					}
 					ImGui::SameLine();
 					if (ImGui::Button("Save")) {
-						it->save(noc_file_dialog_open(NOC_FILE_DIALOG_OPEN, "ogg\0*.ogg\0", NULL, NULL));
+						it->save(noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "ogg\0*.ogg\0", NULL, NULL));
 					}
 					ImGui::SameLine();
 					if (ImGui::Button("Delete")) {
